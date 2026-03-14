@@ -220,7 +220,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
   <div class="terr-grid" id="terr-grid" style="display:none;"></div>
   <div class="step1-footer">
     <span id="sel-count">0 de 3 seleccionados</span>
-    <button class="btn-secondary" onclick="goToCover()">← Grupo</button>
+    <button class="btn-secondary" onclick="goToModo()">← Modo</button>
     <button class="btn-primary" id="btn-next1" onclick="goToStep2()" disabled>Continuar →</button>
   </div>
 </div>
@@ -471,11 +471,13 @@ async function guardarRegistros(){
 
   try {
     for (const s of saves) {
-      await fetch(SCRIPT_URL + '?action=saveRecord&grupo=' + selectedGrupo +
-        '&territorio=' + s.territorio +
+      const url = SCRIPT_URL + '?action=saveRecord' +
+        '&grupo=' + encodeURIComponent(selectedGrupo) +
+        '&territorio=' + encodeURIComponent(s.territorio) +
         '&conductor=' + encodeURIComponent(s.conductor) +
-        '&fechaInicio=' + s.fechaInicio +
-        '&fechaFin=' + s.fechaFin, { method: 'GET', redirect: 'follow' });
+        '&fechaInicio=' + encodeURIComponent(s.fechaInicio) +
+        '&fechaFin=' + encodeURIComponent(s.fechaFin);
+      await fetch(url, { method: 'GET', redirect: 'follow' });
     }
     // Limpiar cache para que recargue del Sheet
     territoriosData = {};
@@ -491,6 +493,7 @@ async function guardarRegistros(){
 
 async function goToStep1(){
   hide('view-cover');hide('view-config');hide('view-preview');
+  hide('view-modo');hide('view-registrar');
   show('view-select'); setStep(1);
   document.getElementById('week-info').textContent=`Semana del ${formatShort(WEEK.mon)} al ${formatShort(WEEK.sun)}`;
 
