@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificador de Salidas</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; padding: 1rem; background: #fff; color: #111; }
+.section-title { font-size: 13px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.terr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.terr-btn { background: #fff; border: 0.5px solid #ddd; border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: left; }
+.terr-btn:hover { border-color: #aaa; }
+.terr-btn.selected { border: 1.5px solid #185FA5; background: #E6F1FB; }
+.terr-num { font-size: 15px; font-weight: 500; color: #111; }
+.terr-btn.selected .terr-num { color: #185FA5; }
+.terr-date { font-size: 11px; color: #666; margin-top: 2px; }
+.terr-days { font-size: 11px; font-weight: 500; margin-top: 2px; }
+.days-old { color: #A32D2D; } .days-mid { color: #BA7517; } .days-new { color: #3B6D11; }
+.salida-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+.salida-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.salida-label { font-size: 14px; font-weight: 500; }
+.phone-badge { font-size: 12px; background: #E1F5EE; color: #0F6E56; padding: 2px 8px; border-radius: 20px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+select, input[type=text], input[type=date], input[type=time] { width: 100%; font-size: 13px; padding: 6px 8px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #111; }
+label { font-size: 12px; color: #666; display: block; margin-bottom: 3px; }
+.btn-primary { padding: 9px 16px; font-size: 13px; font-weight: 500; background: #185FA5; color: white; border: none; border-radius: 8px; cursor: pointer; }
+.btn-primary:hover { background: #0C447C; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-secondary { padding: 9px 16px; font-size: 13px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #111; cursor: pointer; }
+.btn-autofill { font-size: 12px; padding: 5px 12px; background: #EAF3DE; color: #3B6D11; border: 0.5px solid #97C459; border-radius: 8px; cursor: pointer; }
+.step-bar { display: flex; gap: 6px; margin-bottom: 16px; }
+.step { flex: 1; height: 3px; border-radius: 2px; background: #ddd; }
+.step.active { background: #185FA5; } .step.done { background: #1D9E75; }
+.preview-wrap { border: 0.5px solid #ddd; border-radius: 12px; overflow: hidden; margin-top: 4px; }
+table.preview { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.preview th { background: #1a1a2e; color: white; padding: 8px 10px; text-align: center; border: 1px solid #333; }
+table.preview td { padding: 7px 10px; text-align: center; border: 1px solid #ddd; color: #111; background: #fff; }
+table.preview tr:nth-child(even) td { background: #f5f5f5; }
+.week-info { font-size: 12px; color: #666; background: #f5f5f5; border-radius: 8px; padding: 6px 10px; margin-bottom: 12px; }
+.dia-martes { font-size: 18px; font-weight: 500; color: #185FA5; }
+.dia-jueves { font-size: 18px; font-weight: 500; color: #854F0B; }
+.dia-viernes { font-size: 18px; font-weight: 500; color: #3B6D11; }
+</style>
+</head>
+<body>
+<div class="app">
+<div class="step-bar">
+  <div class="step active" id="s1"></div>
+  <div class="step" id="s2"></div>
+  <div class="step" id="s3"></div>
+</div>
+
+<div id="view-select">
+  <p class="section-title">Elegí 3 territorios</p>
+  <div class="week-info" id="week-info"></div>
+  <div class="terr-grid" id="terr-grid"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <span id="sel-count" style="font-size:13px;color:#666;">0 de 3 seleccionados</span>
+    <button class="btn-primary" id="btn-next1" onclick="goToStep2()" disabled>Continuar →</button>
+  </div>
+</div>
+
+<div id="view-config" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <p class="section-title" style="margin:0;">Configurá cada salida</p>
+    <button class="btn-autofill" onclick="autoFillAll()">Autocompletar fechas y horas</button>
+  </div>
+  <div id="salidas-container"></div>
+  <div style="display:flex;gap:8px;margin-top:4px;">
+    <button class="btn-secondary" onclick="goToStep1()" style="flex:1;">← Volver</button>
+    <button class="btn-primary" onclick="generatePreview()" style="flex:2;">Generar tabla →</button>
+  </div>
+</div>
+
+<div id="view-preview" style="display:none;">
+  <p class="section-title">Vista previa</p>
+  <div class="preview-wrap">
+    <table class="preview">
+      <thead><tr><th>ENCUENTRO</th><th>Nº Territorio</th><th>Fecha</th><th>Conductor</th><th>Hora</th></tr></thead>
+      <tbody id="preview-body"></tbody>
+    </table>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="btn-secondary" onclick="goToStep2()" style="flex:1;">← Editar</button>
+    <button class="btn-secondary" onclick="goToStep1()" style="flex:1;">Reiniciar</button>
+  </div>
+</div>
+</div>
+
+<script>
+const CONDUCTORES = ['Andrés Sánchez','Eduardo Scalese','Jose Luis Lasierra','Diego Reinoso','Armando Núñez'];
+const TERRITORIES = [
+  {n:'1',last:'2026-02-06'},{n:'2',last:'2026-02-14'},{n:'3',last:'2026-02-14'},
+  {n:'4',last:'2026-02-14'},{n:'5',last:'2026-02-14'},{n:'6',last:'2026-03-10'},
+  {n:'7',last:'2026-02-03'},{n:'8',last:'2026-02-24'},{n:'9',last:'2026-03-10'},
+  {n:'10',last:'2026-02-08'},{n:'11',last:'2025-08-23',special:true},{n:'12',last:'2026-03-12'},
+  {n:'15',last:'2026-03-13'},{n:'16',last:'2026-01-09'},{n:'17',last:'2026-01-07'},
+  {n:'18',last:'2026-01-11'},{n:'19',last:'2026-03-06'},{n:'20',last:'2026-01-20'},
+  {n:'21',last:'2026-02-17'},{n:'22',last:'2026-02-26'},{n:'23',last:'2026-01-29'},
+  {n:'24',last:'2026-02-27'},{n:'25',last:'2026-02-20'},{n:'129',last:'2026-03-05'},
+  {n:'141',last:'2026-03-11'},{n:'146',last:'2026-03-11'},{n:'147',last:'2026-02-12'},
+  {n:'149',last:'2026-01-26'},{n:'150',last:'2026-02-10'},{n:'153',last:'2026-01-28'},
+  {n:'154',last:'2026-01-20'},{n:'167',last:'2026-02-24'},{n:'168',last:'2025-12-09'},
+  {n:'169',last:'2026-02-17'}
+];
+const DIA_CONFIG = [
+  { key:'tue', label:'Martes', cls:'dia-martes' },
+  { key:'thu', label:'Jueves', cls:'dia-jueves' },
+  { key:'fri', label:'Viernes', cls:'dia-viernes' }
+];
+function getWeekDates() {
+  const now = new Date(); const day = now.getDay();
+  const monday = new Date(now); monday.setDate(now.getDate()-(day===0?6:day-1));
+  function d(o){const x=new Date(monday);x.setDate(monday.getDate()+o);return x.toISOString().slice(0,10);}
+  return {tue:d(1),thu:d(3),fri:d(4)};
+}
+function formatShort(ds){if(!ds)return'—';const d=new Date(ds+'T00:00:00');return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`;}
+function formatLong(ds){if(!ds)return'—';const d=new Date(ds+'T00:00:00');const dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];return`${dias[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getFullYear()).slice(-2)}`;}
+function daysSince(ds){return Math.floor((new Date()-new Date(ds+'T00:00:00'))/86400000);}
+function dayClass(d){return d>90?'days-old':d>45?'days-mid':'days-new';}
+const WEEK=getWeekDates();
+const sorted=TERRITORIES.map(t=>({...t,days:daysSince(t.last)})).sort((a,b)=>b.days-a.days);
+let selected=[];
+function renderGrid(){
+  const g=document.getElementById('terr-grid');g.innerHTML='';
+  sorted.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='terr-btn'+(selected.includes(t.n)?' selected':'');
+    btn.innerHTML=`<div class="terr-num">Terr. ${t.n}${t.special?' ⚠':''}</div><div class="terr-date">Últ: ${formatShort(t.last)}</div><div class="terr-days ${dayClass(t.days)}">${t.days}d sin trabajar</div>`;
+    btn.onclick=()=>{if(selected.includes(t.n))selected=selected.filter(x=>x!==t.n);else if(selected.length<3)selected.push(t.n);renderGrid();};
+    g.appendChild(btn);
+  });
+  document.getElementById('sel-count').textContent=`${selected.length} de 3 seleccionados`;
+  document.getElementById('btn-next1').disabled=selected.length!==3;
+}
+function setStep(n){for(let i=1;i<=3;i++)document.getElementById('s'+i).className='step'+(i<n?' done':i===n?' active':'');}
+function show(id){document.getElementById(id).style.display='';}
+function hide(id){document.getElementById(id).style.display='none';}
+function goToStep1(){show('view-select');hide('view-config');hide('view-preview');setStep(1);}
+function condSelect(id){return`<select id="${id}"><option value="">— Elegir —</option>${CONDUCTORES.map(c=>`<option>${c}</option>`).join('')}</select>`;}
+function renderSalidas(){
+  const c=document.getElementById('salidas-container');c.innerHTML='';
+  selected.forEach((n,i)=>{
+    const cfg=DIA_CONFIG[i];const fechaVal=WEEK[cfg.key];
+    const div=document.createElement('div');div.className='salida-card';
+    div.innerHTML=`<div class="salida-header"><span class="salida-label">Territorio ${n}</span><span class="${cfg.cls}">${cfg.label}</span></div><div class="form-row"><div><label>Conductor</label>${condSelect('cond-'+n)}</div><div><label>Día</label><input type="date" id="fecha-${n}" value="${fechaVal}"></div></div><div class="form-row"><div><label>Hora</label><input type="time" id="hora-${n}" value="18:30"></div><div><label>Encuentro / Familia</label><input type="text" id="enc-${n}" placeholder="Ej: Flia. García"></div></div>`;
+    c.appendChild(div);
+    if(i===0){
+      const phoneDiv=document.createElement('div');phoneDiv.className='salida-card';phoneDiv.style.borderLeft='3px solid #1D9E75';
+      phoneDiv.innerHTML=`<div class="salida-header"><span class="salida-label">Salida telefónica</span><span class="phone-badge">Telefónica · <span class="dia-martes" style="font-size:13px;">Martes</span></span></div><div class="form-row"><div><label>Conductor</label>${condSelect('cond-phone')}</div><div><label>Día</label><input type="date" id="fecha-phone" value="${fechaVal}"></div></div><div class="form-row"><div><label>Hora</label><input type="time" id="hora-phone" value="17:30"></div><div><label>Encuentro / Familia</label><input type="text" id="enc-phone" placeholder="Ej: Flia. López"></div></div>`;
+      c.appendChild(phoneDiv);
+    }
+  });
+}
+function goToStep2(){if(selected.length!==3)return;hide('view-select');show('view-config');hide('view-preview');setStep(2);renderSalidas();}
+function autoFillAll(){
+  selected.forEach((n,i)=>{const fd=document.getElementById('fecha-'+n);const fh=document.getElementById('hora-'+n);if(fd)fd.value=WEEK[DIA_CONFIG[i].key];if(fh)fh.value='18:30';});
+  const fp=document.getElementById('fecha-phone');const hp=document.getElementById('hora-phone');
+  if(fp)fp.value=WEEK.tue;if(hp)hp.value='17:30';
+}
+function generatePreview(){
+  const rows=[];
+  selected.forEach((n,i)=>{
+    rows.push({enc:document.getElementById('enc-'+n).value||'—',terr:n,fecha:formatLong(document.getElementById('fecha-'+n).value),cond:document.getElementById('cond-'+n).value||'—',hora:(document.getElementById('hora-'+n).value||'18:30').replace(':','.')});
+    if(i===0)rows.push({enc:document.getElementById('enc-phone').value||'—',terr:'TELEFÓNICA',fecha:formatLong(document.getElementById('fecha-phone').value),cond:document.getElementById('cond-phone').value||'—',hora:(document.getElementById('hora-phone').value||'17:30').replace(':','.')});
+  });
+  document.getElementById('preview-body').innerHTML=rows.map(r=>`<tr><td>${r.enc}</td><td><strong>${r.terr}</strong></td><td><strong>${r.fecha}</strong></td><td>${r.cond}</td><td><strong>${r.hora}</strong></td></tr>`).join('');
+  hide('view-config');show('view-preview');setStep(3);
+}
+document.getElementById('week-info').textContent=`Semana actual — Martes ${formatShort(WEEK.tue)} · Jueves ${formatShort(WEEK.thu)} · Viernes ${formatShort(WEEK.fri)}`;
+renderGrid();
+</script>
+</body>
+</html>
