@@ -447,6 +447,15 @@ function setEstado(n, estado) {
   }
 }
 
+
+  function fmtDate(ds) {
+  if (!ds) return '';
+  const m = ds.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1].slice(-2)}`;
+  return ds;
+}
+
+  
 async function guardarRegistros(){
   const btn = document.getElementById('btn-guardar');
   const status = document.getElementById('save-status');
