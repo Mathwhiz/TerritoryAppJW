@@ -751,7 +751,7 @@ function generatePreview(){
 
 function guardarImagen(){
   const el = document.querySelector('.card-preview');
-  html2canvas(el, { backgroundColor: '#1e1e1e', scale: 1.5 }).then(canvas => {
+  html2canvas(el, { backgroundColor: '#1e1e1e', scale: 1 }).then(canvas => {
     const link = document.createElement('a');
     link.download = `salidas-grupo-${selectedGrupo}.jpg`;
     link.href = canvas.toDataURL('image/jpeg', 0.92);
