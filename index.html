@@ -32,15 +32,31 @@ label { font-size: 12px; color: #666; display: block; margin-bottom: 3px; }
 .step-bar { display: flex; gap: 6px; margin-bottom: 16px; }
 .step { flex: 1; height: 3px; border-radius: 2px; background: #ddd; }
 .step.active { background: #185FA5; } .step.done { background: #1D9E75; }
-.preview-wrap { border: 0.5px solid #ddd; border-radius: 12px; overflow: hidden; margin-top: 4px; }
-table.preview { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.preview th { background: #1a1a2e; color: white; padding: 8px 10px; text-align: center; border: 1px solid #333; }
-table.preview td { padding: 7px 10px; text-align: center; border: 1px solid #ddd; color: #111; background: #fff; }
-table.preview tr:nth-child(even) td { background: #f5f5f5; }
 .week-info { font-size: 12px; color: #666; background: #f5f5f5; border-radius: 8px; padding: 6px 10px; margin-bottom: 12px; }
 .dia-martes { font-size: 18px; font-weight: 500; color: #185FA5; }
 .dia-jueves { font-size: 18px; font-weight: 500; color: #854F0B; }
 .dia-viernes { font-size: 18px; font-weight: 500; color: #3B6D11; }
+
+/* ── Tabla final ── */
+.card-preview { background: #fff; border: 0.5px solid #ddd; border-radius: 16px; overflow: hidden; }
+.card-preview-header { padding: 14px 18px 12px; border-bottom: 0.5px solid #ddd; }
+.card-preview-top { font-size: 11px; font-weight: 500; color: #666; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 2px; }
+.card-preview-main { font-size: 17px; font-weight: 500; color: #111; }
+table.preview { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.preview th { background: #1a1a2e; color: #fff; padding: 9px 10px; text-align: center; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; border-right: 0.5px solid rgba(255,255,255,0.1); }
+table.preview th:last-child { border-right: none; }
+table.preview td { padding: 9px 10px; text-align: center; border-bottom: 0.5px solid #ddd; color: #111; background: #fff; vertical-align: middle; }
+table.preview tr:last-child td { border-bottom: none; }
+table.preview tr:nth-child(even) td { background: #f5f5f5; }
+table.preview tr.tel-row td:first-child { border-left: 2px solid #1D9E75; }
+.dia-badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; margin-bottom: 3px; }
+.badge-mar { background: #E6F1FB; color: #0C447C; }
+.badge-jue { background: #FAEEDA; color: #633806; }
+.badge-vie { background: #EAF3DE; color: #27500A; }
+.terr-num-big { font-size: 15px; font-weight: 500; }
+.fecha-num { font-size: 13px; font-weight: 500; margin-top: 2px; }
+.cond-txt { font-size: 12px; color: #666; }
+.hora-txt { font-size: 14px; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -168,9 +184,7 @@ function autoFillAll(){
 function generatePreview(){
   const grupo = document.getElementById('sel-grupo')?.value || '—';
   document.getElementById('preview-grupo-title').textContent = `Grupo ${grupo} — Salidas de la semana`;
-
   const DIA_BADGE = { tue:'<div class="dia-badge badge-mar">Martes</div>', thu:'<div class="dia-badge badge-jue">Jueves</div>', fri:'<div class="dia-badge badge-vie">Viernes</div>' };
-
   const rows = [];
   selected.forEach((n,i)=>{
     const diaKey = DIA_CONFIG[i].key;
@@ -179,18 +193,15 @@ function generatePreview(){
     const cond = document.getElementById('cond-'+n).value||'—';
     const enc = document.getElementById('enc-'+n).value||'—';
     const fechaFmt = formatShort(fechaVal).replace(/\//g,'-');
-
-    // Telefónica va primero (17:30) cuando es el primer territorio (martes)
     if(i===0){
       const horaPhone = (document.getElementById('hora-phone').value||'17:30').replace(':','.');
       const condPhone = document.getElementById('cond-phone').value||'—';
       const encPhone = document.getElementById('enc-phone').value||'—';
-      rows.push({enc:encPhone, terr:'TELEFÓNICA', terrSmall:true, badge:DIA_BADGE.tue, fecha:fechaFmt, cond:condPhone, hora:horaPhone, tel:true});
+      const fechaPhone = formatShort(document.getElementById('fecha-phone').value).replace(/\//g,'-');
+      rows.push({enc:encPhone, terr:'TELEFÓNICA', terrSmall:true, badge:DIA_BADGE.tue, fecha:fechaPhone, cond:condPhone, hora:horaPhone, tel:true});
     }
-
     rows.push({enc, terr:n, terrSmall:false, badge:DIA_BADGE[diaKey], fecha:fechaFmt, cond, hora});
   });
-
   document.getElementById('preview-body').innerHTML = rows.map(r=>`
     <tr${r.tel?' class="tel-row"':''}>
       <td>${r.enc}</td>
@@ -199,7 +210,6 @@ function generatePreview(){
       <td><div class="cond-txt">${r.cond}</div></td>
       <td><div class="hora-txt">${r.hora}</div></td>
     </tr>`).join('');
-
   hide('view-config'); show('view-preview'); setStep(3);
 }
 document.getElementById('week-info').textContent=`Semana actual — Martes ${formatShort(WEEK.tue)} · Jueves ${formatShort(WEEK.thu)} · Viernes ${formatShort(WEEK.fri)}`;
