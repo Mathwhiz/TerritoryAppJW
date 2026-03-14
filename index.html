@@ -9,27 +9,31 @@
 body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e1e; color: #eee; min-height: 100vh; }
 
 /* Barra de pasos */
-.step-bar { display: flex; gap: 6px; margin-bottom: 16px; }
+.step-bar { display: flex; gap: 6px; margin-bottom: 20px; }
 .step { flex: 1; height: 3px; border-radius: 2px; background: #444; }
 .step.active { background: #185FA5; }
 .step.done { background: #1D9E75; }
 
-/* Títulos de sección */
-.section-title { font-size: 20px; font-weight: 500; color: #eee; margin-bottom: 6px; }
-.section-sub { font-size: 13px; color: #888; margin-bottom: 14px; }
+/* Encabezados de sección */
+.section-title { font-size: 22px; font-weight: 500; color: #eee; margin-bottom: 4px; text-align: center; }
+.section-sub { font-size: 13px; color: #888; margin-bottom: 16px; text-align: center; }
 
 /* Grid territorios */
 .terr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 14px; }
-.terr-btn { background: #2a2a2a; border: 0.5px solid #444; border-radius: 10px; padding: 10px 8px; cursor: pointer; text-align: center; }
+.terr-btn { background: #2a2a2a; border: 0.5px solid #444; border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center; }
 .terr-btn:hover { border-color: #666; }
 .terr-btn.selected { border: 1.5px solid #378ADD; background: #0c2a45; }
-.terr-num { font-size: 22px; font-weight: 500; color: #eee; }
+.terr-num { font-size: 24px; font-weight: 500; color: #eee; }
 .terr-btn.selected .terr-num { color: #85B7EB; }
-.terr-date { font-size: 11px; color: #888; margin-top: 3px; }
-.terr-days { font-size: 11px; font-weight: 500; margin-top: 3px; }
+.terr-date { font-size: 11px; color: #888; margin-top: 4px; }
+.terr-days { font-size: 13px; font-weight: 500; margin-top: 4px; }
 .days-old { color: #F09595; }
 .days-mid { color: #FAC775; }
 .days-new { color: #C0DD97; }
+
+/* Footer paso 1 */
+.step1-footer { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.step1-footer span { font-size: 13px; color: #888; }
 
 /* Cards de configuración */
 .salida-card { background: #2a2a2a; border: 0.5px solid #444; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
@@ -37,13 +41,14 @@ body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e1e; c
 .salida-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .salida-label { font-size: 14px; font-weight: 500; color: #eee; }
 .phone-badge { font-size: 12px; background: #0a2e24; color: #5DCAA5; padding: 2px 8px; border-radius: 20px; border: 0.5px solid #1D9E75; }
+.dia-label { font-size: 18px; font-weight: 500; }
+.dia-martes { color: #85B7EB; }
+.dia-jueves { color: #FAC775; }
+.dia-viernes { color: #C0DD97; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 select, input[type=text], input[type=date], input[type=time] { width: 100%; font-size: 13px; padding: 6px 8px; border: 0.5px solid #555; border-radius: 8px; background: #1e1e1e; color: #eee; }
 select option { background: #2a2a2a; color: #eee; }
 label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
-.dia-martes { font-size: 15px; font-weight: 500; color: #85B7EB; }
-.dia-jueves { font-size: 15px; font-weight: 500; color: #FAC775; }
-.dia-viernes { font-size: 15px; font-weight: 500; color: #C0DD97; }
 
 /* Botones */
 .btn-primary { padding: 9px 16px; font-size: 13px; font-weight: 500; background: #185FA5; color: white; border: none; border-radius: 8px; cursor: pointer; }
@@ -73,22 +78,22 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .card-preview-header { padding: 14px 18px 12px; border-bottom: 0.5px solid #444; }
 .card-preview-top { font-size: 11px; font-weight: 500; color: #888; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 2px; }
 .card-preview-main { font-size: 17px; font-weight: 500; color: #eee; }
-table.preview { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.preview th { background: #111; color: #fff; padding: 9px 10px; text-align: center; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; border-right: 0.5px solid rgba(255,255,255,0.08); }
+table.preview { width: 100%; border-collapse: collapse; }
+table.preview th { background: #111; color: #fff; padding: 10px 10px; text-align: center; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; border-right: 0.5px solid rgba(255,255,255,0.08); }
 table.preview th:last-child { border-right: none; }
-table.preview td { padding: 9px 10px; text-align: center; border-bottom: 0.5px solid #3a3a3a; color: #eee; background: #2a2a2a; vertical-align: middle; }
+table.preview td { padding: 10px 10px; text-align: center; border-bottom: 0.5px solid #3a3a3a; color: #eee; background: #2a2a2a; vertical-align: middle; }
 table.preview tr:last-child td { border-bottom: none; }
 table.preview tr:nth-child(odd) td { background: #242424; }
 table.preview tr.tel-row td { background: #0d2420; }
 table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .tel-terr { font-size: 11px; font-weight: 500; color: #5DCAA5; letter-spacing: 0.05em; text-transform: uppercase; }
-.dia-badge { display: inline-block; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 20px; margin-bottom: 3px; }
+.dia-badge { display: inline-block; font-size: 14px; font-weight: 500; padding: 4px 12px; border-radius: 20px; margin-bottom: 3px; }
 .badge-mar { background: #0c2a45; color: #85B7EB; }
 .badge-jue { background: #2e1e00; color: #FAC775; }
 .badge-vie { background: #1a2e0a; color: #C0DD97; }
 .terr-num-big { font-size: 18px; font-weight: 500; color: #eee; }
-.fecha-num { font-size: 12px; color: #aaa; margin-top: 2px; }
-.cond-txt { font-size: 12px; color: #999; }
+.fecha-num { font-size: 13px; color: #aaa; margin-top: 2px; }
+.cond-txt { font-size: 13px; color: #999; }
 .hora-txt { font-size: 15px; font-weight: 500; color: #eee; }
 </style>
 </head>
@@ -105,7 +110,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 <div id="view-cover">
   <div class="cover">
     <div class="cover-icon">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
         <path d="M9 20H5a2 2 0 01-2-2V6a2 2 0 012-2h4M15 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4M9 12h6M12 9v6" stroke="#97C459" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
     </div>
@@ -127,19 +132,17 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
   <p class="section-title">Elegí 3 territorios</p>
   <p class="section-sub" id="week-info"></p>
   <div class="terr-grid" id="terr-grid"></div>
-  <div style="display:flex;align-items:center;justify-content:space-between;">
-    <span id="sel-count" style="font-size:13px;color:#888;">0 de 3 seleccionados</span>
-    <div style="display:flex;gap:8px;">
-      <button class="btn-secondary" onclick="goToCover()">← Grupo</button>
-      <button class="btn-primary" id="btn-next1" onclick="goToStep2()" disabled>Continuar →</button>
-    </div>
+  <div class="step1-footer">
+    <span id="sel-count">0 de 3 seleccionados</span>
+    <button class="btn-secondary" onclick="goToCover()">← Grupo</button>
+    <button class="btn-primary" id="btn-next1" onclick="goToStep2()" disabled>Continuar →</button>
   </div>
 </div>
 
 <!-- PASO 2: Configurar salidas -->
 <div id="view-config" style="display:none;">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-    <p class="section-title" style="margin:0;">Configurá cada salida</p>
+    <p class="section-title" style="margin:0;text-align:left;">Configurá cada salida</p>
     <div style="display:flex;gap:6px;">
       <button class="btn-clear" onclick="clearAll()">Limpiar</button>
       <button class="btn-autofill" onclick="autoFillAll()">Autocompletar</button>
@@ -193,6 +196,7 @@ const DIA_CONFIG = [
   { key:'fri', label:'Viernes', cls:'dia-viernes' }
 ];
 const DIA_ORDER = { tue:0, thu:1, fri:2 };
+const DIA_DEFAULT_HORA = { tue:'17:30', thu:'18:30', fri:'18:30' };
 
 let selectedGrupo = null;
 let selected = [];
@@ -222,7 +226,7 @@ function renderGrid() {
   const sorted = territorios.map(t=>({...t,days:daysSince(t.last)})).sort((a,b)=>b.days-a.days);
   const g = document.getElementById('terr-grid'); g.innerHTML='';
   if(territorios.length === 0){
-    g.innerHTML='<p style="color:#888;font-size:13px;grid-column:1/-1;">No hay territorios cargados para este grupo todavía.</p>';
+    g.innerHTML='<p style="color:#888;font-size:13px;grid-column:1/-1;text-align:center;">No hay territorios cargados para este grupo todavía.</p>';
     document.getElementById('sel-count').textContent='0 de 3 seleccionados';
     document.getElementById('btn-next1').disabled=true;
     return;
@@ -251,7 +255,6 @@ function goToCover(){
   show('view-cover');
   document.getElementById('step-bar').style.display='none';
 }
-
 function goToStep1(){
   hide('view-cover');hide('view-config');hide('view-preview');
   show('view-select'); setStep(1);
@@ -270,6 +273,11 @@ function reorderPhone(){
   if(!phoneCard) return;
   phoneCard.dataset.diaKey = diaKey;
   phoneCard.dataset.fecha = WEEK[diaKey];
+
+  // Actualizar hora default según el día elegido
+  const horaInput = document.getElementById('hora-phone');
+  if(horaInput && !horaInput.dataset.edited) horaInput.value = DIA_DEFAULT_HORA[diaKey];
+
   const phoneOrder = DIA_ORDER[diaKey] ?? 0;
   const terrCards = selected.map((n,i)=>document.getElementById('card-terr-'+i)).filter(Boolean);
   let inserted = false;
@@ -285,8 +293,6 @@ function reorderPhone(){
 
 function renderSalidas(){
   const c=document.getElementById('salidas-container');c.innerHTML='';
-
-  // Cards de territorios primero (se reordenarán con reorderPhone)
   selected.forEach((n,i)=>{
     const cfg=DIA_CONFIG[i]; const fechaVal=WEEK[cfg.key];
     const div=document.createElement('div');
@@ -296,7 +302,7 @@ function renderSalidas(){
     div.innerHTML=`
       <div class="salida-header">
         <span class="salida-label">Territorio ${n}</span>
-        <span class="${cfg.cls}">${cfg.label}</span>
+        <span class="dia-label ${cfg.cls}">${cfg.label}</span>
       </div>
       <div class="form-row">
         <div><label>Conductor</label>${condSelect('cond-'+n)}</div>
@@ -309,7 +315,6 @@ function renderSalidas(){
     c.appendChild(div);
   });
 
-  // Card telefónica
   const phoneDiv=document.createElement('div');
   phoneDiv.className='salida-card tel-card';
   phoneDiv.id='card-phone';
@@ -331,12 +336,10 @@ function renderSalidas(){
       </div>
     </div>
     <div class="form-row">
-      <div><label>Hora</label><input type="time" id="hora-phone" value="17:30"></div>
+      <div><label>Hora</label><input type="time" id="hora-phone" value="17:30" oninput="this.dataset.edited='1'"></div>
       <div><label>Encuentro / Familia</label><input type="text" id="enc-phone" placeholder="Ej: Flia. López"></div>
     </div>`;
   c.appendChild(phoneDiv);
-
-  // Posicionar la telefónica en el lugar correcto (Martes = posición 0)
   reorderPhone();
 }
 
@@ -353,7 +356,8 @@ function autoFillAll(){
     if(fh)fh.value='18:30';
   });
   const hp=document.getElementById('hora-phone');
-  if(hp)hp.value='17:30';
+  const dp=document.getElementById('dia-phone');
+  if(hp){ delete hp.dataset.edited; hp.value=DIA_DEFAULT_HORA[dp?.value||'tue']; }
 }
 
 function clearAll(){
@@ -370,7 +374,7 @@ function clearAll(){
   const ep=document.getElementById('enc-phone');
   const dp=document.getElementById('dia-phone');
   if(cp)cp.value='';
-  if(hp)hp.value='';
+  if(hp){delete hp.dataset.edited; hp.value='';}
   if(ep)ep.value='';
   if(dp){dp.value='tue'; reorderPhone();}
 }
@@ -387,12 +391,11 @@ function generatePreview(){
   Array.from(c.children).forEach(card => {
     if(card.id === 'card-phone'){
       const diaKey = card.dataset.diaKey || 'tue';
-      const fechaPhone = card.dataset.fecha || WEEK.tue;
       rows.push({
         enc: document.getElementById('enc-phone').value||'—',
-        terr: 'TELEFÓNICA', tel: true,
+        terr:'TELEFÓNICA', tel:true,
         badge: DIA_BADGE[diaKey],
-        fecha: formatShortFull(fechaPhone).replace(/\//g,'-'),
+        fecha: formatShortFull(card.dataset.fecha||WEEK.tue).replace(/\//g,'-'),
         cond: document.getElementById('cond-phone').value||'—',
         hora: (document.getElementById('hora-phone').value||'17:30').replace(':','.')
       });
@@ -401,7 +404,7 @@ function generatePreview(){
       const n = selected[i];
       rows.push({
         enc: document.getElementById('enc-'+n).value||'—',
-        terr: n, tel: false,
+        terr: n, tel:false,
         badge: DIA_BADGE[DIA_CONFIG[i].key],
         fecha: formatShortFull(document.getElementById('fecha-'+n).value).replace(/\//g,'-'),
         cond: document.getElementById('cond-'+n).value||'—',
