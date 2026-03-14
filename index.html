@@ -125,7 +125,7 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 .estado-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; box-sizing: border-box; }
-.estado-modal-card { background: #2a2a2a; border: 0.5px solid #555; border-radius: 18px; padding: 1.75rem; width: 100%; max-width: 680px; box-sizing: border-box; overflow-x: hidden; }
+.estado-modal-card { background: #2a2a2a; border: 0.5px solid #555; border-radius: 18px; padding: 1.75rem; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
 .estado-modal-title { font-size: 26px; font-weight: 500; color: #eee; margin-bottom: 4px; text-align: center; }
 .estado-modal-sub { font-size: 13px; color: #888; margin-bottom: 16px; text-align: center; }
 .estado-opt { width: 100%; padding: 10px 16px; font-size: 13px; font-weight: 500; border-radius: 10px; border: 1.5px solid; cursor: pointer; margin-bottom: 8px; text-align: left; transition: transform 0.1s, opacity 0.1s; }
@@ -150,7 +150,7 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .edit-row-form { background: #1e1e1e; border: 0.5px solid #555; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
 .edit-row-title { font-size: 12px; color: #888; margin-bottom: 8px; }
 .modal-divider { border: none; border-top: 0.5px solid #444; margin: 16px 0; }
-.modal-section-title { font-size: 15px; font-weight: 500; color: #ccc; letter-spacing: 0.02em; margin-bottom: 12px; text-align: center; }
+.modal-section-title { font-size: 15px; font-weight: 500; color: #ccc; letter-spacing: 0.02em; margin-bottom: 12px; }
 .hist-en-prog { font-size: 10px; color: #FAC775; background: #2e1e00; border: 0.5px solid #EF9F27; border-radius: 4px; padding: 1px 5px; }
 
 
@@ -287,7 +287,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 
 <!-- MODAL TERRITORIO -->
 <div id="estado-modal" class="estado-modal" style="display:none;" onclick="handleModalBg(event)">
-  <div class="estado-modal-card" style="width:320px;max-height:90vh;overflow-y:auto;">
+  <div class="estado-modal-card">
     <div class="estado-modal-title" id="modal-terr-title">Territorio ?</div>
 
     <!-- Historial -->
