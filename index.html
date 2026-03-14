@@ -133,6 +133,18 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .estado-opt.opt-normal:hover { border-color: #1D9E75; color: #5DCAA5; }
 .estado-opt.opt-peligroso:hover { border-color: #EF9F27; color: #FAC775; }
 .estado-opt.opt-no_predica:hover { border-color: #A32D2D; color: #F09595; }
+.hist-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 13px; }
+.hist-table th { color: #888; font-weight: 500; padding: 4px 6px; text-align: left; border-bottom: 0.5px solid #444; }
+.hist-table td { padding: 6px 6px; border-bottom: 0.5px solid #333; color: #eee; vertical-align: middle; }
+.hist-table tr:last-child td { border-bottom: none; }
+.hist-edit-btn { font-size: 11px; padding: 3px 8px; border: 0.5px solid #555; border-radius: 6px; background: #1e1e1e; color: #aaa; cursor: pointer; }
+.hist-edit-btn:hover { border-color: #888; color: #eee; }
+.edit-row-form { background: #1e1e1e; border: 0.5px solid #555; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+.edit-row-title { font-size: 12px; color: #888; margin-bottom: 8px; }
+.modal-divider { border: none; border-top: 0.5px solid #444; margin: 12px 0; }
+.modal-section-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.hist-en-prog { font-size: 10px; color: #FAC775; background: #2e1e00; border: 0.5px solid #EF9F27; border-radius: 4px; padding: 1px 5px; }
+
 
 .grupo-btn-cong { border-color: #534AB7; color: #AFA9EC; }
 .grupo-btn-cong:hover { border-color: #7F77DD; background: rgba(83,74,183,0.2); color: #7F77DD; }
@@ -265,15 +277,43 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
   <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="goToModo()">&#8592; Volver</button>
 </div>
 
-<!-- MODAL ESTADO -->
-<div id="estado-modal" class="estado-modal" style="display:none;">
-  <div class="estado-modal-card">
+<!-- MODAL TERRITORIO -->
+<div id="estado-modal" class="estado-modal" style="display:none;" onclick="handleModalBg(event)">
+  <div class="estado-modal-card" style="width:320px;max-height:90vh;overflow-y:auto;">
     <div class="estado-modal-title" id="modal-terr-title">Territorio ?</div>
-    <div class="estado-modal-sub">Elegí el estado de este territorio</div>
+
+    <!-- Historial -->
+    <div class="modal-section-title" style="margin-top:10px;">Historial</div>
+    <div id="modal-hist-loading" style="font-size:13px;color:#888;margin-bottom:10px;">Cargando...</div>
+    <div id="modal-hist-content" style="display:none;">
+      <table class="hist-table">
+        <thead><tr><th>Conductor</th><th>Inicio</th><th>Fin</th><th></th></tr></thead>
+        <tbody id="modal-hist-body"></tbody>
+      </table>
+    </div>
+    <div id="modal-edit-form" style="display:none;">
+      <div class="edit-row-form">
+        <div class="edit-row-title">Editando fila</div>
+        <div class="form-row">
+          <div><label>Conductor</label><select id="edit-cond"></select></div>
+          <div><label>Inicio</label><input type="date" id="edit-ini"></div>
+        </div>
+        <div><label>Fin</label><input type="date" id="edit-fin" style="width:100%;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;margin-top:3px;"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn-secondary" style="flex:1;font-size:13px;padding:7px;" onclick="cancelEdit()">Cancelar</button>
+          <button class="btn-primary" style="flex:1;font-size:13px;padding:7px;" onclick="saveEdit()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <hr class="modal-divider">
+
+    <!-- Config estado -->
+    <div class="modal-section-title">Estado del territorio</div>
     <button class="estado-opt opt-normal" onclick="setTerritoryEstado('normal')">Normal — aparece en planificación</button>
     <button class="estado-opt opt-peligroso" onclick="setTerritoryEstado('peligroso')">Peligroso — aparece con advertencia</button>
     <button class="estado-opt opt-no_predica" onclick="setTerritoryEstado('no_predica')">No se predica — no aparece</button>
-    <button class="btn-secondary" style="width:100%;margin-top:4px;" onclick="closeModal()">Cancelar</button>
+    <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="closeModal()">Cerrar</button>
   </div>
 </div>
 
@@ -417,15 +457,108 @@ function renderInfoGrid() {
   });
 }
 
-function openModal(n) {
+let editingRow = null;
+
+function handleModalBg(e) {
+  if (e.target.id === 'estado-modal') closeModal();
+}
+
+async function openModal(n) {
   modalTerr = n;
   document.getElementById('modal-terr-title').textContent = 'Territorio ' + n;
+  document.getElementById('modal-hist-loading').style.display = '';
+  document.getElementById('modal-hist-content').style.display = 'none';
+  document.getElementById('modal-edit-form').style.display = 'none';
   document.getElementById('estado-modal').style.display = 'flex';
+  editingRow = null;
+
+  try {
+    const url = SCRIPT_URL + '?action=getHistory&grupo=' + encodeURIComponent(selectedGrupo) + '&territorio=' + encodeURIComponent(n);
+    const resp = await fetch(url);
+    const text = await resp.text();
+    const data = JSON.parse(text);
+    document.getElementById('modal-hist-loading').style.display = 'none';
+    if (data.rows) {
+      renderHistorial(data.rows);
+      document.getElementById('modal-hist-content').style.display = '';
+    }
+  } catch(err) {
+    document.getElementById('modal-hist-loading').textContent = 'Error al cargar historial';
+  }
+}
+
+function renderHistorial(rows) {
+  const tbody = document.getElementById('modal-hist-body');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:#888;text-align:center;">Sin registros</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr>
+      <td>${r.conductor}</td>
+      <td>${r.ini || '—'}</td>
+      <td>${r.fin ? r.fin : '<span class="hist-en-prog">en prog.</span>'}</td>
+      <td><button class="hist-edit-btn" onclick="startEdit(${i}, '${r.rowIndex}', '${r.conductor}', '${r.ini||''}', '${r.fin||''}')">Editar</button></td>
+    </tr>`).join('');
+}
+
+function startEdit(idx, rowIndex, conductor, ini, fin) {
+  editingRow = rowIndex;
+  document.getElementById('modal-edit-form').style.display = '';
+
+  // Poblar select de conductor
+  const conductores = CONDUCTORES_BY_GROUP[selectedGrupo] || [];
+  const sel = document.getElementById('edit-cond');
+  sel.innerHTML = '<option value="">— Elegir —</option>' + conductores.map(c => `<option value="${c}" ${c===conductor?'selected':''}>${c}</option>`).join('');
+  // Si el conductor no está en la lista (ej: CONGREGACION) agregarlo
+  if (conductor && !conductores.includes(conductor)) {
+    sel.innerHTML += `<option value="${conductor}" selected>${conductor}</option>`;
+  }
+
+  // Convertir fecha dd/mm/yy a yyyy-mm-dd para el input
+  function toInputDate(ds) {
+    if (!ds) return '';
+    const m = ds.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+    if (m) {
+      const y = m[3].length === 2 ? '20' + m[3] : m[3];
+      return `${y}-${m[2]}-${m[1]}`;
+    }
+    return '';
+  }
+  document.getElementById('edit-ini').value = toInputDate(ini);
+  document.getElementById('edit-fin').value = toInputDate(fin);
+}
+
+function cancelEdit() {
+  editingRow = null;
+  document.getElementById('modal-edit-form').style.display = 'none';
+}
+
+async function saveEdit() {
+  if (!editingRow) return;
+  const conductor = document.getElementById('edit-cond').value;
+  const ini = document.getElementById('edit-ini').value;
+  const fin = document.getElementById('edit-fin').value;
+  if (!conductor) { alert('Elegí un conductor'); return; }
+
+  const url = SCRIPT_URL + '?action=updateRecord' +
+    '&grupo=' + encodeURIComponent(selectedGrupo) +
+    '&territorio=' + encodeURIComponent(modalTerr) +
+    '&rowIndex=' + encodeURIComponent(editingRow) +
+    '&conductor=' + encodeURIComponent(conductor) +
+    '&fechaInicio=' + encodeURIComponent(ini) +
+    '&fechaFin=' + encodeURIComponent(fin);
+  await fetch(url);
+
+  cancelEdit();
+  // Recargar historial
+  await openModal(modalTerr);
 }
 
 function closeModal() {
   document.getElementById('estado-modal').style.display = 'none';
   modalTerr = null;
+  editingRow = null;
 }
 
 async function setTerritoryEstado(estado) {
