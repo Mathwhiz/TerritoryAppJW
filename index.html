@@ -268,10 +268,10 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyqfcGLySbIx6I2902w6mdZKSLAPk1-gZirJmY7A4Ua0Vy3bbYtxrwotyLsSMiCrNy1/exec';
 
 const CONDUCTORES_BY_GROUP = {
-  1: ['— Elegir —'],
-  2: ['— Elegir —'],
+  1: [],
+  2: [],
   3: ['Andrés Sánchez','Eduardo Scalese','Jose Luis Lasierra','Diego Reinoso','Armando Núñez'],
-  4: ['— Elegir —']
+  4: []
 };
 
 const SPECIAL_TERR = { '11': true, '131': true };
@@ -587,8 +587,8 @@ function renderGrid() {
 }
 
 function condSelect(id, grupo) {
-  const conductores = CONDUCTORES_BY_GROUP[grupo] || ['— Elegir —'];
-  const opts = conductores.map((c,i) => `<option value="${i===0?'':c}">${c}</option>`).join('');
+  const conductores = CONDUCTORES_BY_GROUP[grupo] || [];
+  const opts = `<option value="">— Elegir conductor —</option>` + conductores.map(c => `<option value="${c}">${c}</option>`).join('');
   return `<select id="${id}">${opts}</select>`;
 }
 
