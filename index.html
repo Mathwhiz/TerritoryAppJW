@@ -67,6 +67,35 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .btn-save { padding: 10px 16px; font-size: 14px; font-weight: 500; background: #1D9E75; color: white; border: none; border-radius: 8px; cursor: pointer; }
 .btn-save:hover { background: #0F6E56; }
 
+/* ── Modo selector ── */
+.modo-wrap { min-height: calc(100vh - 4rem); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 2rem 1rem; }
+.modo-titulo { font-size: 20px; font-weight: 500; color: #ccc; margin-bottom: 8px; text-align: center; }
+.modo-card { width: 100%; max-width: 320px; background: #2a2a2a; border: 0.5px solid #444; border-radius: 14px; padding: 1.25rem 1.5rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 16px; transition: border-color 0.15s; }
+.modo-card:hover { border-color: #666; }
+.modo-card.modo-planificar:hover { border-color: #378ADD; background: #0c2a45; }
+.modo-card.modo-registrar:hover { border-color: #1D9E75; background: #0d2420; }
+.modo-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.modo-icon-plan { background: rgba(55,138,221,0.15); }
+.modo-icon-reg { background: rgba(29,158,117,0.15); }
+.modo-card-title { font-size: 16px; font-weight: 500; color: #eee; margin-bottom: 3px; }
+.modo-card-sub { font-size: 13px; color: #888; }
+
+/* ── Registro de territorios ── */
+.reg-card { background: #2a2a2a; border: 0.5px solid #444; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+.reg-card.completado { border-left: 3px solid #1D9E75; opacity: 0.6; }
+.reg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.reg-terr { font-size: 18px; font-weight: 500; color: #eee; }
+.reg-ini { font-size: 12px; color: #888; }
+.toggle-wrap { display: flex; gap: 8px; margin-bottom: 10px; }
+.toggle-btn { flex: 1; padding: 7px; font-size: 13px; border-radius: 8px; border: 0.5px solid #555; background: #1e1e1e; color: #aaa; cursor: pointer; }
+.toggle-btn.active-comp { background: #0d2e1a; border-color: #1D9E75; color: #5DCAA5; }
+.toggle-btn.active-prog { background: #2e1e00; border-color: #EF9F27; color: #FAC775; }
+.reg-empty { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
+.btn-guardar { width: 100%; padding: 12px; font-size: 15px; font-weight: 500; background: #1D9E75; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+.btn-guardar:hover { background: #0F6E56; }
+.btn-guardar:disabled { opacity: 0.35; cursor: not-allowed; }
+.save-status { text-align: center; font-size: 13px; margin-top: 10px; min-height: 20px; }
+
 .cover { min-height: calc(100vh - 2rem); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; text-align: center; }
 .cover-icon { width: 80px; height: 80px; background: rgba(59,109,17,0.25); border-radius: 22px; display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
 .cover-title { font-size: 62px; font-weight: 500; color: #97C459; line-height: 1.1; margin-bottom: 10px; }
@@ -132,7 +161,50 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
       <button class="grupo-btn" onclick="selectGrupo(this,3)">3</button>
       <button class="grupo-btn" onclick="selectGrupo(this,4)">4</button>
     </div>
-    <button class="btn-start" id="btn-start" onclick="goToStep1()">Empezar →</button>
+    <button class="btn-start" id="btn-start" onclick="goToModo()">Empezar →</button>
+  </div>
+</div>
+
+
+<!-- PASO 0b: Elegir modo -->
+<div id="view-modo" style="display:none;">
+  <div class="modo-wrap">
+    <div class="modo-titulo">&#191;Qu&#233; quer&#233;s hacer, Grupo <span id="modo-grupo-label">?</span>?</div>
+    <button class="modo-card modo-planificar" onclick="goToStep1()">
+      <div class="modo-icon modo-icon-plan">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="modo-card-title">Planificar salidas</div>
+        <div class="modo-card-sub">Armar las salidas de esta semana</div>
+      </div>
+    </button>
+    <button class="modo-card modo-registrar" onclick="goToRegistrar()">
+      <div class="modo-icon modo-icon-reg">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M7 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3h6" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="modo-card-title">Registrar territorios</div>
+        <div class="modo-card-sub">Cerrar territorios de la semana</div>
+      </div>
+    </button>
+    <button class="btn-secondary" onclick="goToCover()" style="width:100%;max-width:320px;">&#8592; Volver</button>
+  </div>
+</div>
+
+<!-- REGISTRO: territorios en progreso -->
+<div id="view-registrar" style="display:none;">
+  <p class="section-title">Registrar territorios</p>
+  <p class="section-sub">Grupo <span id="reg-grupo-label">?</span> &mdash; marc&#225; los que se completaron</p>
+  <div id="reg-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
+  <div id="reg-error" style="display:none;"></div>
+  <div id="reg-container" style="display:none;"></div>
+  <div id="reg-footer" style="display:none;">
+    <button class="btn-guardar" id="btn-guardar" onclick="guardarRegistros()">Guardar cambios</button>
+    <div class="save-status" id="save-status"></div>
+    <div style="margin-top:10px;">
+      <button class="btn-secondary" style="width:100%;" onclick="goToModo()">&#8592; Volver</button>
+    </div>
   </div>
 </div>
 
@@ -217,13 +289,12 @@ let selected = [];
 let territoriosData = {}; // datos cargados del Sheet
 
 async function fetchGrupo(grupo) {
-  const url = SCRIPT_URL + '?action=getLastDates&grupo=' + encodeURIComponent(grupo);
-  const response = await fetch(url, {
-    method: 'GET',
-    redirect: 'follow'
+  const response = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getLastDates', grupo: String(grupo) })
   });
-  const text = await response.text();
-  const data = JSON.parse(text);
+  const data = await response.json();
   if (data.error) throw new Error(data.error);
   return data;
 }
@@ -270,8 +341,152 @@ function setStep(n){
 function goToCover(){
   selected=[];
   hide('view-select');hide('view-config');hide('view-preview');
+  hide('view-modo');hide('view-registrar');
   show('view-cover');
   document.getElementById('step-bar').style.display='none';
+}
+
+function goToModo(){
+  selected=[];
+  hide('view-cover');hide('view-select');hide('view-config');hide('view-preview');hide('view-registrar');
+  document.getElementById('modo-grupo-label').textContent = selectedGrupo;
+  show('view-modo');
+  document.getElementById('step-bar').style.display='none';
+}
+
+async function goToRegistrar(){
+  hide('view-modo');
+  show('view-registrar');
+  document.getElementById('reg-grupo-label').textContent = selectedGrupo;
+  show('reg-loading');
+  hide('reg-container');
+  hide('reg-error');
+  hide('reg-footer');
+
+  try {
+    if (!territoriosData || Object.keys(territoriosData).length === 0) {
+      const raw = await fetchGrupo(selectedGrupo);
+      territoriosData = {};
+      Object.keys(raw).forEach(terr => {
+        const d = raw[terr];
+        territoriosData[terr] = {
+          lastFin: parseSheetDate(d.lastFin),
+          lastIni: parseSheetDate(d.lastIni),
+          enProgreso: d.enProgreso
+        };
+      });
+    }
+    hide('reg-loading');
+    renderRegistrar();
+  } catch(err) {
+    hide('reg-loading');
+    const errEl = document.getElementById('reg-error');
+    errEl.innerHTML = `<div class="error-wrap">Error: ${err.message}. <button class="btn-secondary" style="font-size:12px;padding:4px 10px;margin-left:8px;" onclick="goToRegistrar()">Reintentar</button></div>`;
+    show('reg-error');
+  }
+}
+
+function renderRegistrar(){
+  const enProgreso = Object.keys(territoriosData).filter(n => territoriosData[n].enProgreso);
+  const c = document.getElementById('reg-container');
+  c.innerHTML = '';
+
+  if (enProgreso.length === 0) {
+    c.innerHTML = '<div class="reg-empty">No hay territorios en progreso para este grupo.</div>';
+    show('reg-container');
+    show('reg-footer');
+    return;
+  }
+
+  enProgreso.forEach(n => {
+    const t = territoriosData[n];
+    const ini = t.lastIni || '';
+    const div = document.createElement('div');
+    div.className = 'reg-card';
+    div.id = 'reg-card-' + n;
+    div.dataset.estado = 'completado';
+    div.dataset.terr = n;
+    div.innerHTML = `
+      <div class="reg-header">
+        <span class="reg-terr">Territorio ${n}</span>
+        <span class="reg-ini">Inicio: ${ini ? formatShortFull(ini) : '—'}</span>
+      </div>
+      <div class="toggle-wrap">
+        <button class="toggle-btn active-comp" id="tog-comp-${n}" onclick="setEstado('${n}','completado')">Completado</button>
+        <button class="toggle-btn" id="tog-prog-${n}" onclick="setEstado('${n}','progreso')">Sigue en progreso</button>
+      </div>
+      <div id="reg-fields-${n}">
+        <div class="form-row">
+          <div><label>Conductor</label>${condSelect('reg-cond-'+n, selectedGrupo)}</div>
+          <div><label>Fecha inicio</label><input type="date" id="reg-ini-${n}" value="${ini}"></div>
+        </div>
+        <div><label>Fecha fin</label><input type="date" id="reg-fin-${n}" value="${ini}" style="width:100%;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;margin-top:3px;"></div>
+      </div>`;
+    c.appendChild(div);
+  });
+
+  show('reg-container');
+  show('reg-footer');
+}
+
+function setEstado(n, estado) {
+  const card = document.getElementById('reg-card-' + n);
+  const fields = document.getElementById('reg-fields-' + n);
+  const btnComp = document.getElementById('tog-comp-' + n);
+  const btnProg = document.getElementById('tog-prog-' + n);
+  card.dataset.estado = estado;
+
+  if (estado === 'completado') {
+    btnComp.className = 'toggle-btn active-comp';
+    btnProg.className = 'toggle-btn';
+    card.classList.remove('completado');
+    fields.style.display = '';
+  } else {
+    btnComp.className = 'toggle-btn';
+    btnProg.className = 'toggle-btn active-prog';
+    card.classList.add('completado');
+    fields.style.display = 'none';
+  }
+}
+
+async function guardarRegistros(){
+  const btn = document.getElementById('btn-guardar');
+  const status = document.getElementById('save-status');
+  btn.disabled = true;
+  status.style.color = '#888';
+  status.textContent = 'Guardando...';
+
+  const cards = document.querySelectorAll('[id^="reg-card-"]');
+  const saves = [];
+
+  cards.forEach(card => {
+    const n = card.dataset.terr;
+    const estado = card.dataset.estado;
+    const conductor = document.getElementById('reg-cond-' + n)?.value || '—';
+    const ini = document.getElementById('reg-ini-' + n)?.value || '';
+    const fin = estado === 'completado' ? (document.getElementById('reg-fin-' + n)?.value || '') : '';
+
+    saves.push({ territorio: n, conductor, fechaInicio: ini, fechaFin: fin, estado });
+  });
+
+  try {
+    for (const s of saves) {
+      await fetch(SCRIPT_URL + '?action=saveRecord&grupo=' + selectedGrupo +
+        '&territorio=' + s.territorio +
+        '&conductor=' + encodeURIComponent(s.conductor) +
+        '&fechaInicio=' + s.fechaInicio +
+        '&fechaFin=' + s.fechaFin, { method: 'GET', redirect: 'follow' });
+    }
+    // Limpiar cache para que recargue del Sheet
+    territoriosData = {};
+    status.style.color = '#5DCAA5';
+    status.textContent = 'Guardado correctamente';
+    btn.disabled = false;
+  } catch(err) {
+    status.style.color = '#F09595';
+    status.textContent = 'Error al guardar: ' + err.message;
+    btn.disabled = false;
+  }
 }
 
 async function goToStep1(){
