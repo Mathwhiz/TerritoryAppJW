@@ -125,14 +125,18 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 .estado-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.estado-modal-card { background: #2a2a2a; border: 0.5px solid #555; border-radius: 14px; padding: 1.5rem; width: 280px; }
-.estado-modal-title { font-size: 18px; font-weight: 500; color: #eee; margin-bottom: 4px; }
-.estado-modal-sub { font-size: 13px; color: #888; margin-bottom: 16px; }
-.estado-opt { width: 100%; padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 0.5px solid #555; background: #1e1e1e; color: #eee; cursor: pointer; margin-bottom: 8px; text-align: left; }
-.estado-opt:hover { border-color: #888; }
-.estado-opt.opt-normal:hover { border-color: #1D9E75; color: #5DCAA5; }
-.estado-opt.opt-peligroso:hover { border-color: #EF9F27; color: #FAC775; }
-.estado-opt.opt-no_predica:hover { border-color: #A32D2D; color: #F09595; }
+.estado-modal-card { background: #2a2a2a; border: 0.5px solid #555; border-radius: 18px; padding: 1.75rem; width: 340px; }
+.estado-modal-title { font-size: 24px; font-weight: 500; color: #eee; margin-bottom: 4px; text-align: center; }
+.estado-modal-sub { font-size: 13px; color: #888; margin-bottom: 16px; text-align: center; }
+.estado-opt { width: 100%; padding: 12px 16px; font-size: 14px; font-weight: 500; border-radius: 10px; border: 1.5px solid; cursor: pointer; margin-bottom: 8px; text-align: left; transition: transform 0.1s, opacity 0.1s; }
+.estado-opt:hover { transform: scale(1.02); opacity: 0.9; }
+.estado-opt:active { transform: scale(0.98); }
+.estado-opt.opt-normal { background: #0d2e1a; border-color: #1D9E75; color: #5DCAA5; }
+.estado-opt.opt-normal:hover { background: #0f3d22; }
+.estado-opt.opt-peligroso { background: #2e1e00; border-color: #EF9F27; color: #FAC775; }
+.estado-opt.opt-peligroso:hover { background: #3a2500; }
+.estado-opt.opt-no_predica { background: #2e1a1a; border-color: #A32D2D; color: #F09595; }
+.estado-opt.opt-no_predica:hover { background: #3a2020; }
 .hist-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 13px; }
 .hist-table th { color: #888; font-weight: 500; padding: 4px 6px; text-align: left; border-bottom: 0.5px solid #444; }
 .hist-table td { padding: 6px 6px; border-bottom: 0.5px solid #333; color: #eee; vertical-align: middle; }
@@ -141,8 +145,8 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .hist-edit-btn:hover { border-color: #888; color: #eee; }
 .edit-row-form { background: #1e1e1e; border: 0.5px solid #555; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
 .edit-row-title { font-size: 12px; color: #888; margin-bottom: 8px; }
-.modal-divider { border: none; border-top: 0.5px solid #444; margin: 12px 0; }
-.modal-section-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.modal-divider { border: none; border-top: 0.5px solid #444; margin: 16px 0; }
+.modal-section-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; text-align: center; }
 .hist-en-prog { font-size: 10px; color: #FAC775; background: #2e1e00; border: 0.5px solid #EF9F27; border-radius: 4px; padding: 1px 5px; }
 
 
