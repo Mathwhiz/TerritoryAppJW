@@ -16,17 +16,17 @@ body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e1e; c
 
 /* Encabezados de sección */
 .section-title { font-size: 22px; font-weight: 500; color: #eee; margin-bottom: 4px; text-align: center; }
-.section-sub { font-size: 13px; color: #888; margin-bottom: 16px; text-align: center; }
+.section-sub { font-size: 14px; color: #888; margin-bottom: 16px; text-align: center; }
 
 /* Grid territorios */
-.terr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 14px; }
-.terr-btn { background: #2a2a2a; border: 0.5px solid #444; border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center; }
+.terr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 18px; }
+.terr-btn { background: #2a2a2a; border: 0.5px solid #444; border-radius: 10px; padding: 14px 8px; cursor: pointer; text-align: center; }
 .terr-btn:hover { border-color: #666; }
 .terr-btn.selected { border: 1.5px solid #378ADD; background: #0c2a45; }
-.terr-num { font-size: 24px; font-weight: 500; color: #eee; }
+.terr-num { font-size: 26px; font-weight: 500; color: #eee; }
 .terr-btn.selected .terr-num { color: #85B7EB; }
-.terr-date { font-size: 11px; color: #888; margin-top: 4px; }
-.terr-days { font-size: 13px; font-weight: 500; margin-top: 4px; }
+.terr-date { font-size: 11px; color: #888; margin-top: 5px; }
+.terr-days { font-size: 14px; font-weight: 600; margin-top: 5px; }
 .days-old { color: #F09595; }
 .days-mid { color: #FAC775; }
 .days-new { color: #C0DD97; }
@@ -37,11 +37,14 @@ body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e1e; c
 
 /* Cards de configuración */
 .salida-card { background: #2a2a2a; border: 0.5px solid #444; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
-.salida-card.tel-card { border-left: 3px solid #1D9E75; background: #0d2420; }
-.salida-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.salida-label { font-size: 14px; font-weight: 500; color: #eee; }
-.phone-badge { font-size: 12px; background: #0a2e24; color: #5DCAA5; padding: 2px 8px; border-radius: 20px; border: 0.5px solid #1D9E75; }
-.dia-label { font-size: 18px; font-weight: 500; }
+.salida-card.card-mar { border-left: 3px solid #378ADD; }
+.salida-card.card-thu { border-left: 3px solid #EF9F27; }
+.salida-card.card-fri { border-left: 3px solid #639922; }
+.salida-card.tel-card  { border-left: 3px solid #1D9E75; background: #0d2420; }
+.salida-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.salida-label { font-size: 16px; font-weight: 500; color: #eee; }
+.phone-badge { font-size: 13px; background: #0a2e24; color: #5DCAA5; padding: 3px 10px; border-radius: 20px; border: 0.5px solid #1D9E75; }
+.dia-label { font-size: 20px; font-weight: 700; letter-spacing: 0.01em; }
 .dia-martes { color: #85B7EB; }
 .dia-jueves { color: #FAC775; }
 .dia-viernes { color: #C0DD97; }
@@ -51,19 +54,21 @@ select option { background: #2a2a2a; color: #eee; }
 label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 
 /* Botones */
-.btn-primary { padding: 9px 16px; font-size: 13px; font-weight: 500; background: #185FA5; color: white; border: none; border-radius: 8px; cursor: pointer; }
+.btn-primary { padding: 10px 16px; font-size: 14px; font-weight: 500; background: #185FA5; color: white; border: none; border-radius: 8px; cursor: pointer; }
 .btn-primary:hover { background: #0C447C; }
 .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
-.btn-secondary { padding: 9px 16px; font-size: 13px; border: 0.5px solid #555; border-radius: 8px; background: #2a2a2a; color: #ccc; cursor: pointer; }
+.btn-secondary { padding: 10px 16px; font-size: 14px; border: 0.5px solid #555; border-radius: 8px; background: #2a2a2a; color: #ccc; cursor: pointer; }
 .btn-secondary:hover { background: #333; }
-.btn-autofill { font-size: 12px; padding: 5px 12px; background: #1a2e0a; color: #97C459; border: 0.5px solid #3B6D11; border-radius: 8px; cursor: pointer; }
-.btn-clear { font-size: 12px; padding: 5px 12px; background: #2e1a1a; color: #F09595; border: 0.5px solid #A32D2D; border-radius: 8px; cursor: pointer; }
+.btn-autofill { font-size: 14px; padding: 8px 16px; background: #1a2e0a; color: #97C459; border: 0.5px solid #3B6D11; border-radius: 8px; cursor: pointer; }
+.btn-clear { font-size: 14px; padding: 8px 16px; background: #2e1a1a; color: #F09595; border: 0.5px solid #A32D2D; border-radius: 8px; cursor: pointer; }
+.btn-save { padding: 10px 16px; font-size: 14px; font-weight: 500; background: #1D9E75; color: white; border: none; border-radius: 8px; cursor: pointer; }
+.btn-save:hover { background: #0F6E56; }
 
 /* ── Carátula ── */
 .cover { min-height: calc(100vh - 2rem); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; text-align: center; }
-.cover-icon { width: 72px; height: 72px; background: rgba(59,109,17,0.25); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
-.cover-title { font-size: 52px; font-weight: 500; color: #97C459; line-height: 1.1; margin-bottom: 8px; }
-.cover-subtitle { font-size: 18px; color: #639922; letter-spacing: 0.04em; margin-bottom: 48px; }
+.cover-icon { width: 80px; height: 80px; background: rgba(59,109,17,0.25); border-radius: 22px; display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
+.cover-title { font-size: 62px; font-weight: 500; color: #97C459; line-height: 1.1; margin-bottom: 10px; }
+.cover-subtitle { font-size: 22px; color: #639922; letter-spacing: 0.04em; margin-bottom: 52px; }
 .grupo-label { font-size: 20px; font-weight: 500; color: #ccc; margin-bottom: 16px; }
 .grupo-grid { display: flex; gap: 12px; margin-bottom: 36px; }
 .grupo-btn { width: 72px; height: 72px; border-radius: 14px; border: 0.5px solid #444; background: #2a2a2a; font-size: 26px; font-weight: 500; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -74,12 +79,15 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .btn-start.enabled:hover { background: #27500A; }
 
 /* ── Tabla final ── */
+.preview-header-wrap { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.preview-title { font-size: 28px; font-weight: 500; color: #97C459; }
+.preview-subtitle { font-size: 14px; color: #639922; }
 .card-preview { background: #2a2a2a; border: 0.5px solid #444; border-radius: 16px; overflow: hidden; }
 .card-preview-header { padding: 14px 18px 12px; border-bottom: 0.5px solid #444; }
 .card-preview-top { font-size: 11px; font-weight: 500; color: #888; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 2px; }
 .card-preview-main { font-size: 17px; font-weight: 500; color: #eee; }
 table.preview { width: 100%; border-collapse: collapse; }
-table.preview th { background: #111; color: #fff; padding: 10px 10px; text-align: center; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; border-right: 0.5px solid rgba(255,255,255,0.08); }
+table.preview th { background: #111; color: #fff; padding: 11px 10px; text-align: center; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; border-right: 0.5px solid rgba(255,255,255,0.08); }
 table.preview th:last-child { border-right: none; }
 table.preview td { padding: 10px 10px; text-align: center; border-bottom: 0.5px solid #3a3a3a; color: #eee; background: #2a2a2a; vertical-align: middle; }
 table.preview tr:last-child td { border-bottom: none; }
@@ -93,7 +101,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .badge-vie { background: #1a2e0a; color: #C0DD97; }
 .terr-num-big { font-size: 18px; font-weight: 500; color: #eee; }
 .fecha-num { font-size: 13px; color: #aaa; margin-top: 2px; }
-.cond-txt { font-size: 13px; color: #999; }
+.cond-txt { font-size: 14px; font-weight: 500; color: #ddd; }
 .hora-txt { font-size: 15px; font-weight: 500; color: #eee; }
 </style>
 </head>
@@ -110,7 +118,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 <div id="view-cover">
   <div class="cover">
     <div class="cover-icon">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
         <path d="M9 20H5a2 2 0 01-2-2V6a2 2 0 012-2h4M15 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4M9 12h6M12 9v6" stroke="#97C459" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
     </div>
@@ -141,9 +149,9 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 
 <!-- PASO 2: Configurar salidas -->
 <div id="view-config" style="display:none;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-    <p class="section-title" style="margin:0;text-align:left;">Configurá cada salida</p>
-    <div style="display:flex;gap:6px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <p class="section-title" style="margin:0;text-align:left;font-size:22px;">Configurá cada salida</p>
+    <div style="display:flex;gap:8px;">
       <button class="btn-clear" onclick="clearAll()">Limpiar</button>
       <button class="btn-autofill" onclick="autoFillAll()">Autocompletar</button>
     </div>
@@ -157,7 +165,10 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 
 <!-- PASO 3: Vista previa -->
 <div id="view-preview" style="display:none;">
-  <p class="section-title" style="margin-bottom:12px;">Vista previa</p>
+  <div class="preview-header-wrap">
+    <span class="preview-title">Salidas</span>
+    <span class="preview-subtitle" id="preview-grupo-label">Grupo · Congregación Sur</span>
+  </div>
   <div class="card-preview">
     <div class="card-preview-header">
       <div class="card-preview-top">Congregación Sur</div>
@@ -168,12 +179,13 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
       <tbody id="preview-body"></tbody>
     </table>
   </div>
-<div style="display:flex;gap:8px;margin-top:12px;">
-  <button class="btn-secondary" onclick="goToStep2()" style="flex:1;">← Editar</button>
-  <button class="btn-primary" onclick="guardarImagen()" style="flex:2;">Guardar imagen</button>
-</div>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="btn-secondary" onclick="goToStep2()" style="flex:1;">← Editar</button>
+    <button class="btn-save" onclick="guardarImagen()" style="flex:1;">Guardar imagen</button>
+  </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 const CONDUCTORES = ['Andrés Sánchez','Eduardo Scalese','Jose Luis Lasierra','Diego Reinoso','Armando Núñez'];
 const TERRITORIES = [
@@ -192,9 +204,9 @@ const TERRITORIES = [
 ];
 const TERRITORIES_BY_GROUP = { 3: TERRITORIES };
 const DIA_CONFIG = [
-  { key:'tue', label:'Martes', cls:'dia-martes' },
-  { key:'thu', label:'Jueves', cls:'dia-jueves' },
-  { key:'fri', label:'Viernes', cls:'dia-viernes' }
+  { key:'tue', label:'Martes', cls:'dia-martes', cardCls:'card-mar' },
+  { key:'thu', label:'Jueves', cls:'dia-jueves', cardCls:'card-thu' },
+  { key:'fri', label:'Viernes', cls:'dia-viernes', cardCls:'card-fri' }
 ];
 const DIA_ORDER = { tue:0, thu:1, fri:2 };
 const DIA_DEFAULT_HORA = { tue:'17:30', thu:'18:30', fri:'18:30' };
@@ -274,11 +286,8 @@ function reorderPhone(){
   if(!phoneCard) return;
   phoneCard.dataset.diaKey = diaKey;
   phoneCard.dataset.fecha = WEEK[diaKey];
-
-  // Actualizar hora default según el día elegido
   const horaInput = document.getElementById('hora-phone');
   if(horaInput && !horaInput.dataset.edited) horaInput.value = DIA_DEFAULT_HORA[diaKey];
-
   const phoneOrder = DIA_ORDER[diaKey] ?? 0;
   const terrCards = selected.map((n,i)=>document.getElementById('card-terr-'+i)).filter(Boolean);
   let inserted = false;
@@ -297,7 +306,7 @@ function renderSalidas(){
   selected.forEach((n,i)=>{
     const cfg=DIA_CONFIG[i]; const fechaVal=WEEK[cfg.key];
     const div=document.createElement('div');
-    div.className='salida-card';
+    div.className=`salida-card ${cfg.cardCls}`;
     div.id='card-terr-'+i;
     div.dataset.idx=i;
     div.innerHTML=`
@@ -382,6 +391,7 @@ function clearAll(){
 
 function generatePreview(){
   document.getElementById('preview-grupo-title').textContent=`Grupo ${selectedGrupo} — Salidas de la semana`;
+  document.getElementById('preview-grupo-label').textContent=`Grupo ${selectedGrupo} · Congregación Sur`;
   const DIA_BADGE={
     tue:'<div class="dia-badge badge-mar">Martes</div>',
     thu:'<div class="dia-badge badge-jue">Jueves</div>',
@@ -424,7 +434,7 @@ function generatePreview(){
   hide('view-config');show('view-preview');setStep(3);
 }
 
-  function guardarImagen(){
+function guardarImagen(){
   const el = document.querySelector('.card-preview');
   html2canvas(el, { backgroundColor: '#1e1e1e', scale: 2 }).then(canvas => {
     const link = document.createElement('a');
@@ -434,6 +444,5 @@ function generatePreview(){
   });
 }
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
