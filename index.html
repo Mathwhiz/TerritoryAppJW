@@ -752,8 +752,8 @@ function generatePreview(){
 function guardarImagen(){
   const el = document.querySelector('.card-preview');
   const originalWidth = el.style.width;
-  el.style.width = '480px';
-  html2canvas(el, { backgroundColor: '#1e1e1e', scale: 1, width: 480 }).then(canvas => {
+  el.style.width = '580px';
+html2canvas(el, { backgroundColor: '#1e1e1e', scale: 1, width: 580 }).then(canvas => {
     el.style.width = originalWidth;
     const link = document.createElement('a');
     link.download = `salidas-grupo-${selectedGrupo}.jpg`;
