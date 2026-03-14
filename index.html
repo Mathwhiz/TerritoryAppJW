@@ -69,11 +69,15 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 
 /* ── Modo selector ── */
 .modo-wrap { min-height: calc(100vh - 4rem); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 2rem 1rem; }
-.modo-titulo { font-size: 20px; font-weight: 500; color: #ccc; margin-bottom: 8px; text-align: center; }
-.modo-card { width: 100%; max-width: 320px; background: #2a2a2a; border: 0.5px solid #444; border-radius: 14px; padding: 1.25rem 1.5rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 16px; transition: border-color 0.15s; }
-.modo-card:hover { border-color: #666; }
-.modo-card.modo-planificar:hover { border-color: #378ADD; background: #0c2a45; }
-.modo-card.modo-registrar:hover { border-color: #1D9E75; background: #0d2420; }
+.modo-titulo { font-size: 48px; font-weight: 500; color: #ccc; margin-bottom: 20px; text-align: center; }
+.grupo-color-1 { color: #378ADD; }
+.grupo-color-2 { color: #EF9F27; }
+.grupo-color-3 { color: #97C459; }
+.grupo-color-4 { color: #D85A30; }
+.grupo-color-C { color: #7F77DD; }
+.modo-card { width: 100%; max-width: 320px; background: #2a2a2a; border: 1.5px solid #444; border-radius: 14px; padding: 1.25rem 1.5rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 16px; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
+.modo-card:hover { transform: scale(1.02); }
+.modo-card:active { transform: scale(0.98); }
 .modo-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .modo-icon-plan { background: rgba(55,138,221,0.15); }
 .modo-icon-reg { background: rgba(29,158,117,0.15); }
@@ -219,7 +223,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 <!-- PASO 0b: Elegir modo -->
 <div id="view-modo" style="display:none;">
   <div class="modo-wrap">
-    <div class="modo-titulo">&#191;Qu&#233; quer&#233;s hacer, Grupo <span id="modo-grupo-label">?</span>?</div>
+    <div class="modo-titulo">Grupo <span id="modo-grupo-label" style="font-size:inherit;">?</span></div>
     <button class="modo-card modo-planificar" onclick="goToStep1()">
       <div class="modo-icon modo-icon-plan">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -238,12 +242,12 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
         <div class="modo-card-sub">Cerrar territorios de la semana</div>
       </div>
     </button>
-    <button class="modo-card" onclick="goToInfoGrupo()" style="max-width:320px;width:100%;border-color:#534AB7;">
-      <div class="modo-icon" style="background:rgba(83,74,183,0.15);">
+    <button class="modo-card" onclick="goToInfoGrupo()">
+      <div class="modo-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round"/></svg>
       </div>
       <div>
-        <div class="modo-card-title" style="color:#AFA9EC;">Ver mi grupo</div>
+        <div class="modo-card-title">Ver mi grupo</div>
         <div class="modo-card-sub">Territorios y configuración</div>
       </div>
     </button>
@@ -697,10 +701,30 @@ function goToCover(){
   document.getElementById('step-bar').style.display='none';
 }
 
+const GROUP_COLORS = { 1:'#378ADD', 2:'#EF9F27', 3:'#97C459', 4:'#D85A30', 'C':'#7F77DD' };
+const GROUP_BG = { 1:'rgba(55,138,221,0.15)', 2:'rgba(239,159,39,0.15)', 3:'rgba(151,196,89,0.15)', 4:'rgba(216,90,48,0.15)', C:'rgba(127,119,221,0.15)' };
+
 function goToModo(){
   selected=[];
   hide('view-cover');hide('view-select');hide('view-config');hide('view-preview');hide('view-registrar');hide('view-info');
-  document.getElementById('modo-grupo-label').textContent = selectedGrupo;
+  const label = document.getElementById('modo-grupo-label');
+  label.textContent = selectedGrupo === 'C' ? 'Congregación' : selectedGrupo;
+  const color = GROUP_COLORS[selectedGrupo] || '#97C459';
+  const bg = GROUP_BG[selectedGrupo] || 'rgba(151,196,89,0.15)';
+  label.style.color = color;
+
+  // Aplicar color a los bordes de las cards
+  document.querySelectorAll('.modo-card').forEach(card => {
+    card.style.borderColor = color;
+    card.addEventListener('mouseenter', function(){ this.style.background = bg; });
+    card.addEventListener('mouseleave', function(){ this.style.background = '#2a2a2a'; });
+  });
+
+  // Iconos con el color del grupo
+  document.querySelectorAll('.modo-icon').forEach(icon => {
+    icon.style.background = bg;
+  });
+
   show('view-modo');
   document.getElementById('step-bar').style.display='none';
 }
