@@ -108,6 +108,32 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .btn-start { padding: 14px 48px; font-size: 16px; font-weight: 500; background: #3B6D11; color: #fff; border: none; border-radius: 12px; cursor: pointer; opacity: 0.3; pointer-events: none; letter-spacing: 0.02em; }
 .btn-start.enabled { opacity: 1; pointer-events: auto; }
 .btn-start.enabled:hover { background: #27500A; }
+/* ── Panel de info del grupo ── */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.info-btn { background: #2a2a2a; border: 0.5px solid #444; border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; }
+.info-btn:hover { border-color: #666; }
+.info-btn.estado-normal { border-color: #444; }
+.info-btn.estado-peligroso { border: 1.5px solid #EF9F27; background: #2e1e00; }
+.info-btn.estado-no_predica { border: 1.5px solid #A32D2D; background: #2e1a1a; }
+.info-btn-num { font-size: 20px; font-weight: 500; color: #eee; }
+.info-btn-date { font-size: 10px; color: #888; margin-top: 3px; }
+.info-btn-estado { font-size: 10px; font-weight: 500; margin-top: 3px; }
+.info-btn.estado-peligroso .info-btn-estado { color: #FAC775; }
+.info-btn.estado-no_predica .info-btn-estado { color: #F09595; }
+.info-btn.estado-normal .info-btn-estado { color: #888; }
+.info-legend { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.estado-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.estado-modal-card { background: #2a2a2a; border: 0.5px solid #555; border-radius: 14px; padding: 1.5rem; width: 280px; }
+.estado-modal-title { font-size: 18px; font-weight: 500; color: #eee; margin-bottom: 4px; }
+.estado-modal-sub { font-size: 13px; color: #888; margin-bottom: 16px; }
+.estado-opt { width: 100%; padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 0.5px solid #555; background: #1e1e1e; color: #eee; cursor: pointer; margin-bottom: 8px; text-align: left; }
+.estado-opt:hover { border-color: #888; }
+.estado-opt.opt-normal:hover { border-color: #1D9E75; color: #5DCAA5; }
+.estado-opt.opt-peligroso:hover { border-color: #EF9F27; color: #FAC775; }
+.estado-opt.opt-no_predica:hover { border-color: #A32D2D; color: #F09595; }
+
 .grupo-btn-cong { border-color: #534AB7; color: #AFA9EC; }
 .grupo-btn-cong:hover { border-color: #7F77DD; background: rgba(83,74,183,0.2); color: #7F77DD; }
 .grupo-btn-cong.selected { border: 2px solid #7F77DD; background: rgba(83,74,183,0.25); color: #CECBF6; }
@@ -192,6 +218,15 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
         <div class="modo-card-sub">Cerrar territorios de la semana</div>
       </div>
     </button>
+    <button class="modo-card" onclick="goToInfoGrupo()" style="max-width:320px;width:100%;border-color:#534AB7;">
+      <div class="modo-icon" style="background:rgba(83,74,183,0.15);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="modo-card-title" style="color:#AFA9EC;">Ver mi grupo</div>
+        <div class="modo-card-sub">Territorios y configuración</div>
+      </div>
+    </button>
     <button class="btn-secondary" onclick="goToCover()" style="width:100%;max-width:320px;">&#8592; Volver</button>
   </div>
 </div>
@@ -209,6 +244,36 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
     <div style="margin-top:10px;">
       <button class="btn-secondary" style="width:100%;" onclick="goToModo()">&#8592; Volver</button>
     </div>
+  </div>
+</div>
+
+
+<!-- INFO GRUPO -->
+<div id="view-info" style="display:none;">
+  <p class="section-title">Mi grupo</p>
+  <p class="section-sub">Grupo <span id="info-grupo-label">?</span> — tocá un territorio para cambiar su estado</p>
+  <div id="info-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
+  <div id="info-error" style="display:none;"></div>
+  <div id="info-content" style="display:none;">
+    <div class="info-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#444;"></div>Normal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EF9F27;"></div>Peligroso</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#A32D2D;"></div>No se predica</div>
+    </div>
+    <div class="info-grid" id="info-grid"></div>
+  </div>
+  <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="goToModo()">&#8592; Volver</button>
+</div>
+
+<!-- MODAL ESTADO -->
+<div id="estado-modal" class="estado-modal" style="display:none;">
+  <div class="estado-modal-card">
+    <div class="estado-modal-title" id="modal-terr-title">Territorio ?</div>
+    <div class="estado-modal-sub">Elegí el estado de este territorio</div>
+    <button class="estado-opt opt-normal" onclick="setTerritoryEstado('normal')">Normal — aparece en planificación</button>
+    <button class="estado-opt opt-peligroso" onclick="setTerritoryEstado('peligroso')">Peligroso — aparece con advertencia</button>
+    <button class="estado-opt opt-no_predica" onclick="setTerritoryEstado('no_predica')">No se predica — no aparece</button>
+    <button class="btn-secondary" style="width:100%;margin-top:4px;" onclick="closeModal()">Cancelar</button>
   </div>
 </div>
 
@@ -293,6 +358,97 @@ let selectedGrupo = null;
 let selected = [];
 let territoriosData = {}; // datos cargados del Sheet
 
+
+let configData = {};
+let modalTerr = null;
+
+async function goToInfoGrupo() {
+  hide('view-modo');
+  show('view-info');
+  document.getElementById('info-grupo-label').textContent = selectedGrupo;
+  show('info-loading');
+  hide('info-content');
+  hide('info-error');
+
+  try {
+    // Cargar territorios y config en paralelo
+    if (!territoriosData || Object.keys(territoriosData).length === 0) {
+      const raw = await fetchGrupo(selectedGrupo);
+      territoriosData = {};
+      Object.keys(raw).forEach(terr => {
+        const d = raw[terr];
+        territoriosData[terr] = {
+          lastFin: parseSheetDate(d.lastFin),
+          lastIni: parseSheetDate(d.lastIni),
+          enProgreso: d.enProgreso
+        };
+      });
+    }
+    const cfgUrl = SCRIPT_URL + '?action=getConfig&grupo=' + encodeURIComponent(selectedGrupo);
+    const cfgResp = await fetch(cfgUrl);
+    const cfgText = await cfgResp.text();
+    configData = JSON.parse(cfgText);
+
+    hide('info-loading');
+    show('info-content');
+    renderInfoGrid();
+  } catch(err) {
+    hide('info-loading');
+    const errEl = document.getElementById('info-error');
+    errEl.innerHTML = `<div class="error-wrap">Error: ${err.message}.</div>`;
+    show('info-error');
+  }
+}
+
+function renderInfoGrid() {
+  const g = document.getElementById('info-grid');
+  g.innerHTML = '';
+  const lista = Object.keys(territoriosData).sort((a,b) => parseInt(a) - parseInt(b));
+  lista.forEach(n => {
+    const t = territoriosData[n];
+    const estado = configData[n] || 'normal';
+    const lastDate = t.lastFin || t.lastIni;
+    const btn = document.createElement('button');
+    btn.className = `info-btn estado-${estado}`;
+    const estadoLabel = estado === 'normal' ? '' : estado === 'peligroso' ? '⚠ peligroso' : '✕ no predica';
+    btn.innerHTML = `<div class="info-btn-num">${n}</div><div class="info-btn-date">${lastDate ? formatShortFull(lastDate) : 'Sin reg.'}</div><div class="info-btn-estado">${estadoLabel}</div>`;
+    btn.onclick = () => openModal(n);
+    g.appendChild(btn);
+  });
+}
+
+function openModal(n) {
+  modalTerr = n;
+  document.getElementById('modal-terr-title').textContent = 'Territorio ' + n;
+  document.getElementById('estado-modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('estado-modal').style.display = 'none';
+  modalTerr = null;
+}
+
+async function setTerritoryEstado(estado) {
+  if (!modalTerr) return;
+  closeModal();
+  const n = modalTerr;
+
+  // Actualizar local
+  if (estado === 'normal') {
+    delete configData[n];
+  } else {
+    configData[n] = estado;
+  }
+  renderInfoGrid();
+
+  // Guardar en Sheet
+  const url = SCRIPT_URL + '?action=setConfig' +
+    '&grupo=' + encodeURIComponent(selectedGrupo) +
+    '&territorio=' + encodeURIComponent(n) +
+    '&estado=' + encodeURIComponent(estado);
+  await fetch(url);
+}
+
 async function fetchGrupo(grupo) {
   const url = SCRIPT_URL + '?action=getLastDates&grupo=' + encodeURIComponent(grupo);
   const response = await fetch(url);
@@ -344,14 +500,14 @@ function setStep(n){
 function goToCover(){
   selected=[];
   hide('view-select');hide('view-config');hide('view-preview');
-  hide('view-modo');hide('view-registrar');
+  hide('view-modo');hide('view-registrar');hide('view-info');
   show('view-cover');
   document.getElementById('step-bar').style.display='none';
 }
 
 function goToModo(){
   selected=[];
-  hide('view-cover');hide('view-select');hide('view-config');hide('view-preview');hide('view-registrar');
+  hide('view-cover');hide('view-select');hide('view-config');hide('view-preview');hide('view-registrar');hide('view-info');
   document.getElementById('modo-grupo-label').textContent = selectedGrupo;
   show('view-modo');
   document.getElementById('step-bar').style.display='none';
@@ -554,10 +710,13 @@ function renderGrid() {
   }
 
   // Ordenar: en progreso primero, luego por días sin trabajar desc
-  const lista = Object.keys(territoriosData).map(n => {
+  const lista = Object.keys(territoriosData)
+  .filter(n => (configData[n] || 'normal') !== 'no_predica')
+  .map(n => {
     const d = territoriosData[n];
     const lastDate = d.lastFin || d.lastIni;
-    return { n, ...d, days: daysSince(lastDate), lastDate };
+    const estadoConfig = configData[n] || 'normal';
+    return { n, ...d, days: daysSince(lastDate), lastDate, estadoConfig };
   }).sort((a,b) => {
     if (a.enProgreso && !b.enProgreso) return -1;
     if (!a.enProgreso && b.enProgreso) return 1;
@@ -577,8 +736,9 @@ function renderGrid() {
     const daysLabel = t.enProgreso
       ? '<div class="badge-progreso">en progreso</div>'
       : `<div class="terr-days ${dayClass(t.days)}">${t.days}d</div>`;
+    const peligroLabel = t.estadoConfig === 'peligroso' ? '<div class="badge-progreso" style="border-color:#EF9F27;color:#FAC775;">⚠ peligroso</div>' : '';
 
-    btn.innerHTML = `<div class="terr-num">${t.n}${isSpecial?' ⚠':''}</div><div class="terr-date">${dateLabel}</div>${daysLabel}`;
+    btn.innerHTML = `<div class="terr-num">${t.n}</div><div class="terr-date">${dateLabel}</div>${daysLabel}${peligroLabel}`;
     btn.onclick = () => {
       if(selected.includes(t.n)) selected=selected.filter(x=>x!==t.n);
       else if(selected.length<3) selected.push(t.n);
