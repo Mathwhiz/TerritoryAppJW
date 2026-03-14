@@ -447,6 +447,14 @@ function setEstado(n, estado) {
   }
 }
 
+
+  function fmtDate(ds) {
+  if (!ds) return '';
+  const m = ds.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1].slice(-2)}`;
+  return ds;
+}
+
 async function guardarRegistros(){
   const btn = document.getElementById('btn-guardar');
   const status = document.getElementById('save-status');
@@ -461,8 +469,8 @@ async function guardarRegistros(){
     const n = card.dataset.terr;
     const estado = card.dataset.estado;
     const conductor = document.getElementById('reg-cond-' + n)?.value || '—';
-    const ini = document.getElementById('reg-ini-' + n)?.value || '';
-    const fin = estado === 'completado' ? (document.getElementById('reg-fin-' + n)?.value || '') : '';
+    const ini = fmtDate(document.getElementById('reg-ini-' + n)?.value || '');
+    const fin = estado === 'completado' ? fmtDate(document.getElementById('reg-fin-' + n)?.value || '') : '';
     saves.push({ territorio: n, conductor, fechaInicio: ini, fechaFin: fin, estado });
   });
 
