@@ -106,9 +106,10 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .cover-subtitle { font-size: 22px; color: #639922; letter-spacing: 0.04em; margin-bottom: 52px; }
 .grupo-label { font-size: 20px; font-weight: 500; color: #ccc; margin-bottom: 16px; }
 .grupo-grid { display: flex; gap: 12px; margin-bottom: 36px; }
-.grupo-btn { width: 72px; height: 72px; border-radius: 14px; border: 0.5px solid #444; background: #2a2a2a; font-size: 26px; font-weight: 500; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.grupo-btn:hover { border-color: #97C459; background: rgba(59,109,17,0.2); color: #97C459; }
-.grupo-btn.selected { border: 2px solid #97C459; background: rgba(59,109,17,0.25); color: #C0DD97; }
+.grupo-btn { width: 72px; height: 72px; border-radius: 14px; border: 1.5px solid #444; background: #2a2a2a; font-size: 26px; font-weight: 500; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s; }
+.grupo-btn:hover { transform: scale(1.08); }
+.grupo-btn:active { transform: scale(0.96); }
+.grupo-btn.selected { border-width: 2px; }
 .btn-start { padding: 14px 48px; font-size: 16px; font-weight: 500; background: #3B6D11; color: #fff; border: none; border-radius: 12px; cursor: pointer; opacity: 0.3; pointer-events: none; letter-spacing: 0.02em; }
 .btn-start.enabled { opacity: 1; pointer-events: auto; }
 .btn-start.enabled:hover { background: #27500A; }
@@ -158,9 +159,7 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .hist-en-prog { font-size: 10px; color: #FAC775; background: #2e1e00; border: 0.5px solid #EF9F27; border-radius: 4px; padding: 1px 5px; }
 
 
-.grupo-btn-cong { border-color: #534AB7; color: #AFA9EC; }
-.grupo-btn-cong:hover { border-color: #7F77DD; background: rgba(83,74,183,0.2); color: #7F77DD; }
-.grupo-btn-cong.selected { border: 2px solid #7F77DD; background: rgba(83,74,183,0.25); color: #CECBF6; }
+
 
 .preview-header-wrap { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
 .preview-title { font-size: 28px; font-weight: 500; color: #97C459; }
@@ -205,15 +204,15 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
         <path d="M9 20H5a2 2 0 01-2-2V6a2 2 0 012-2h4M15 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4M9 12h6M12 9v6" stroke="#97C459" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
     </div>
-    <div class="cover-title">Planificador<br>de Salidas</div>
+    <div class="cover-title">Territory<br>App</div>
     <div class="cover-subtitle">Congregación Sur</div>
     <div class="grupo-label">¿Con qué grupo trabajás?</div>
     <div class="grupo-grid">
-      <button class="grupo-btn" onclick="selectGrupo(this,1)">1</button>
-      <button class="grupo-btn" onclick="selectGrupo(this,2)">2</button>
-      <button class="grupo-btn" onclick="selectGrupo(this,3)">3</button>
-      <button class="grupo-btn" onclick="selectGrupo(this,4)">4</button>
-      <button class="grupo-btn grupo-btn-cong" onclick="selectGrupo(this,'C')" style="font-size:16px;width:88px;">Congr.</button>
+      <button class="grupo-btn" data-grupo="1" onclick="selectGrupo(this,1)">1</button>
+      <button class="grupo-btn" data-grupo="2" onclick="selectGrupo(this,2)">2</button>
+      <button class="grupo-btn" data-grupo="3" onclick="selectGrupo(this,3)">3</button>
+      <button class="grupo-btn" data-grupo="4" onclick="selectGrupo(this,4)">4</button>
+      <button class="grupo-btn" data-grupo="C" onclick="selectGrupo(this,'C')" style="font-size:16px;width:88px;">Congr.</button>
     </div>
     <button class="btn-start" id="btn-start" onclick="goToModo()">Empezar →</button>
   </div>
@@ -419,7 +418,9 @@ let modalTerr = null;
 async function goToInfoGrupo() {
   hide('view-modo');
   show('view-info');
-  document.getElementById('info-grupo-label').textContent = selectedGrupo;
+  const infoTitulo = document.getElementById('info-titulo');
+  infoTitulo.textContent = selectedGrupo === 'C' ? 'Congregación' : 'Grupo ' + selectedGrupo;
+  infoTitulo.style.color = GCOLORS[selectedGrupo] || '#97C459';
   show('info-loading');
   hide('info-content');
   hide('info-error');
@@ -679,9 +680,31 @@ function dayClass(d){return d>90?'days-old':d>45?'days-mid':'days-new';}
 
 const WEEK = getWeekDates();
 
+const GCOLORS = { 1:'#378ADD', 2:'#EF9F27', 3:'#97C459', 4:'#D85A30', C:'#7F77DD' };
+const GBGS   = { 1:'rgba(55,138,221,0.18)', 2:'rgba(239,159,39,0.18)', 3:'rgba(151,196,89,0.18)', 4:'rgba(216,90,48,0.18)', C:'rgba(127,119,221,0.18)' };
+
+function applyGrupoColors() {
+  document.querySelectorAll('.grupo-btn').forEach(btn => {
+    const g = btn.dataset.grupo;
+    const c = GCOLORS[g] || '#888';
+    const bg = GBGS[g] || 'rgba(100,100,100,0.18)';
+    btn.style.borderColor = c;
+    btn.style.color = c;
+    btn.onmouseenter = () => { if (!btn.classList.contains('selected')) btn.style.background = bg; };
+    btn.onmouseleave = () => { if (!btn.classList.contains('selected')) btn.style.background = '#2a2a2a'; };
+  });
+}
+applyGrupoColors();
+
 function selectGrupo(el, n) {
-  document.querySelectorAll('.grupo-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.grupo-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.style.background = '#2a2a2a';
+  });
+  const color = GCOLORS[n] || '#888';
+  const bg = GBGS[n] || 'rgba(100,100,100,0.18)';
   el.classList.add('selected');
+  el.style.background = bg;
   selectedGrupo = n;
   document.getElementById('btn-start').classList.add('enabled');
 }
