@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Planificador de Salidas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>  
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e1e; color: #eee; min-height: 100vh; }
@@ -168,9 +169,10 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
       <tbody id="preview-body"></tbody>
     </table>
   </div>
-  <div style="margin-top:12px;">
-    <button class="btn-secondary" onclick="goToStep2()" style="width:100%;">← Editar</button>
-  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+  <button class="btn-secondary" onclick="goToStep2()" style="flex:1;">← Editar</button>
+  <button class="btn-primary" onclick="guardarImagen()" style="flex:2;">Guardar imagen</button>
+</div>
 </div>
 
 <script>
@@ -421,6 +423,17 @@ function generatePreview(){
       <td><div class="hora-txt">${r.hora}</div></td>
     </tr>`).join('');
   hide('view-config');show('view-preview');setStep(3);
+}
+
+  
+function guardarImagen(){
+  const el = document.querySelector('.card-preview');
+  html2canvas(el, { backgroundColor: '#1e1e1e', scale: 2 }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `salidas-grupo-${selectedGrupo}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
 }
 </script>
 </body>
