@@ -9,7 +9,12 @@
 <body>
 
 <button class="btn-home" id="btn-home" onclick="goToModo()" title="Inicio">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 21V12h6v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 21V12h6v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<button class="btn-mapa-float" id="btn-mapa-float" title="Ver mapa">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  Mapa
 </button>
 
 <div class="app">
@@ -98,13 +103,6 @@
 
   <!-- ── REGISTRAR TERRITORIOS ── -->
   <div id="view-registrar" class="view" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <p class="section-title" style="margin-bottom:0;">Registrar territorios</p>
-      <button class="btn-mapa-view" onclick="openMapaPopup('registrar')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Mapa
-      </button>
-    </div>
     <p class="section-sub">Grupo <span id="reg-grupo-label">?</span> &mdash; marcá los que se completaron</p>
     <div id="reg-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
     <div id="reg-error" style="display:none;"></div>
@@ -120,13 +118,6 @@
 
   <!-- ── INFO GRUPO ── -->
   <div id="view-info" class="view" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <p class="section-title" id="info-titulo" style="font-size:36px;margin-bottom:0;">Grupo ?</p>
-      <button class="btn-mapa-view" onclick="openMapaPopup('info')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Mapa
-      </button>
-    </div>
     <p class="section-sub">Tocá un territorio para ver su info o cambiar su estado</p>
     <div id="info-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
     <div id="info-error" style="display:none;"></div>
@@ -194,11 +185,7 @@
       <p class="plan-titulo">Planificar salidas</p>
       <div class="plan-btns">
         <button class="btn-add-tel"   onclick="addSalida('tel')">+ Telefónica</button>
-        <button class="btn-add-salida" onclick="addSalida('campo')">+ Salida</button>
-        <button class="btn-mapa-plan" onclick="openMapaPopup('info')" title="Ver mapa">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
+        <button class="btn-add-salida" onclick="addSalida('campo')">+ Salida</button></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;">
       <button id="btn-semana-prev" onclick="cambiarSemana(-1)" style="font-size:18px;padding:2px 10px;border:0.5px solid #555;border-radius:8px;background:#2a2a2a;color:#aaa;cursor:pointer;">←</button>
@@ -276,12 +263,14 @@
   </div>
 
   <!-- ── MAPA POPUP ── -->
-  <div id="mapa-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:300;display:none;flex-direction:column;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#2a2a2a;border-bottom:0.5px solid #444;flex-shrink:0;">
-      <div style="font-size:15px;font-weight:500;color:#eee;" id="mapa-popup-title">Mapa</div>
-      <button onclick="closeMapaPopup()" style="background:#1e1e1e;border:0.5px solid #555;color:#aaa;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+  <div id="mapa-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+    <div style="width:100%;max-width:520px;height:80vh;max-height:680px;background:#1e1e1e;border-radius:16px;border:0.5px solid #444;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,0.7);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#2a2a2a;border-bottom:0.5px solid #444;flex-shrink:0;">
+        <div style="font-size:15px;font-weight:500;color:#eee;" id="mapa-popup-title">Mapa</div>
+        <button onclick="closeMapaPopup()" style="background:#1e1e1e;border:0.5px solid #555;color:#aaa;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <iframe id="mapa-iframe" src="" style="flex:1;border:none;width:100%;"></iframe>
     </div>
-    <iframe id="mapa-iframe" src="" style="flex:1;border:none;width:100%;"></iframe>
   </div>
 
 </div><!-- /.app -->

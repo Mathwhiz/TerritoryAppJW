@@ -47,12 +47,26 @@ const DIA_COLORS = {
 function show(id) {
   document.getElementById(id).style.display = '';
   const homeBtn = document.getElementById('btn-home');
+  const mapaBtn = document.getElementById('btn-mapa-float');
   if (homeBtn) {
     const showHome = ['view-config','view-preview','view-registrar','view-info','view-historial'].includes(id);
     if (showHome) homeBtn.classList.add('visible');
-    // Hide home btn in view-config — plan header has its own back button
     if (id === 'view-config') homeBtn.classList.add('hidden-in-plan');
     else homeBtn.classList.remove('hidden-in-plan');
+  }
+  if (mapaBtn) {
+    if (id === 'view-info') {
+      mapaBtn.classList.add('visible');
+      mapaBtn.onclick = () => openMapaPopup('info');
+    } else if (id === 'view-registrar') {
+      mapaBtn.classList.add('visible');
+      mapaBtn.onclick = () => openMapaPopup('registrar');
+    } else if (id === 'view-config') {
+      mapaBtn.classList.add('visible');
+      mapaBtn.onclick = () => openMapaPopup('info');
+    } else {
+      mapaBtn.classList.remove('visible');
+    }
   }
 }
 function hide(id) { document.getElementById(id).style.display = 'none'; }
@@ -202,6 +216,7 @@ function goToCover() {
 function goToModo() {
   selected = [];
   document.getElementById('btn-home').classList.remove('visible');
+  document.getElementById('btn-mapa-float')?.classList.remove('visible');
   hide('view-cover'); hide('view-config'); hide('view-preview');
   hide('view-registrar'); hide('view-info'); hide('view-historial');
   const label = document.getElementById('modo-grupo-label');
@@ -244,6 +259,7 @@ function cerrarSesion() {
   });
   document.getElementById('btn-start').classList.remove('enabled');
   document.getElementById('btn-home').classList.remove('visible');
+  document.getElementById('btn-mapa-float')?.classList.remove('visible');
   goToCover();
 }
 
@@ -793,17 +809,30 @@ async function goToInfoGrupo() {
   }
 }
 
+function daysColor(dias) {
+  if (dias === null || dias === undefined) return '#555';
+  if (dias <= 30)  return '#4CAF50';
+  if (dias <= 45)  return '#8BC34A';
+  if (dias <= 60)  return '#FFC107';
+  if (dias <= 90)  return '#FF9800';
+  if (dias <= 120) return '#FF5722';
+  return '#F44336';
+}
+
 function renderInfoGrid() {
   const g = document.getElementById('info-grid');
   g.innerHTML = '';
   Object.keys(territoriosData).sort((a,b) => parseInt(a)-parseInt(b)).forEach(n => {
     const t = territoriosData[n];
-    const estado = configData[n] || 'normal';
+    const estado   = configData[n] || 'normal';
     const lastDate = t.lastFin || t.lastIni;
+    const dias     = lastDate ? daysSince(lastDate) : null;
+    const col      = daysColor(dias);
+    const diasTxt  = dias !== null ? `${dias}d` : '—';
     const btn = document.createElement('button');
     btn.className = `info-btn estado-${estado}`;
     const estadoLabel = estado === 'normal' ? '' : estado === 'peligroso' ? '⚠ peligroso' : '✕ no predica';
-    btn.innerHTML = `<div class="info-btn-num">${n}</div><div class="info-btn-date">${lastDate ? formatShortFull(lastDate) : 'Sin reg.'}</div><div class="info-btn-estado">${estadoLabel}</div>`;
+    btn.innerHTML = `<div class="info-btn-num">${n}</div><div class="info-btn-date">${lastDate ? formatShortFull(lastDate) : 'Sin reg.'}</div><div class="info-btn-days" style="color:${col};">${diasTxt}</div><div class="info-btn-estado">${estadoLabel}</div>`;
     btn.onclick = () => openModal(n);
     g.appendChild(btn);
   });
