@@ -667,7 +667,14 @@ function parseSheetDate(ds) {
 function getWeekDates() {
   const now = new Date(); const day = now.getDay();
   const monday = new Date(now); monday.setDate(now.getDate()-(day===0?6:day-1));
-  function d(o){const x=new Date(monday);x.setDate(monday.getDate()+o);return x.toISOString().slice(0,10);}
+  function d(o){
+    const x=new Date(monday);
+    x.setDate(monday.getDate()+o);
+    const yyyy=x.getFullYear();
+    const mm=String(x.getMonth()+1).padStart(2,'0');
+    const dd=String(x.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
   return {mon:d(0),tue:d(1),wed:d(2),thu:d(3),fri:d(4),sat:d(5),sun:d(6)};
 }
 
@@ -1008,21 +1015,52 @@ function getConductorOptions(grupo, selected = '') {
   return '<option value="">— Elegir conductor —</option>' + conductores.map(c => `<option value="${c}" ${c===selected?'selected':''}>${c}</option>`).join('');
 }
 
+const DIA_COLORS = {
+  'Lunes':    '#85B7EB',
+  'Martes':   '#85B7EB',
+  'Miércoles':'#C0DD97',
+  'Jueves':   '#FAC775',
+  'Viernes':  '#C0DD97',
+  'Sábado':   '#CDB4FF',
+  'Domingo':  '#F09595',
+};
+const DIAS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function getNombreDia(fecha) {
+  if (!fecha) return '—';
+  const d = new Date(fecha + 'T00:00:00');
+  return DIAS_ES[d.getDay()];
+}
+
+function updateDiaLabel(id) {
+  const fecha = document.getElementById('sal-fecha-' + id)?.value;
+  const label = document.getElementById('sal-dia-label-' + id);
+  if (!label) return;
+  const nombre = getNombreDia(fecha);
+  label.textContent = nombre;
+  label.style.color = DIA_COLORS[nombre] || '#eee';
+}
+
 function renderSalidaCard(s) {
   const c = document.getElementById('salidas-container');
   const esTel = s.tipo === 'tel';
   const div = document.createElement('div');
   div.className = 'salida-card-new ' + (esTel ? 'tipo-tel' : 'tipo-campo');
   div.id = 'salida-card-' + s.id;
+  const nombreDia = getNombreDia(s.fecha);
+  const diaColor = DIA_COLORS[nombreDia] || '#eee';
   div.innerHTML = `
     <div class="salida-card-top">
-      <span class="salida-card-label">${esTel ? 'Telefónica' : 'Salida de campo'}</span>
-      <button class="salida-remove-btn" onclick="removeSalida(${s.id})">✕ Quitar</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="sal-dia-label-${s.id}" style="font-size:22px;font-weight:500;color:${diaColor};">${nombreDia}</span>
+        <span class="salida-card-label" style="font-size:13px;color:#888;">${esTel ? 'Telefónica' : 'Campo'}</span>
+      </div>
+      <button class="salida-remove-btn" onclick="removeSalida(${s.id})">✕</button>
     </div>
     <div class="form-row">
       <div>
         <label>Día</label>
-        <input type="date" id="sal-fecha-${s.id}" value="${s.fecha}">
+        <input type="date" id="sal-fecha-${s.id}" value="${s.fecha}" onchange="updateDiaLabel(${s.id})">
       </div>
       <div>
         <label>Hora</label>
@@ -1048,6 +1086,26 @@ function renderSalidas() {
   c.innerHTML = '';
   salidas = [];
   salidaCounter = 0;
+
+  // Bloque fijo de telefónicas para congregación
+  if (selectedGrupo === 'C') {
+    const telBlock = document.createElement('div');
+    telBlock.className = 'salida-card-new tipo-tel';
+    telBlock.style.marginBottom = '14px';
+    telBlock.innerHTML = `
+      <div class="salida-card-top" style="margin-bottom:8px;">
+        <span style="font-size:16px;font-weight:500;color:#5DCAA5;">Telefónica fija — Lunes a Sábado</span>
+      </div>
+      <div style="font-size:13px;color:#888;margin-bottom:10px;">
+        ID: 844 0225 6636 &nbsp;·&nbsp; Contraseña: 479104
+      </div>
+      <div class="form-row">
+        <div><label>Hora mañana</label><input type="time" id="tel-fija-manana" value="10:00"></div>
+        <div><label>Hora tarde</label><input type="time" id="tel-fija-tarde" value="17:00"></div>
+      </div>`;
+    c.appendChild(telBlock);
+  }
+
   const plantilla = getPlantilla(selectedGrupo);
   plantilla.forEach(p => addSalida(p.tipo, p));
 }
