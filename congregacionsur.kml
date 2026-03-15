@@ -10949,6 +10949,44 @@
         <styleUrl>#poly-E65100-2000-77-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
+    <Style id="poly-E65100-3801-94-nodesc-normal">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>3.801</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>5e0051e6</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-E65100-3801-94-nodesc-highlight">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>5.7015</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>5e0051e6</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-E65100-3801-94-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-E65100-3801-94-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-E65100-3801-94-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="poly-F57C00-2000-77-nodesc-normal">
       <LineStyle>
         <color>ff007cf5</color>
@@ -12824,24 +12862,6 @@
                 -64.288713,-36.625496,0
                 -64.289642,-36.625478,0
                 -64.291262,-36.625477,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>territorio 225</name>
-        <styleUrl>#poly-F57C00-2000-77-nodesc</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                -64.293219,-36.479368,0
-                -64.301226,-36.485789,0
-                -64.300261,-36.493374,0
-                -64.292253,-36.486953,0
-                -64.293219,-36.479368,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -15965,39 +15985,6 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Territorio 80</name>
-        <styleUrl>#poly-E65100-2000-77-nodesc</styleUrl>
-        <MultiGeometry>
-          <Polygon>
-            <outerBoundaryIs>
-              <LinearRing>
-                <tessellate>1</tessellate>
-                <coordinates>
-                  -64.315532,-36.639053,0
-                  -64.31556,-36.639029,0
-                  -64.315586,-36.639097,0
-                  -64.315532,-36.639053,0
-                </coordinates>
-              </LinearRing>
-            </outerBoundaryIs>
-          </Polygon>
-          <Polygon>
-            <outerBoundaryIs>
-              <LinearRing>
-                <tessellate>1</tessellate>
-                <coordinates>
-                  -64.314953,-36.639406,0
-                  -64.311493,-36.642258,0
-                  -64.308286,-36.639649,0
-                  -64.311644,-36.63686,0
-                  -64.314953,-36.639406,0
-                </coordinates>
-              </LinearRing>
-            </outerBoundaryIs>
-          </Polygon>
-        </MultiGeometry>
-      </Placemark>
-      <Placemark>
         <name>Territorio 82</name>
         <styleUrl>#poly-E65100-2000-77-nodesc</styleUrl>
         <Polygon>
@@ -16396,6 +16383,24 @@
                 -64.26998,-36.633113,0
                 -64.269937,-36.629445,0
                 -64.271901,-36.629445,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Territorio 80</name>
+        <styleUrl>#poly-E65100-3801-94-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                -64.3150308,-36.6394159,0
+                -64.311426,-36.6423128,0
+                -64.3081644,-36.6396742,0
+                -64.3116405,-36.6367299,0
+                -64.3150308,-36.6394159,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
