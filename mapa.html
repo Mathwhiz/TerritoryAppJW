@@ -20,7 +20,8 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; hei
 .filter-btn.active { opacity: 1; }
 .filter-btn.inactive { opacity: 0.3; }
 
-#map { flex: 1; width: 100%; min-height: 0; }
+#map-wrap { flex: 1; position: relative; min-height: 0; }
+#map { position: absolute; inset: 0; }
 .leaflet-container { background: #1a1a1a; }
 .leaflet-tile { filter: brightness(0.82) saturate(0.75); }
 
@@ -64,7 +65,7 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; hei
   <button class="filter-btn active" id="filter-C"     style="border-color:#7F77DD;color:#7F77DD;" onclick="filterGroup('C')">Congregación</button>
 </div>
 
-<div style="position:relative;flex:1;min-height:0;">
+<div id="map-wrap">
   <div id="map"></div>
   <div class="map-legend">
     <div class="legend-row"><div class="legend-dot" style="background:#378ADD;"></div>Grupo 1</div>
@@ -101,7 +102,15 @@ let activeFilter = 'all';
 function initMap() {
   map = L.map('map', { center: [-36.625, -64.285], zoom: 14, zoomControl: true, attributionControl: false });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-  loadTerritoriosInfo().then(() => renderTerritories());
+  setTimeout(() => { map.invalidateSize(); }, 100);
+  loadTerritoriosInfo().then(() => {
+    renderTerritories();
+    // Ajustar vista a todos los territorios
+    if (allLayers.length) {
+      const bounds = L.latLngBounds(allLayers.map(l => l.polygon.getBounds()));
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  });
 }
 
 // ── Cargar info del Sheet ──
