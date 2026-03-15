@@ -50,6 +50,9 @@ function show(id) {
   if (homeBtn) {
     const showHome = ['view-config','view-preview','view-registrar','view-info','view-historial'].includes(id);
     if (showHome) homeBtn.classList.add('visible');
+    // Hide home btn in view-config — plan header has its own back button
+    if (id === 'view-config') homeBtn.classList.add('hidden-in-plan');
+    else homeBtn.classList.remove('hidden-in-plan');
   }
 }
 function hide(id) { document.getElementById(id).style.display = 'none'; }
@@ -1013,4 +1016,39 @@ async function deleteHistorialGrupo(startRowIndex, count, btn) {
     await fetch(url);
   }
   await goToHistorial();
+}
+
+/* ─────────────────────────────────────────
+   MAPA POPUP
+───────────────────────────────────────── */
+function openMapaPopup(modo) {
+  const popup  = document.getElementById('mapa-popup');
+  const iframe = document.getElementById('mapa-iframe');
+  const title  = document.getElementById('mapa-popup-title');
+  const g      = selectedGrupo;
+
+  // Título
+  const grupoLabel = g === 'C' ? 'Congregación' : 'Grupo ' + g;
+  title.textContent = modo === 'registrar'
+    ? `Mapa — ${grupoLabel} · En progreso`
+    : `Mapa — ${grupoLabel}`;
+
+  // Pasar territorios en progreso si modo=registrar
+  let enProgresoParam = '';
+  if (modo === 'registrar') {
+    const enProg = Object.keys(territoriosData).filter(n => territoriosData[n].enProgreso);
+    enProgresoParam = '&enprogreso=' + encodeURIComponent(enProg.join(','));
+  }
+
+  iframe.src = `mapa.html?grupo=${g}&modo=${modo}${enProgresoParam}`;
+  popup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMapaPopup() {
+  const popup  = document.getElementById('mapa-popup');
+  const iframe = document.getElementById('mapa-iframe');
+  popup.style.display = 'none';
+  iframe.src = '';
+  document.body.style.overflow = '';
 }
