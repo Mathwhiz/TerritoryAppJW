@@ -141,8 +141,8 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .cover-title { font-size: 62px; font-weight: 500; color: #97C459; line-height: 1.1; margin-bottom: 10px; }
 .cover-subtitle { font-size: 22px; color: #639922; letter-spacing: 0.04em; margin-bottom: 52px; }
 .grupo-label { font-size: 20px; font-weight: 500; color: #ccc; margin-bottom: 16px; }
-.grupo-grid { display: flex; gap: 8px; margin: 16px 0 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
-.grupo-btn { width: 52px; height: 52px; border-radius: 14px; border: 1.5px solid #444; background: #2a2a2a; color: #eee; font-size: 20px; font-weight: 500; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+.grupo-grid { display: flex; gap: 10px; margin-bottom: 36px; flex-wrap: wrap; justify-content: center; width: 100%; }
+.grupo-btn { width: 64px; height: 64px; border-radius: 14px; border: 1.5px solid #444; background: #2a2a2a; font-size: 22px; font-weight: 500; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s; }
 .grupo-btn:hover { transform: scale(1.08); }
 .grupo-btn:active { transform: scale(0.96); }
 .grupo-btn.selected { border-width: 2px; }
@@ -246,6 +246,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .btn-home { position: fixed; top: 14px; right: 14px; width: 80px; height: 80px; border-radius: 16px; border: 0.5px solid #555; background: #2a2a2a; color: #aaa; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 50; transition: background 0.15s, color 0.15s; }
 .btn-home:hover { background: #333; color: #eee; }
 .btn-home.visible { display: flex; }
+.btn-home.hidden-in-plan { display: none !important; }
 .btn-mapa-float { position: fixed; top: 14px; right: 108px; width: 80px; height: 80px; border-radius: 16px; border: 0.5px solid #4A44A5; background: #1a1a2e; color: #7F77DD; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 50; transition: background 0.15s, color 0.15s; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
 .btn-mapa-float:hover { background: #22224a; color: #a09aff; }
 .btn-mapa-float.visible { display: flex; }
