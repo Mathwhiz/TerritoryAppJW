@@ -116,7 +116,7 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .hist-row-tel { color: #5DCAA5; }
 
 /* ── Planificador flexible ── */
-.plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-right: 0; }
+.plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-right: 196px; }
 .plan-titulo { font-size: 20px; font-weight: 500; color: #eee; }
 .plan-btns { display: flex; gap: 8px; align-items: center; }
 .btn-add-salida { font-size: 13px; padding: 7px 12px; background: #1a2e0a; color: #97C459; border: 0.5px solid #3B6D11; border-radius: 8px; cursor: pointer; }
@@ -246,11 +246,11 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .btn-home { position: fixed; top: 14px; right: 14px; width: 80px; height: 80px; border-radius: 16px; border: 0.5px solid #555; background: #2a2a2a; color: #aaa; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 50; transition: background 0.15s, color 0.15s; }
 .btn-home:hover { background: #333; color: #eee; }
 .btn-home.visible { display: flex; }
-.btn-home.hidden-in-plan { /* unused */ }
+.btn-home.hidden-in-plan { display: none !important; }
 .btn-mapa-float { position: fixed; top: 14px; right: 108px; width: 80px; height: 80px; border-radius: 16px; border: 0.5px solid #4A44A5; background: #1a1a2e; color: #7F77DD; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 50; transition: background 0.15s, color 0.15s; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
 .btn-mapa-float:hover { background: #22224a; color: #a09aff; }
 .btn-mapa-float.visible { display: flex; }
-.btn-home.hidden-in-plan { /* unused */ }
+.btn-home.hidden-in-plan { display: none !important; }
 
 /* ── Encabezado tabla final por grupo ── */
 .preview-header-wrap { margin-bottom: 16px; }
