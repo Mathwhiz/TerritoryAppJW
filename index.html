@@ -355,7 +355,11 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
       <button class="btn-add-salida" onclick="addSalida('campo')">+ Salida</button>
     </div>
   </div>
-  <p class="section-sub" id="week-info" style="margin-bottom:12px;"></p>
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;">
+    <button id="btn-semana-prev" onclick="cambiarSemana(-1)" style="font-size:18px;padding:2px 10px;border:0.5px solid #555;border-radius:8px;background:#2a2a2a;color:#aaa;cursor:pointer;">←</button>
+    <span id="week-info" style="font-size:14px;color:#888;"></span>
+    <button onclick="cambiarSemana(1)" style="font-size:18px;padding:2px 10px;border:0.5px solid #555;border-radius:8px;background:#2a2a2a;color:#aaa;cursor:pointer;">→</button>
+  </div>
   <div id="terr-loading" class="loading-wrap" style="display:none;">
     <div class="spinner"></div>
     <div class="loading-txt">Cargando territorios...</div>
@@ -664,9 +668,10 @@ function parseSheetDate(ds) {
   return ds;
 }
 
-function getWeekDates() {
+function getWeekDates(offset = 0) {
   const now = new Date(); const day = now.getDay();
-  const monday = new Date(now); monday.setDate(now.getDate()-(day===0?6:day-1));
+  const monday = new Date(now);
+  monday.setDate(now.getDate()-(day===0?6:day-1) + offset*7);
   function d(o){
     const x=new Date(monday);
     x.setDate(monday.getDate()+o);
@@ -767,7 +772,8 @@ async function goToStep1(){
   hide('view-cover');hide('view-preview');
   hide('view-modo');hide('view-registrar');hide('view-info');
   show('view-config'); setStep(1);
-  document.getElementById('week-info').textContent=`Semana del ${formatShort(WEEK.mon)} al ${formatShort(WEEK.sun)}`;
+  semanaOffset = 0;
+  updateWeekInfo();
 
   show('terr-loading');
   hide('terr-error');
@@ -950,7 +956,7 @@ async function guardarRegistros(){
 
 // Plantillas por defecto según grupo
 function getPlantilla(grupo) {
-  const week = getWeekDates();
+  const week = getWeekDates(semanaOffset);
   if (grupo === 'C') {
     return [
       { tipo:'campo', fecha: week.mon, hora:'18:30', conductor:'', encuentro:'', territorio:'' },
@@ -970,13 +976,14 @@ function getPlantilla(grupo) {
   ];
 }
 
-let salidas = []; // array de salidas actuales
+let salidas = [];
 let salidaCounter = 0;
+let semanaOffset = 0;
 
 function addSalida(tipo, data = {}) {
   if (salidas.length >= 20) return;
   const id = ++salidaCounter;
-  const week = getWeekDates();
+  const week = getWeekDates(semanaOffset);
   const s = {
     id,
     tipo,
@@ -1081,6 +1088,23 @@ function renderSalidaCard(s) {
   c.appendChild(div);
 }
 
+
+function updateWeekInfo() {
+  const w = getWeekDates(semanaOffset);
+  document.getElementById('week-info').textContent = `Semana del ${formatShort(w.mon)} al ${formatShort(w.sun)}`;
+  // Deshabilitar flecha izquierda si es semana actual
+  const prevBtn = document.getElementById('btn-semana-prev');
+  if (prevBtn) prevBtn.style.opacity = semanaOffset <= 0 ? '0.3' : '1';
+  if (prevBtn) prevBtn.style.pointerEvents = semanaOffset <= 0 ? 'none' : 'auto';
+}
+
+function cambiarSemana(dir) {
+  if (dir < 0 && semanaOffset <= 0) return;
+  semanaOffset += dir;
+  updateWeekInfo();
+  renderSalidas();
+}
+
 function renderSalidas() {
   const c = document.getElementById('salidas-container');
   c.innerHTML = '';
@@ -1145,6 +1169,15 @@ function generatePreview(){
   document.getElementById('preview-grupo-title').textContent=`${grupoLabel} — Salidas de la semana`;
   document.getElementById('preview-grupo-label').textContent=`${grupoLabel} · Congregación Sur`;
   const rows = [];
+
+  // Telefónica fija de congregación (dos filas arriba del todo)
+  if (selectedGrupo === 'C') {
+    const horaMan = document.getElementById('tel-fija-manana')?.value || '10:00';
+    const horaTar = document.getElementById('tel-fija-tarde')?.value || '17:00';
+    rows.push({ enc: 'ID: 844 0225 6636 · Clave: 479104', terr: 'TELEFÓNICA', tel: true, badge: '<div class="dia-badge" style="background:#0a2e24;color:#5DCAA5;">Lun a Sáb</div>', fecha: '', cond: '—', hora: horaMan.replace(':','.') });
+    rows.push({ enc: 'ID: 844 0225 6636 · Clave: 479104', terr: 'TELEFÓNICA', tel: true, badge: '<div class="dia-badge" style="background:#0a2e24;color:#5DCAA5;">Lun a Sáb</div>', fecha: '', cond: '—', hora: horaTar.replace(':','.') });
+  }
+
   salidas.forEach(s => {
     const fecha = document.getElementById('sal-fecha-' + s.id)?.value || '';
     const hora = document.getElementById('sal-hora-' + s.id)?.value || '';
