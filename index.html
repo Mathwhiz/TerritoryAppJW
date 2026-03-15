@@ -220,6 +220,23 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .fecha-num { font-size: 13px; color: #aaa; margin-top: 2px; }
 .cond-txt { font-size: 14px; font-weight: 500; color: #ddd; }
 .hora-txt { font-size: 15px; font-weight: 500; color: #eee; }
+
+/* ── PIN modal ── */
+.pin-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; box-sizing: border-box; }
+.pin-card { background: #2a2a2a; border: 2px solid #555; border-radius: 22px; padding: 2rem 1.5rem; width: 100%; max-width: 300px; text-align: center; }
+.pin-title { font-size: 24px; font-weight: 500; color: #eee; margin-bottom: 4px; }
+.pin-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+.pin-dots { display: flex; gap: 16px; justify-content: center; margin-bottom: 28px; }
+.pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #555; background: transparent; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+.pin-dot.filled { transform: scale(1.1); }
+.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.pin-btn { padding: 18px; font-size: 24px; font-weight: 500; border-radius: 14px; border: 0.5px solid #444; background: #1e1e1e; color: #eee; cursor: pointer; transition: background 0.1s, transform 0.1s; }
+.pin-btn:hover { background: #333; }
+.pin-btn:active { transform: scale(0.92); background: #444; }
+.pin-btn.pin-del { font-size: 18px; color: #F09595; border-color: #A32D2D; background: #2e1a1a; }
+.pin-btn.pin-del:hover { background: #3a2020; }
+.pin-error { font-size: 13px; color: #F09595; min-height: 20px; margin-top: 4px; }
+.pin-cancel { font-size: 13px; color: #888; background: none; border: none; cursor: pointer; margin-top: 10px; text-decoration: underline; }
 </style>
 </head>
 <body>
