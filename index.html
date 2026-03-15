@@ -99,6 +99,14 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .btn-guardar:hover { background: #0F6E56; }
 .btn-guardar:disabled { opacity: 0.35; cursor: not-allowed; }
 .save-status { text-align: center; font-size: 13px; margin-top: 10px; min-height: 20px; }
+/* ── Animaciones de transición ── */
+.view { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.btn-registrar-prog { width: 100%; padding: 11px; font-size: 14px; font-weight: 500; background: #2e1e00; color: #FAC775; border: 1.5px solid #EF9F27; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+.btn-registrar-prog:hover { background: #3a2500; }
+.btn-registrar-prog:disabled { opacity: 0.4; cursor: not-allowed; }
+.reg-prog-status { text-align: center; font-size: 13px; margin-top: 8px; min-height: 18px; }
+
 /* ── Planificador flexible ── */
 .plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .plan-titulo { font-size: 20px; font-weight: 500; color: #eee; }
@@ -213,7 +221,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 </div>
 
 <!-- PASO 0: Carátula -->
-<div id="view-cover">
+<div id="view-cover" class="view">
   <div class="cover">
     <div class="cover-icon">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
@@ -236,7 +244,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 
 
 <!-- PASO 0b: Elegir modo -->
-<div id="view-modo" style="display:none;">
+<div id="view-modo" class="view" style="display:none;">
   <div class="modo-wrap">
     <div class="modo-titulo">Grupo <span id="modo-grupo-label" style="font-size:inherit;">?</span></div>
     <button class="modo-card modo-planificar" onclick="goToStep1()">
@@ -271,7 +279,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 </div>
 
 <!-- REGISTRO: territorios en progreso -->
-<div id="view-registrar" style="display:none;">
+<div id="view-registrar" class="view" style="display:none;">
   <p class="section-title">Registrar territorios</p>
   <p class="section-sub">Grupo <span id="reg-grupo-label">?</span> &mdash; marc&#225; los que se completaron</p>
   <div id="reg-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
@@ -288,7 +296,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 
 
 <!-- INFO GRUPO -->
-<div id="view-info" style="display:none;">
+<div id="view-info" class="view" style="display:none;">
   <p class="section-title" id="info-titulo" style="font-size:36px;margin-bottom:4px;">Grupo ?</p>
   <p class="section-sub">Tocá un territorio para ver su info o cambiar su estado</p>
   <div id="info-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
@@ -347,7 +355,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
     </div>
 
 <!-- PASO 1: Planificador flexible -->
-<div id="view-config" style="display:none;">
+<div id="view-config" class="view" style="display:none;">
   <div class="plan-header">
     <p class="plan-titulo">Planificar salidas</p>
     <div class="plan-btns">
@@ -373,7 +381,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 </div>
 
 <!-- PASO 3: Vista previa -->
-<div id="view-preview" style="display:none;">
+<div id="view-preview" class="view" style="display:none;">
   <div class="preview-header-wrap">
     <span class="preview-title">Salidas</span>
     <span class="preview-subtitle" id="preview-grupo-label">Grupo · Congregación Sur</span>
@@ -392,6 +400,8 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
     <button class="btn-secondary" onclick="goBackToConfig()" style="flex:1;">← Editar</button>
     <button class="btn-save" onclick="guardarImagen()" style="flex:1;">Guardar imagen</button>
   </div>
+  <button class="btn-registrar-prog" id="btn-reg-prog" onclick="registrarEnProgreso()">Registrar territorios como en progreso</button>
+  <div class="reg-prog-status" id="reg-prog-status"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1141,8 +1151,62 @@ function condSelect(id, grupo) {
 }
 
 
+
+async function registrarEnProgreso() {
+  const btn = document.getElementById('btn-reg-prog');
+  const status = document.getElementById('reg-prog-status');
+  
+  // Recopilar territorios de campo con conductor
+  const territoriosARegistrar = [];
+  salidas.forEach(s => {
+    if (s.tipo !== 'campo') return;
+    const terr = document.getElementById('sal-terr-' + s.id)?.value;
+    const cond = document.getElementById('sal-cond-' + s.id)?.value;
+    const fecha = document.getElementById('sal-fecha-' + s.id)?.value;
+    if (terr && terr !== '—') {
+      territoriosARegistrar.push({ terr, cond: cond || '—', fecha });
+    }
+  });
+
+  if (territoriosARegistrar.length === 0) {
+    status.style.color = '#F09595';
+    status.textContent = 'No hay territorios de campo asignados.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.style.color = '#888';
+  status.textContent = `Registrando ${territoriosARegistrar.length} territorio(s)...`;
+
+  try {
+    for (const t of territoriosARegistrar) {
+      const url = SCRIPT_URL + '?action=saveRecord' +
+        '&grupo=' + encodeURIComponent(selectedGrupo) +
+        '&territorio=' + encodeURIComponent(t.terr) +
+        '&conductor=' + encodeURIComponent(t.cond) +
+        '&fechaInicio=' + encodeURIComponent(fmtDate(t.fecha)) +
+        '&fechaFin=';
+      await fetch(url);
+    }
+    territoriosData = {};
+    status.style.color = '#5DCAA5';
+    status.textContent = `✓ ${territoriosARegistrar.length} territorio(s) registrado(s) como en progreso`;
+    btn.disabled = true;
+    btn.textContent = 'Ya registrado ✓';
+  } catch(err) {
+    status.style.color = '#F09595';
+    status.textContent = 'Error: ' + err.message;
+    btn.disabled = false;
+  }
+}
+
 function goBackToConfig(){
   hide('view-preview');show('view-config');setStep(1);
+  // Resetear estado del botón de registro
+  const btn = document.getElementById('btn-reg-prog');
+  const status = document.getElementById('reg-prog-status');
+  if (btn) { btn.disabled = false; btn.textContent = 'Registrar territorios como en progreso'; }
+  if (status) status.textContent = '';
 }
 
 
