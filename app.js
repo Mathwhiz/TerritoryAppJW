@@ -207,18 +207,20 @@ function goToModo() {
   label.style.color = color;
 
   const cardColors = [
-    { border: '#378ADD', bg: 'rgba(55,138,221,0.15)' },
-    { border: '#1D9E75', bg: 'rgba(29,158,117,0.15)' },
-    { border: '#7F77DD', bg: 'rgba(127,119,221,0.15)' }
+    { border: '#378ADD', bg: 'rgba(55,138,221,0.15)'  },  // Planificar
+    { border: '#1D9E75', bg: 'rgba(29,158,117,0.15)'  },  // Registrar
+    { border: '#7F77DD', bg: 'rgba(127,119,221,0.15)' },  // Ver mi grupo
+    { border: '#FAC775', bg: 'rgba(250,199,117,0.15)' },  // Historial
+    { border: '#5DCAA5', bg: 'rgba(93,202,165,0.15)'  },  // Mapa
   ];
   document.querySelectorAll('.modo-card').forEach((card, i) => {
-    const cc = cardColors[i] || cardColors[2];
+    const cc = cardColors[i] ?? cardColors[cardColors.length - 1];
     card.style.borderColor = cc.border;
     card.onmouseenter = function() { this.style.background = cc.bg; this.style.transform = 'scale(1.02)'; };
     card.onmouseleave = function() { this.style.background = '#2a2a2a'; this.style.transform = ''; };
   });
   document.querySelectorAll('.modo-icon').forEach((icon, i) => {
-    const cc = cardColors[i] || cardColors[2];
+    const cc = cardColors[i] ?? cardColors[cardColors.length - 1];
     icon.style.background = cc.bg;
   });
 
