@@ -248,7 +248,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 </style>
 </head>
 <body>
-<button class="btn-home" id="btn-home" onclick="goToCover()" title="Inicio">
+<button class="btn-home" id="btn-home" onclick="goToModo()" title="Inicio">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 21V12h6v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
 </button>
 <div class="app">
@@ -322,7 +322,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
         <div class="modo-card-sub">Salidas de semanas anteriores</div>
       </div>
     </button>
-    <button class="btn-secondary" onclick="goToCover()" style="width:100%;max-width:320px;">&#8592; Volver</button>
+    <button class="btn-secondary" onclick="cerrarSesion()" style="width:100%;max-width:320px;border-color:#A32D2D;color:#F09595;">Cerrar sesión</button>
   </div>
 </div>
 
@@ -1559,6 +1559,17 @@ html2canvas(el, { backgroundColor: '#1e1e1e', scale: 1, width: 900 }).then(canva
     link.href = canvas.toDataURL('image/jpeg', 0.92);
     link.click();
   });
+}
+
+function cerrarSesion() {
+  selectedGrupo = null;
+  document.querySelectorAll('.grupo-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.style.background = '#2a2a2a';
+  });
+  document.getElementById('btn-start').classList.remove('enabled');
+  document.getElementById('btn-home').classList.remove('visible');
+  goToCover();
 }
   
 </script>
