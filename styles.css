@@ -121,7 +121,10 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .plan-btns { display: flex; gap: 8px; align-items: center; }
 .btn-add-salida { font-size: 13px; padding: 7px 12px; background: #1a2e0a; color: #97C459; border: 0.5px solid #3B6D11; border-radius: 8px; cursor: pointer; }
 .btn-add-tel { font-size: 13px; padding: 7px 12px; background: #0a2e24; color: #5DCAA5; border: 0.5px solid #1D9E75; border-radius: 8px; cursor: pointer; }
-/* btn-mapa-plan and btn-mapa-view replaced by btn-mapa-float */
+.btn-mapa-plan { padding: 7px 9px; background: #1a1a2e; color: #7F77DD; border: 0.5px solid #4A44A5; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-mapa-plan:hover { background: #22224a; }
+.btn-mapa-view { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 6px 10px; background: #1a1a2e; color: #7F77DD; border: 0.5px solid #4A44A5; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+.btn-mapa-view:hover { background: #22224a; }
 .salida-card-new { background: #2a2a2a; border: 0.5px solid #444; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; position: relative; }
 .salida-card-new.tipo-campo { border-left: 3px solid #378ADD; }
 .salida-card-new.tipo-tel { border-left: 3px solid #1D9E75; background: #0d2420; }
@@ -247,6 +250,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .btn-mapa-float { position: fixed; top: 14px; right: 108px; width: 80px; height: 80px; border-radius: 16px; border: 0.5px solid #4A44A5; background: #1a1a2e; color: #7F77DD; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 50; transition: background 0.15s, color 0.15s; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
 .btn-mapa-float:hover { background: #22224a; color: #a09aff; }
 .btn-mapa-float.visible { display: flex; }
+.btn-home.hidden-in-plan { display: none !important; }
 
 /* ── Encabezado tabla final por grupo ── */
 .preview-header-wrap { margin-bottom: 16px; }

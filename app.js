@@ -507,7 +507,7 @@ function renderSalidaCard(s) {
     </div>
     <div class="form-row">
       <div><label>Conductor</label><select id="sal-cond-${s.id}">${getConductorOptions(selectedGrupo, s.conductor)}</select></div>
-      ${esTel ? '' : `<div><label>Territorio</label><select id="sal-terr-${s.id}">${getTerritoryOptions()}</select></div>`}
+      ${esTel ? '' : `<div style="display:flex;align-items:flex-end;gap:6px;"><div style="flex:1;"><label>Territorio</label><select id="sal-terr-${s.id}">${getTerritoryOptions()}</select></div><button type="button" onclick="addExtraTerritory(${s.id})" style="margin-bottom:1px;padding:6px 9px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">+</button></div><div id="extra-terrs-${s.id}"></div>`}
     </div>
     <div>
       <label>Encuentro / Familia</label>
@@ -516,6 +516,17 @@ function renderSalidaCard(s) {
   c.appendChild(div);
 }
 
+
+function addExtraTerritory(salidaId) {
+  const container = document.getElementById('extra-terrs-' + salidaId);
+  if (!container) return;
+  const idx = container.children.length + 2; // 1-based, offset by main select
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:flex-end;gap:6px;margin-top:6px;';
+  const uid = `sal-terr-${salidaId}-x${idx}`;
+  wrap.innerHTML = `<div style="flex:1;"><select id="${uid}" style="width:100%;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">${getTerritoryOptions()}</select></div><button type="button" onclick="this.parentElement.remove()" style="margin-bottom:1px;padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
+  container.appendChild(wrap);
+}
 /* ─────────────────────────────────────────
    VISTA PREVIA
 ───────────────────────────────────────── */
@@ -561,8 +572,17 @@ function generatePreview() {
     const hora  = document.getElementById('sal-hora-'  + s.id)?.value || '';
     const cond  = document.getElementById('sal-cond-'  + s.id)?.value || '—';
     const enc   = document.getElementById('sal-enc-'   + s.id)?.value || '—';
-    const terr  = s.tipo === 'tel' ? 'TELEFÓNICA' : (document.getElementById('sal-terr-' + s.id)?.value || '—');
-    rows.push({ enc, terr, tel: s.tipo === 'tel', badge: getDiaBadge(fecha), fecha: formatShortFull(fecha).replace(/\//g,'-'), cond, hora: hora.replace(':','.') });
+    if (s.tipo === 'tel') {
+      rows.push({ enc, terr:'TELEFÓNICA', tel:true, badge:getDiaBadge(fecha), fecha:formatShortFull(fecha).replace(/\//g,'-'), cond, hora:hora.replace(':','.') });
+    } else {
+      const mainTerr = document.getElementById('sal-terr-' + s.id)?.value || '—';
+      const extraContainer = document.getElementById('extra-terrs-' + s.id);
+      const extraSelects = extraContainer ? extraContainer.querySelectorAll('select') : [];
+      const allTerrs = [mainTerr, ...[...extraSelects].map(sel => sel.value).filter(v => v && v !== '—')];
+      allTerrs.forEach(terr => {
+        rows.push({ enc, terr, tel:false, badge:getDiaBadge(fecha), fecha:formatShortFull(fecha).replace(/\//g,'-'), cond, hora:hora.replace(':','.') });
+      });
+    }
   });
   document.getElementById('preview-body').innerHTML = rows.map(r => `
     <tr${r.tel ? ' class="tel-row"' : ''}>
@@ -602,10 +622,12 @@ async function registrarEnProgreso() {
   const territoriosARegistrar = [];
   salidas.forEach(s => {
     if (s.tipo !== 'campo') return;
-    const terr = document.getElementById('sal-terr-' + s.id)?.value;
     const cond = document.getElementById('sal-cond-' + s.id)?.value;
     const fecha = document.getElementById('sal-fecha-' + s.id)?.value;
-    if (terr && terr !== '—') territoriosARegistrar.push({ terr, cond: cond || '—', fecha });
+    const mainTerrR = document.getElementById('sal-terr-' + s.id)?.value;
+    const extraContR = document.getElementById('extra-terrs-' + s.id);
+    const allTerrsR = [mainTerrR, ...(extraContR ? [...extraContR.querySelectorAll('select')].map(sel => sel.value) : [])].filter(v => v && v !== '—');
+    allTerrsR.forEach(terr => territoriosARegistrar.push({ terr, cond: cond || '—', fecha }));
   });
   if (territoriosARegistrar.length === 0) {
     status.style.color = '#F09595';
@@ -824,14 +846,14 @@ function renderInfoGrid() {
   g.innerHTML = '';
   Object.keys(territoriosData).sort((a,b) => parseInt(a)-parseInt(b)).forEach(n => {
     const t = territoriosData[n];
-    const estado   = configData[n] || 'normal';
+    const estado = configData[n] || 'normal';
     const lastDate = t.lastFin || t.lastIni;
-    const dias     = lastDate ? daysSince(lastDate) : null;
-    const col      = daysColor(dias);
-    const diasTxt  = dias !== null ? `${dias}d` : '—';
     const btn = document.createElement('button');
     btn.className = `info-btn estado-${estado}`;
     const estadoLabel = estado === 'normal' ? '' : estado === 'peligroso' ? '⚠ peligroso' : '✕ no predica';
+    const dias    = lastDate ? daysSince(lastDate) : null;
+    const col     = daysColor(dias);
+    const diasTxt = dias !== null ? `${dias}d` : '—';
     btn.innerHTML = `<div class="info-btn-num">${n}</div><div class="info-btn-date">${lastDate ? formatShortFull(lastDate) : 'Sin reg.'}</div><div class="info-btn-days" style="color:${col};">${diasTxt}</div><div class="info-btn-estado">${estadoLabel}</div>`;
     btn.onclick = () => openModal(n);
     g.appendChild(btn);
