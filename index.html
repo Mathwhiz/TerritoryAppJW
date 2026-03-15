@@ -249,7 +249,7 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
       <button class="grupo-btn" data-grupo="4" onclick="selectGrupo(this,4)">4</button>
       <button class="grupo-btn" data-grupo="C" onclick="selectGrupo(this,'C')" style="font-size:16px;width:88px;">Congr.</button>
     </div>
-    <button class="btn-start" id="btn-start" onclick="goToModo()">Empezar →</button>
+    <button class="btn-start" id="btn-start" onclick="openPin()">Empezar →</button>
   </div>
 </div>
 
@@ -801,6 +801,65 @@ async function deleteHistorialSalida(rowIndex, btn) {
   await goToHistorial();
 }
 
+
+const PINS = { 1:'1111', 2:'2222', 3:'3333', 4:'4444', C:'5555' };
+let pinBuffer = '';
+let pinGrupo = null;
+
+function openPin() {
+  pinGrupo = selectedGrupo;
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  const label = pinGrupo === 'C' ? 'Congregación' : 'Grupo ' + pinGrupo;
+  document.getElementById('pin-title').textContent = label;
+  const color = GCOLORS[pinGrupo] || '#97C459';
+  document.getElementById('pin-title').style.color = color;
+  document.getElementById('pin-card').style.borderColor = color;
+  document.getElementById('pin-modal').style.display = 'flex';
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
+}
+
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.classList.toggle('filled', i < pinBuffer.length);
+    const color = GCOLORS[pinGrupo] || '#97C459';
+    dot.style.borderColor = i < pinBuffer.length ? color : '#555';
+    dot.style.background = i < pinBuffer.length ? color : 'transparent';
+  }
+}
+
+function checkPin() {
+  const correct = PINS[pinGrupo];
+  if (pinBuffer === correct) {
+    document.getElementById('pin-modal').style.display = 'none';
+    pinBuffer = '';
+    goToModo();
+  } else {
+    document.getElementById('pin-error').textContent = 'PIN incorrecto, intentá de nuevo';
+    pinBuffer = '';
+    updatePinDots();
+  }
+}
+
+function pinCancel() {
+  document.getElementById('pin-modal').style.display = 'none';
+  pinBuffer = '';
+}
+
 function applyGrupoColors() {
   document.querySelectorAll('.grupo-btn').forEach(btn => {
     const g = btn.dataset.grupo;
@@ -847,7 +906,7 @@ const GROUP_BG = { 1:'rgba(55,138,221,0.15)', 2:'rgba(239,159,39,0.15)', 3:'rgba
 
 function goToModo(){
   selected=[];
-  hide('view-cover');hide('view-config');hide('view-preview');hide('view-registrar');hide('view-info');
+  hide('view-cover');hide('view-config');hide('view-preview');hide('view-registrar');hide('view-info');hide('view-historial');
   const label = document.getElementById('modo-grupo-label');
   label.textContent = selectedGrupo === 'C' ? 'Congregación' : selectedGrupo;
   const color = GROUP_COLORS[selectedGrupo] || '#97C459';
