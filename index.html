@@ -997,7 +997,7 @@ function show(id){
   document.getElementById(id).style.display='';
   const homeBtn = document.getElementById('btn-home');
   if (homeBtn) {
-    const showHome = ['view-modo','view-config','view-preview','view-registrar','view-info','view-historial'].includes(id);
+    const showHome = ['view-config','view-preview','view-registrar','view-info','view-historial'].includes(id);
     if (showHome) homeBtn.classList.add('visible');
   }
 }
