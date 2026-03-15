@@ -1020,6 +1020,7 @@ const GROUP_BG = { 1:'rgba(55,138,221,0.15)', 2:'rgba(239,159,39,0.15)', 3:'rgba
 
 function goToModo(){
   selected=[];
+  document.getElementById('btn-home').classList.remove('visible');
   hide('view-cover');hide('view-config');hide('view-preview');hide('view-registrar');hide('view-info');hide('view-historial');
   const label = document.getElementById('modo-grupo-label');
   label.textContent = selectedGrupo === 'C' ? 'Congregación' : selectedGrupo;
