@@ -283,11 +283,13 @@ function renderSemana(rows, containerId) {
 
 /* ─── Buscar hermano ─── */
 function getAllHermanos() {
-  const set = new Set();
+  const seen = new Map();
   Object.values(hermanos).forEach(lista => {
-    if (Array.isArray(lista)) lista.forEach(h => { if (h) set.add(h); });
+    if (Array.isArray(lista)) lista.forEach(h => {
+      if (h && !seen.has(norm(h))) seen.set(norm(h), h);
+    });
   });
-  return [...set].sort();
+  return [...seen.values()].sort((a,b) => norm(a).localeCompare(norm(b)));
 }
 
 function mostrarSugerencias(lista) {
