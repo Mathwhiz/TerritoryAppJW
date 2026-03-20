@@ -290,3 +290,52 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
 .semana-bloque-title { font-size: 12px; color: #7F77DD; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding: 4px 0; border-bottom: 0.5px solid #2a2a2a; }
 .asig-libre { opacity: 0.45; }
 .asig-rol-libre { font-size: 12px; padding: 3px 10px; border-radius: 20px; background: #2a2a2a; color: #555; border: 0.5px solid #333; }
+
+/* ── Gestionar hermanos ── */
+.hermano-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #2a2a2a; border: 0.5px solid #333; border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 8px; gap: 10px;
+}
+.hermano-info { flex: 1; min-width: 0; }
+.hermano-nombre { font-size: 14px; font-weight: 500; color: #eee; margin-bottom: 4px; }
+.hermano-roles { display: flex; flex-wrap: wrap; gap: 4px; }
+.rol-chip {
+  font-size: 11px; padding: 2px 7px; border-radius: 12px;
+  background: rgba(127,119,221,0.15); color: #9990ee;
+  border: 0.5px solid rgba(127,119,221,0.3);
+}
+.hermano-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-edit-hermano {
+  padding: 6px 8px; border-radius: 8px; border: 0.5px solid #444;
+  background: #2a2a2a; cursor: pointer; font-size: 14px;
+}
+.btn-edit-hermano:hover { background: #333; }
+.btn-del-hermano {
+  padding: 6px 8px; border-radius: 8px; border: 0.5px solid #A32D2D;
+  background: #2e1a1a; color: #F09595; cursor: pointer; font-size: 12px;
+}
+.btn-del-hermano:hover { background: #3a2020; }
+
+/* Modal hermano */
+.modal-hermano-card {
+  background: #252525; border: 1px solid #7F77DD; border-radius: 16px;
+  padding: 24px; width: 90%; max-width: 380px; max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-hermano-titulo { font-size: 20px; font-weight: 500; color: #7F77DD; margin-bottom: 16px; }
+.modal-hermano-roles-titulo { font-size: 12px; color: #888; margin-bottom: 8px; }
+.modal-roles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.rol-checkbox {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: #ccc; cursor: pointer;
+  background: #1e1e1e; border: 0.5px solid #333; border-radius: 8px;
+  padding: 7px 10px; transition: background 0.1s;
+}
+.rol-checkbox:hover { background: #2a2a2a; }
+.rol-checkbox input { accent-color: #7F77DD; width: 14px; height: 14px; cursor: pointer; }
+.rol-checkbox input:checked + span { color: #eee; }
+
+/* Card gestionar en encargado */
+.modo-gestionar { border-color: #1D9E75 !important; }
+.modo-gestionar:hover { background: rgba(29,158,117,0.08) !important; }

@@ -283,13 +283,11 @@ function renderSemana(rows, containerId) {
 
 /* ─── Buscar hermano ─── */
 function getAllHermanos() {
-  const seen = new Map();
+  const set = new Set();
   Object.values(hermanos).forEach(lista => {
-    if (Array.isArray(lista)) lista.forEach(h => {
-      if (h && !seen.has(norm(h))) seen.set(norm(h), h);
-    });
+    if (Array.isArray(lista)) lista.forEach(h => { if (h) set.add(h); });
   });
-  return [...seen.values()].sort((a,b) => norm(a).localeCompare(norm(b)));
+  return [...set].sort();
 }
 
 function mostrarSugerencias(lista) {
@@ -638,4 +636,138 @@ function guardarImagen() {
     link.href = canvas.toDataURL('image/jpeg', 0.92);
     link.click();
   });
+}
+
+/* ─── Gestionar hermanos ─── */
+let listaHermanos = []; // [{ nombre, roles: [] }]
+let hermanoEditando = null;
+
+const ROLES_OPCIONES = [
+  { key: 'LECTOR',               label: 'Lector' },
+  { key: 'SONIDO_1',             label: 'Sonido 1' },
+  { key: 'SONIDO_2',             label: 'Sonido 2' },
+  { key: 'PLATAFORMA',           label: 'Plataforma' },
+  { key: 'MICROFONISTAS_1',      label: 'Micrófonos 1' },
+  { key: 'MICROFONISTAS_2',      label: 'Micrófonos 2' },
+  { key: 'ACOMODADOR_AUDITORIO', label: 'Acod. Auditorio' },
+  { key: 'ACOMODADOR_ENTRADA',   label: 'Acod. Entrada' },
+  { key: 'PRESIDENTE',           label: 'Presidente' },
+  { key: 'REVISTAS',             label: 'Revistas' },
+  { key: 'PUBLICACIONES',        label: 'Publicaciones' },
+];
+
+async function goToGestionar() {
+  showView('view-gestionar');
+  show('gestionar-loading'); hide('gestionar-content');
+  setText('gestionar-search', '');
+  try {
+    const data = await apiFetch({ action: 'getLista' });
+    listaHermanos = data.hermanos || [];
+    hide('gestionar-loading');
+    renderLista(listaHermanos);
+    show('gestionar-content');
+  } catch(err) {
+    hide('gestionar-loading');
+    const c = document.getElementById('gestionar-lista');
+    if (c) c.innerHTML = `<div class="error-wrap">Error: ${err.message}</div>`;
+    show('gestionar-content');
+  }
+}
+
+function renderLista(lista) {
+  const c = document.getElementById('gestionar-lista');
+  if (!c) return;
+  if (lista.length === 0) {
+    c.innerHTML = '<div class="empty-state">No hay hermanos cargados</div>';
+    return;
+  }
+  c.innerHTML = lista.map(h => `
+    <div class="hermano-row">
+      <div class="hermano-info">
+        <div class="hermano-nombre">${h.nombre}</div>
+        <div class="hermano-roles">${h.roles.map(r => {
+          const found = ROLES_OPCIONES.find(o => o.key === r);
+          return `<span class="rol-chip">${found ? found.label : r}</span>`;
+        }).join('')}</div>
+      </div>
+      <div class="hermano-actions">
+        <button class="btn-edit-hermano" onclick="abrirEditarHermano('${h.nombre.replace(/'/g,"\\'")}')">✏️</button>
+        <button class="btn-del-hermano" onclick="confirmarEliminar('${h.nombre.replace(/'/g,"\\'")}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function filtrarLista() {
+  const q = norm(document.getElementById('gestionar-search')?.value || '');
+  const filtrada = listaHermanos.filter(h => norm(h.nombre).includes(q));
+  renderLista(filtrada);
+}
+
+function abrirNuevoHermano() {
+  hermanoEditando = null;
+  document.getElementById('modal-hermano-titulo').textContent = 'Nuevo hermano';
+  document.getElementById('modal-hermano-nombre').value = '';
+  ROLES_OPCIONES.forEach(o => {
+    const cb = document.getElementById('cb-' + o.key);
+    if (cb) cb.checked = false;
+  });
+  setText('modal-hermano-status', '');
+  show('modal-hermano');
+}
+
+function abrirEditarHermano(nombre) {
+  const h = listaHermanos.find(x => x.nombre === nombre);
+  if (!h) return;
+  hermanoEditando = h.nombre;
+  document.getElementById('modal-hermano-titulo').textContent = 'Editar hermano';
+  document.getElementById('modal-hermano-nombre').value = h.nombre;
+  ROLES_OPCIONES.forEach(o => {
+    const cb = document.getElementById('cb-' + o.key);
+    if (cb) cb.checked = h.roles.includes(o.key);
+  });
+  setText('modal-hermano-status', '');
+  show('modal-hermano');
+}
+
+function cerrarModalHermano() { hide('modal-hermano'); hermanoEditando = null; }
+
+async function guardarHermano() {
+  const nombre = document.getElementById('modal-hermano-nombre')?.value.trim();
+  if (!nombre) { setText('modal-hermano-status', 'Escribí un nombre'); return; }
+  const roles = ROLES_OPCIONES.filter(o => document.getElementById('cb-' + o.key)?.checked).map(o => o.key);
+  const status = document.getElementById('modal-hermano-status');
+  if (status) { status.style.color = '#888'; status.textContent = 'Guardando...'; }
+  try {
+    const params = { action: 'saveHermano', nombre, roles: roles.join(', ') };
+    if (hermanoEditando) params.nombreOriginal = hermanoEditando;
+    await apiFetch(params);
+    // Actualizar lista local
+    if (hermanoEditando) {
+      const idx = listaHermanos.findIndex(h => h.nombre === hermanoEditando);
+      if (idx >= 0) listaHermanos[idx] = { nombre, roles };
+    } else {
+      listaHermanos.push({ nombre, roles });
+      listaHermanos.sort((a,b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+    }
+    // Invalidar caché de hermanos para que se recarguen
+    hermanos = {};
+    hide('modal-hermano');
+    hermanoEditando = null;
+    renderLista(listaHermanos);
+    if (status) { status.style.color = '#5DCAA5'; status.textContent = '✓ Guardado'; }
+  } catch(err) {
+    if (status) { status.style.color = '#F09595'; status.textContent = 'Error: ' + err.message; }
+  }
+}
+
+async function confirmarEliminar(nombre) {
+  if (!confirm(`¿Eliminar a ${nombre} de la lista?`)) return;
+  try {
+    await apiFetch({ action: 'deleteHermano', nombre });
+    listaHermanos = listaHermanos.filter(h => h.nombre !== nombre);
+    hermanos = {};
+    renderLista(listaHermanos);
+  } catch(err) {
+    alert('Error al eliminar: ' + err.message);
+  }
 }
