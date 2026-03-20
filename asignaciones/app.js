@@ -41,11 +41,16 @@ function show(id) { const el = document.getElementById(id); if (el) el.style.dis
 function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 
+const VISTAS_ENCARGADO = ['view-editar','view-automatico','view-imagen','view-gestionar'];
+
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
   show(id);
   const btn = document.getElementById('btn-home');
-  if (btn) btn.classList.toggle('visible', id !== 'view-cover');
+  if (btn) {
+    btn.classList.toggle('visible', id !== 'view-cover');
+    btn.onclick = VISTAS_ENCARGADO.includes(id) ? goToEncargado : goToCover;
+  }
 }
 
 /* ─── Utilidades fecha ─── */
