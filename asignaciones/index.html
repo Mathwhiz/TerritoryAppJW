@@ -8,13 +8,21 @@
 </head>
 <body>
 
+<!-- Botón casita -->
+<button class="btn-home" id="btn-home" onclick="goToCover()" title="Inicio" style="display:none;">
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9 21V12h6v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+
 <div class="app">
 
-  <!-- ── COVER ── -->
+  <!-- COVER -->
   <div id="view-cover" class="view">
     <div class="cover">
       <div class="cover-icon">
-        <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#7F77DD" stroke-width="1.5" stroke-linecap="round"/>
           <circle cx="9" cy="7" r="4" stroke="#7F77DD" stroke-width="1.5"/>
           <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#7F77DD" stroke-width="1.5" stroke-linecap="round"/>
@@ -22,70 +30,84 @@
       </div>
       <div class="cover-title">Asignaciones</div>
       <div class="cover-subtitle">Congregación Sur</div>
+      <div class="grupo-label">¿Qué querés hacer?</div>
 
-      <button class="btn-ver" onclick="goToVerSemana()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
-        Ver semana actual
+      <button class="modo-card modo-ver" onclick="goToVerSemana()">
+        <div class="modo-icon" style="background:rgba(93,202,165,0.15);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#1D9E75" stroke-width="1.8"/>
+            <circle cx="12" cy="12" r="3" stroke="#1D9E75" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="modo-card-title">Ver semana actual</div>
+          <div class="modo-card-sub">Programación de esta semana</div>
+        </div>
       </button>
 
-      <button class="btn-buscar" onclick="goToBuscarHermano()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.8"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Buscar mi asignación
+      <button class="modo-card modo-buscar" onclick="goToBuscarHermano()">
+        <div class="modo-icon" style="background:rgba(55,138,221,0.15);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="#378ADD" stroke-width="1.8"/>
+            <path d="m21 21-4.35-4.35" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="modo-card-title">Mi asignación</div>
+          <div class="modo-card-sub">Buscar mi nombre esta semana</div>
+        </div>
       </button>
 
-      <div class="cover-divider"></div>
-
-      <button class="btn-encargado" onclick="goToPin()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Acceso encargado
+      <button class="modo-card modo-encargado" onclick="goToPin()">
+        <div class="modo-icon" style="background:rgba(127,119,221,0.12);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="11" width="18" height="11" rx="2" stroke="#7F77DD" stroke-width="1.8"/>
+            <path d="M7 11V7a5 5 0 0110 0v4" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="modo-card-title">Acceso encargado</div>
+          <div class="modo-card-sub">Editar y generar programación</div>
+        </div>
       </button>
 
-      <a href="../index.html" class="btn-volver-home">← Inicio</a>
+      <a href="../index.html" class="btn-secondary" style="width:100%;max-width:320px;text-align:center;text-decoration:none;margin-top:4px;">← Volver al inicio</a>
     </div>
   </div>
 
-  <!-- ── VER SEMANA ── -->
+  <!-- VER SEMANA -->
   <div id="view-semana" class="view" style="display:none;">
-    <div class="page-header">
-      <button class="back-btn" onclick="goToCover()">←</button>
-      <div>
-        <div class="page-title">Semana actual</div>
-        <div class="page-sub" id="semana-label">Cargando...</div>
-      </div>
-    </div>
+    <p class="section-title">Semana actual</p>
+    <p class="section-sub" id="semana-label">Cargando...</p>
     <div id="semana-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando programación...</div></div>
     <div id="semana-error" style="display:none;"></div>
-    <div id="semana-content" style="display:none;">
-      <div id="semana-reuniones"></div>
-    </div>
+    <div id="semana-content" style="display:none;"><div id="semana-reuniones"></div></div>
+    <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="goToCover()">← Volver</button>
   </div>
 
-  <!-- ── BUSCAR HERMANO ── -->
+  <!-- BUSCAR HERMANO -->
   <div id="view-buscar" class="view" style="display:none;">
-    <div class="page-header">
-      <button class="back-btn" onclick="goToCover()">←</button>
-      <div>
-        <div class="page-title">Mi asignación</div>
-        <div class="page-sub">Buscá tu nombre</div>
-      </div>
-    </div>
+    <p class="section-title">Mi asignación</p>
+    <p class="section-sub">Escribí tu nombre para ver en qué estás</p>
     <div class="buscar-wrap">
       <div class="search-box">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#888" stroke-width="1.8"/><path d="m21 21-4.35-4.35" stroke="#888" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input type="text" id="search-input" placeholder="Escribí tu nombre..." oninput="filtrarHermanos()" autocomplete="off">
+        <input type="text" id="search-input" placeholder="Ej: Flores Daniel..." oninput="filtrarHermanos()" autocomplete="off">
       </div>
       <div id="search-suggestions" class="search-suggestions" style="display:none;"></div>
+      <div id="buscar-loading" class="loading-wrap" style="display:none;"><div class="spinner"></div><div class="loading-txt">Buscando...</div></div>
       <div id="buscar-result" style="display:none;"></div>
       <div id="buscar-empty" class="buscar-empty" style="display:none;">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#444" stroke-width="1.5"/><path d="m21 21-4.35-4.35" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <p>No encontramos ese nombre</p>
+        <p>No encontramos ese nombre esta semana</p>
       </div>
     </div>
+    <button class="btn-secondary" style="width:100%;margin-top:16px;" onclick="goToCover()">← Volver</button>
   </div>
 
-  <!-- ── PIN MODAL ── -->
+  <!-- PIN MODAL -->
   <div id="pin-modal" class="pin-modal" style="display:none;">
-    <div class="pin-card">
+    <div class="pin-card" id="pin-card">
       <div class="pin-title">Encargado</div>
       <div class="pin-sub">Ingresá el PIN</div>
       <div class="pin-dots">
@@ -113,58 +135,48 @@
     </div>
   </div>
 
-  <!-- ── MENÚ ENCARGADO ── -->
+  <!-- MENÚ ENCARGADO -->
   <div id="view-encargado" class="view" style="display:none;">
-    <div class="page-header">
-      <button class="back-btn" onclick="cerrarSesionEncargado()">←</button>
-      <div>
-        <div class="page-title">Encargado</div>
-        <div class="page-sub">Panel de gestión</div>
-      </div>
-    </div>
+    <p class="section-title" style="color:#7F77DD;">Encargado</p>
+    <p class="section-sub">Panel de gestión de asignaciones</p>
     <div class="enc-menu">
-      <button class="enc-card" onclick="goToEditar()">
-        <div class="enc-icon" style="background:rgba(55,138,221,0.15);">
+      <button class="modo-card" onclick="goToEditar()" style="max-width:320px;width:100%;">
+        <div class="modo-icon" style="background:rgba(55,138,221,0.15);">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <div>
-          <div class="enc-card-title">Editar programación</div>
-          <div class="enc-card-sub">Modificar asignaciones de la semana</div>
+          <div class="modo-card-title">Editar programación</div>
+          <div class="modo-card-sub">Modificar asignaciones de la semana</div>
         </div>
       </button>
-      <button class="enc-card" onclick="goToAutomatico()">
-        <div class="enc-icon" style="background:rgba(29,158,117,0.15);">
+      <button class="modo-card" onclick="goToAutomatico()" style="max-width:320px;width:100%;">
+        <div class="modo-icon" style="background:rgba(29,158,117,0.15);">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <div>
-          <div class="enc-card-title">Generar automático</div>
-          <div class="enc-card-sub">Asignar roles respetando rotación</div>
+          <div class="modo-card-title">Generar automático</div>
+          <div class="modo-card-sub">Asignar roles respetando rotación</div>
         </div>
       </button>
-      <button class="enc-card" onclick="goToGenerarImagen()">
-        <div class="enc-icon" style="background:rgba(250,199,117,0.15);">
+      <button class="modo-card" onclick="goToGenerarImagen()" style="max-width:320px;width:100%;">
+        <div class="modo-icon" style="background:rgba(250,199,117,0.15);">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#FAC775" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" stroke="#FAC775" stroke-width="1.8"/><path d="M21 15l-5-5L5 21" stroke="#FAC775" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <div>
-          <div class="enc-card-title">Generar imagen</div>
-          <div class="enc-card-sub">Tabla lista para compartir por WhatsApp</div>
+          <div class="modo-card-title">Generar imagen</div>
+          <div class="modo-card-sub">Tabla para compartir por WhatsApp</div>
         </div>
       </button>
+      <button class="btn-secondary" onclick="cerrarSesionEncargado()" style="width:100%;max-width:320px;border-color:#A32D2D;color:#F09595;">Cerrar sesión</button>
     </div>
   </div>
 
-  <!-- ── EDITAR PROGRAMACIÓN ── -->
+  <!-- EDITAR PROGRAMACIÓN -->
   <div id="view-editar" class="view" style="display:none;">
-    <div class="page-header">
-      <button class="back-btn" onclick="showView('view-encargado')">←</button>
-      <div>
-        <div class="page-title">Editar programación</div>
-        <div class="page-sub" id="editar-semana-label"></div>
-      </div>
-    </div>
+    <p class="section-title">Editar programación</p>
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;">
       <button onclick="cambiarSemanaEdit(-1)" class="semana-nav-btn">←</button>
-      <span id="editar-semana-info" style="font-size:13px;color:#888;"></span>
+      <span id="editar-semana-info" style="font-size:14px;color:#888;"></span>
       <button onclick="cambiarSemanaEdit(1)" class="semana-nav-btn">→</button>
     </div>
     <div id="editar-loading" class="loading-wrap" style="display:none;"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
@@ -176,32 +188,23 @@
     <div class="save-status" id="editar-status"></div>
   </div>
 
-  <!-- ── AUTOMÁTICO ── -->
+  <!-- AUTOMÁTICO -->
   <div id="view-automatico" class="view" style="display:none;">
-    <div class="page-header">
-      <button class="back-btn" onclick="showView('view-encargado')">←</button>
-      <div>
-        <div class="page-title">Generar automático</div>
-        <div class="page-sub">Asignación inteligente por rotación</div>
-      </div>
-    </div>
+    <p class="section-title">Generar automático</p>
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;">
       <button onclick="cambiarSemanaAuto(-1)" class="semana-nav-btn">←</button>
-      <span id="auto-semana-info" style="font-size:13px;color:#888;"></span>
+      <span id="auto-semana-info" style="font-size:14px;color:#888;"></span>
       <button onclick="cambiarSemanaAuto(1)" class="semana-nav-btn">→</button>
     </div>
     <div class="auto-info">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#7F77DD" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round"/></svg>
-      Generá la programación automáticamente. Se respeta la rotación para que ningún hermano repita rol dos reuniones seguidas.
+      Genera la programación automáticamente respetando rotación para que ningún hermano repita rol dos reuniones seguidas.
     </div>
     <div id="auto-loading" class="loading-wrap" style="display:none;"><div class="spinner"></div><div class="loading-txt">Generando...</div></div>
     <div id="auto-preview" style="display:none;"></div>
     <div style="display:flex;gap:8px;margin-top:14px;">
       <button class="btn-secondary" onclick="showView('view-encargado')" style="flex:1;">← Volver</button>
-      <button class="btn-primary" onclick="generarAutomatico()" style="flex:2;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="margin-right:6px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Generar
-      </button>
+      <button class="btn-primary" onclick="generarAutomatico()" style="flex:2;">⚡ Generar</button>
     </div>
     <div id="auto-guardar-wrap" style="display:none;margin-top:8px;">
       <button class="btn-guardar" style="width:100%;" onclick="guardarAutomatico()">Guardar en planilla</button>
@@ -209,15 +212,10 @@
     </div>
   </div>
 
-  <!-- ── GENERAR IMAGEN ── -->
+  <!-- GENERAR IMAGEN -->
   <div id="view-imagen" class="view" style="display:none;">
-    <div class="page-header">
-      <button class="back-btn" onclick="showView('view-encargado')">←</button>
-      <div>
-        <div class="page-title">Tabla para WhatsApp</div>
-        <div class="page-sub" id="imagen-semana-label"></div>
-      </div>
-    </div>
+    <p class="section-title">Tabla para WhatsApp</p>
+    <p class="section-sub" id="imagen-semana-label"></p>
     <div id="imagen-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
     <div id="imagen-content" style="display:none;">
       <div class="card-tabla" id="card-tabla">
@@ -234,7 +232,7 @@
     </div>
   </div>
 
-</div><!-- /.app -->
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="app.js"></script>

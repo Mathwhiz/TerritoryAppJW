@@ -53,6 +53,11 @@ function hide(id) { document.getElementById(id).style.display = 'none'; }
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
   show(id);
+  const homeBtn = document.getElementById('btn-home');
+  if (homeBtn) {
+    const showHome = id !== 'view-cover';
+    homeBtn.classList.toggle('visible', showHome);
+  }
 }
 
 function getWeekDates(offset = 0) {
@@ -88,10 +93,25 @@ function semanaKeyDeFecha(fechaStr) {
   return `${String(monday.getDate()).padStart(2,'0')}/${String(monday.getMonth()+1).padStart(2,'0')}/${String(monday.getFullYear()).slice(-2)}`;
 }
 
-async function apiFetch(params) {
-  const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-  const r = await fetch(`${SCRIPT_URL}?${qs}`);
-  return r.json();
+function apiFetch(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = '_cb_' + Math.random().toString(36).slice(2);
+    const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timeout al conectar con el servidor'));
+    }, 15000);
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = (data) => { cleanup(); resolve(data); };
+    script.src = `${SCRIPT_URL}?${qs}&callback=${cbName}`;
+    script.onerror = () => { cleanup(); reject(new Error('Error de red al contactar el servidor')); };
+    document.head.appendChild(script);
+  });
 }
 
 /* ─── Navegación ─── */
