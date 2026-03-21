@@ -323,23 +323,31 @@ function renderTerritories() {
 
     // MODO PICKER
     if (_modoParam === 'picker') {
-      const c = GRUPO_COLORS[t.grupo] || { fill:'#888', border:'#555' };
-      // Si el grupo NO es el grupo del param y no es 'all', opacar más
       const isMainGroup = (t.grupo === _grupoParam);
-      const fillOp = isMainGroup ? 0.28 : 0.10;
+      // Color por días para el grupo principal, gris para los demás
+      let c;
+      if (isMainGroup) {
+        const info = territoriosInfo[baseNum(t.num)] || {};
+        const lastDate = info.lastFin || info.lastIni;
+        c = colorByDias(lastDate ? daysSince(lastDate) : null);
+      } else {
+        c = { fill:'#555', border:'#444' };
+      }
+      const fillOp = isMainGroup ? 0.40 : 0.08;
       const weight = isMainGroup ? 2 : 1;
-      const polygon = L.polygon(t.coords, { color:c.border, fillColor:c.fill, fillOpacity:fillOp, weight, opacity: isMainGroup ? 0.9 : 0.4 });
-      const label   = makeLabel(t.coords, isMainGroup ? c.fill : '#555', t.num);
-      polygon.on('click', () => togglePickerTerritory(t.num, polygon, t.grupo, label, c));
+      const opacity = isMainGroup ? 0.9 : 0.35;
+      const polygon = L.polygon(t.coords, { color:c.border, fillColor:c.fill, fillOpacity:fillOp, weight, opacity });
+      const label   = makeLabel(t.coords, isMainGroup ? c.fill : '#444', t.num);
+      polygon.on('click', () => togglePickerTerritory(t.num, polygon, t.grupo, label, c, { fillOp, weight, opacity, isMainGroup }));
       polygon.on('mouseover', () => {
         if (!pickerSelected.has(t.num))
-          polygon.setStyle({ fillOpacity: isMainGroup ? 0.45 : 0.2, weight: weight+0.5 });
+          polygon.setStyle({ fillOpacity: isMainGroup ? 0.60 : 0.15, weight: weight+0.5 });
       });
       polygon.on('mouseout', () => {
         if (!pickerSelected.has(t.num))
-          polygon.setStyle({ fillOpacity: isMainGroup ? 0.28 : 0.10, weight });
+          polygon.setStyle({ fillOpacity: fillOp, weight });
       });
-      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, baseStyle:{ fillOp, weight, isMainGroup }, c });
+      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, baseStyle:{ fillOp, weight, opacity, isMainGroup }, c });
       polygon.addTo(map); label.addTo(map);
       return;
     }
@@ -364,22 +372,19 @@ function renderTerritories() {
 }
 
 // ── Lógica picker ──
-function togglePickerTerritory(num, polygon, grupo, label, c) {
+function togglePickerTerritory(num, polygon, grupo, label, c, baseStyleOverride) {
   map.closePopup();
   if (pickerSelected.has(num)) {
-    // Deseleccionar
     pickerSelected.delete(num);
     const layer = allLayers.find(l => l.numero === num);
     if (layer) {
-      const { fillOp, weight, isMainGroup } = layer.baseStyle;
-      polygon.setStyle({ fillColor: c.fill, color: c.border, fillOpacity: fillOp, weight, opacity: isMainGroup ? 0.9 : 0.4 });
+      const { fillOp, weight, opacity, isMainGroup } = layer.baseStyle;
+      polygon.setStyle({ fillColor: layer.c.fill, color: layer.c.border, fillOpacity: fillOp, weight, opacity });
     }
     showToast(`Territorio ${num} quitado`, true);
   } else {
-    // Seleccionar
     pickerSelected.add(num);
-    // Highlight verde brillante
-    polygon.setStyle({ fillColor:'#97C459', color:'#3B6D11', fillOpacity:0.65, weight:3, opacity:1 });
+    polygon.setStyle({ fillColor:'#97C459', color:'#3B6D11', fillOpacity:0.70, weight:3, opacity:1 });
     showToast(`Territorio ${num} agregado ✓`);
   }
   updatePickerBar();
@@ -403,8 +408,8 @@ function clearPickerSelection() {
   pickerSelected.forEach(num => {
     const layer = allLayers.find(l => l.numero === num);
     if (layer) {
-      const { fillOp, weight, isMainGroup } = layer.baseStyle;
-      layer.polygon.setStyle({ fillColor: layer.c.fill, color: layer.c.border, fillOpacity: fillOp, weight, opacity: isMainGroup ? 0.9 : 0.4 });
+      const { fillOp, weight, opacity } = layer.baseStyle;
+      layer.polygon.setStyle({ fillColor: layer.c.fill, color: layer.c.border, fillOpacity: fillOp, weight, opacity });
     }
   });
   pickerSelected.clear();
@@ -425,11 +430,10 @@ function confirmPickerSelection() {
 // ── Aplicar filtro visual en modo picker ──
 function applyPickerFilter(grupo) {
   if (allLayers.length === 0) return;
-  // En modo picker ya renderizamos con opacidad diferenciada, solo centramos
   const visible = allLayers.filter(l => l.group === grupo);
   if (visible.length) {
     const bounds = L.latLngBounds(visible.map(l => l.polygon.getBounds()));
-    map.fitBounds(bounds, { padding:[30,30], maxZoom:16 });
+    map.flyToBounds(bounds, { padding:[24,24], maxZoom:16, minZoom:16, duration:0.4 });
   } else if (allLayers.length) {
     const bounds = L.latLngBounds(allLayers.map(l => l.polygon.getBounds()));
     map.fitBounds(bounds, { padding:[20,20] });
@@ -531,9 +535,14 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="legend-row"><div class="legend-dot" style="background:#F44336;"></div>> 120 días</div>
       <div class="legend-row"><div class="legend-dot" style="background:#555;"></div>Sin registro</div>`;
   } else if (_modoParam === 'picker') {
-    const gc = GRUPO_COLORS[_grupoParam];
     legend.innerHTML = `
-      <div class="legend-row"><div class="legend-dot" style="background:${gc ? gc.fill : '#888'};"></div>Tu grupo</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#4CAF50;"></div>≤ 30 días</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#8BC34A;"></div>31–45 días</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#FFC107;"></div>46–60 días</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#FF9800;"></div>61–90 días</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#FF5722;"></div>91–120 días</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#F44336;"></div>> 120 días</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#555;"></div>Sin registro</div>
       <div class="legend-row"><div class="legend-dot" style="background:#97C459;border:1.5px solid #3B6D11;"></div>Seleccionado</div>`;
   }
 });

@@ -512,8 +512,8 @@ function renderSalidaCard(s) {
             <select id="sal-terr-${s.id}">${getTerritoryOptions()}</select>
           </div>
           <button type="button" onclick="openMapaPicker(${s.id})" title="Elegir del mapa"
-            style="margin-bottom:1px;padding:6px 9px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;white-space:nowrap;">
-            🗺
+            style="margin-bottom:1px;padding:6px 14px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;white-space:nowrap;font-weight:500;">
+            🗺 Mapa
           </button>
           <button type="button" onclick="addExtraTerritory(${s.id})"
             style="margin-bottom:1px;padding:6px 9px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">+</button>
