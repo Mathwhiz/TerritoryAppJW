@@ -1,12 +1,11 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxy3WmKkJjSsEXM8qI0lCUdQn76o2v-55zZavlx_lJ_-SVZUip4vFsl0WXAPcPgMfDE/exec';
 
+// ── Roles que aparecen en la tabla semanal (asignaciones por reunión) ──
 const ROLES_LABELS = {
   LECTOR:               'Lector',
-  SONIDO_1:             'Sonido 1',
-  SONIDO_2:             'Sonido 2',
+  SONIDO:               'Sonido',
   PLATAFORMA:           'Plataforma',
-  MICROFONISTAS_1:      'Micrófonos 1',
-  MICROFONISTAS_2:      'Micrófonos 2',
+  MICROFONISTAS:        'Micrófonos',
   ACOMODADOR_AUDITORIO: 'Acod. Auditorio',
   ACOMODADOR_ENTRADA:   'Acod. Entrada',
   PRESIDENTE:           'Presidente',
@@ -14,6 +13,33 @@ const ROLES_LABELS = {
   PUBLICACIONES:        'Publicaciones',
 };
 const ROLES = Object.keys(ROLES_LABELS);
+
+// ── Roles que SOLO existen en la lista de hermanos (no en tabla semanal) ──
+const ROLES_LISTA_EXTRA = {
+  CONDUCTOR_GRUPO_1:     'Conductor Grupo 1',
+  CONDUCTOR_GRUPO_2:     'Conductor Grupo 2',
+  CONDUCTOR_GRUPO_3:     'Conductor Grupo 3',
+  CONDUCTOR_GRUPO_4:     'Conductor Grupo 4',
+  CONDUCTOR_CONGREGACION:'Conductor Congregación',
+};
+
+// Todos los roles disponibles para la gestión de hermanos
+const ROLES_OPCIONES = [
+  { key: 'LECTOR',                label: 'Lector' },
+  { key: 'SONIDO',                label: 'Sonido' },
+  { key: 'PLATAFORMA',            label: 'Plataforma' },
+  { key: 'MICROFONISTAS',         label: 'Micrófonos' },
+  { key: 'ACOMODADOR_AUDITORIO',  label: 'Acod. Auditorio' },
+  { key: 'ACOMODADOR_ENTRADA',    label: 'Acod. Entrada' },
+  { key: 'PRESIDENTE',            label: 'Presidente' },
+  { key: 'REVISTAS',              label: 'Revistas' },
+  { key: 'PUBLICACIONES',         label: 'Publicaciones' },
+  { key: 'CONDUCTOR_GRUPO_1',     label: 'Conductor Grupo 1' },
+  { key: 'CONDUCTOR_GRUPO_2',     label: 'Conductor Grupo 2' },
+  { key: 'CONDUCTOR_GRUPO_3',     label: 'Conductor Grupo 3' },
+  { key: 'CONDUCTOR_GRUPO_4',     label: 'Conductor Grupo 4' },
+  { key: 'CONDUCTOR_CONGREGACION',label: 'Conductor Congregación' },
+];
 
 const DIA_COLORS = {
   'Lunes':'#85B7EB','Martes':'#85B7EB','Miércoles':'#C0DD97',
@@ -25,7 +51,7 @@ const DIA_BG = {
 };
 
 /* ─── PIN hardcodeado ─── */
-const PIN_ENCARGADO = '1234'; // cambiá acá si querés otro PIN
+const PIN_ENCARGADO = '1234';
 
 /* ─── Estado global ─── */
 let hermanos      = {};
@@ -355,14 +381,12 @@ async function buscarHermano(nombre) {
     }
     hide('buscar-loading');
 
-    // Todas las filas desde hace 7 días en adelante
     const hoy = new Date(); hoy.setHours(0,0,0,0);
     const desde = new Date(hoy); desde.setDate(hoy.getDate() - 7);
     const filasProximas = todasLasFilas
       .filter(r => { const d = parseFecha(r.fecha); return d && d >= desde; })
       .sort((a,b) => parseFecha(a.fecha) - parseFecha(b.fecha));
 
-    // Agrupar por semana (lunes)
     const semanas = {};
     const ordenSemanas = [];
     filasProximas.forEach(row => {
@@ -380,7 +404,6 @@ async function buscarHermano(nombre) {
     let tieneAlgo = false;
 
     ordenSemanas.slice(0,8).forEach(semKey => {
-      // ordenar siempre miércoles antes que sábado
       const filas = semanas[semKey].sort((a,b) => parseFecha(a.fecha) - parseFecha(b.fecha));
       const label = getLabelSemana(filas);
       html += `<div class="semana-bloque"><div class="semana-bloque-title">Semana del ${label}</div>`;
@@ -464,7 +487,6 @@ function renderEditar(rows, lunesDate) {
   const c = document.getElementById('editar-content');
   if (!c) return;
   c.innerHTML = '';
-  // Siempre miércoles (offset 2) y sábado (offset 5) desde el lunes
   const diasSemana = [
     { dia: 'Miércoles', offset: 2 },
     { dia: 'Sábado',    offset: 5 },
@@ -480,7 +502,6 @@ function renderEditar(rows, lunesDate) {
     div.dataset.fecha = fecha;
     div.dataset.dia = dia;
     const rolesHTML = ROLES.map(r => {
-      // Presidente no va en miércoles
       if (r === 'PRESIDENTE' && dia === 'Miércoles') return '';
       const lista = hermanos[r] || [];
       const valActual = existing[r] || '';
@@ -644,22 +665,8 @@ function guardarImagen() {
 }
 
 /* ─── Gestionar hermanos ─── */
-let listaHermanos = []; // [{ nombre, roles: [] }]
+let listaHermanos = [];
 let hermanoEditando = null;
-
-const ROLES_OPCIONES = [
-  { key: 'LECTOR',               label: 'Lector' },
-  { key: 'SONIDO_1',             label: 'Sonido 1' },
-  { key: 'SONIDO_2',             label: 'Sonido 2' },
-  { key: 'PLATAFORMA',           label: 'Plataforma' },
-  { key: 'MICROFONISTAS_1',      label: 'Micrófonos 1' },
-  { key: 'MICROFONISTAS_2',      label: 'Micrófonos 2' },
-  { key: 'ACOMODADOR_AUDITORIO', label: 'Acod. Auditorio' },
-  { key: 'ACOMODADOR_ENTRADA',   label: 'Acod. Entrada' },
-  { key: 'PRESIDENTE',           label: 'Presidente' },
-  { key: 'REVISTAS',             label: 'Revistas' },
-  { key: 'PUBLICACIONES',        label: 'Publicaciones' },
-];
 
 async function goToGestionar() {
   showView('view-gestionar');
@@ -746,7 +753,6 @@ async function guardarHermano() {
     const params = { action: 'saveHermano', nombre, roles: roles.join(', ') };
     if (hermanoEditando) params.nombreOriginal = hermanoEditando;
     await apiFetch(params);
-    // Actualizar lista local
     if (hermanoEditando) {
       const idx = listaHermanos.findIndex(h => h.nombre === hermanoEditando);
       if (idx >= 0) listaHermanos[idx] = { nombre, roles };
@@ -754,7 +760,6 @@ async function guardarHermano() {
       listaHermanos.push({ nombre, roles });
       listaHermanos.sort((a,b) => norm(a.nombre).localeCompare(norm(b.nombre)));
     }
-    // Invalidar caché de hermanos para que se recarguen
     hermanos = {};
     hide('modal-hermano');
     hermanoEditando = null;

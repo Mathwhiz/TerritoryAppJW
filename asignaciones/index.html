@@ -260,20 +260,34 @@
         <label class="edit-rol-label">Nombre</label>
         <input type="text" id="modal-hermano-nombre" placeholder="Ej: Flores Daniel" style="width:100%;font-size:14px;padding:8px 10px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">
       </div>
-      <div class="modal-hermano-roles-titulo">Roles asignados</div>
-      <div class="modal-roles-grid">
+
+      <!-- Roles de reunión -->
+      <div class="modal-hermano-roles-titulo">Roles de reunión</div>
+      <div class="modal-roles-grid" style="margin-bottom:14px;">
         <label class="rol-checkbox"><input type="checkbox" id="cb-LECTOR"><span>Lector</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-SONIDO_1"><span>Sonido 1</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-SONIDO_2"><span>Sonido 2</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="cb-SONIDO"><span>Sonido</span></label>
         <label class="rol-checkbox"><input type="checkbox" id="cb-PLATAFORMA"><span>Plataforma</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-MICROFONISTAS_1"><span>Micrófonos 1</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-MICROFONISTAS_2"><span>Micrófonos 2</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="cb-MICROFONISTAS"><span>Micrófonos</span></label>
         <label class="rol-checkbox"><input type="checkbox" id="cb-ACOMODADOR_AUDITORIO"><span>Acod. Auditorio</span></label>
         <label class="rol-checkbox"><input type="checkbox" id="cb-ACOMODADOR_ENTRADA"><span>Acod. Entrada</span></label>
         <label class="rol-checkbox"><input type="checkbox" id="cb-PRESIDENTE"><span>Presidente</span></label>
         <label class="rol-checkbox"><input type="checkbox" id="cb-REVISTAS"><span>Revistas</span></label>
         <label class="rol-checkbox"><input type="checkbox" id="cb-PUBLICACIONES"><span>Publicaciones</span></label>
       </div>
+
+      <!-- Roles de conductor (solo para territorios) -->
+      <div class="modal-hermano-roles-titulo" style="margin-bottom:6px;">
+        Conductores
+        <span style="font-size:11px;color:#555;font-weight:400;margin-left:6px;">— para territorios</span>
+      </div>
+      <div class="modal-roles-grid">
+        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_1"><span>Conductor Grupo 1</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_2"><span>Conductor Grupo 2</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_3"><span>Conductor Grupo 3</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_4"><span>Conductor Grupo 4</span></label>
+        <label class="rol-checkbox" style="grid-column: span 2;"><input type="checkbox" id="cb-CONDUCTOR_CONGREGACION"><span>Conductor Congregación</span></label>
+      </div>
+
       <div class="save-status" id="modal-hermano-status"></div>
       <div style="display:flex;gap:8px;margin-top:12px;">
         <button class="btn-secondary" onclick="cerrarModalHermano()" style="flex:1;">Cancelar</button>
