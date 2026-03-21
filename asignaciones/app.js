@@ -3,9 +3,11 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxy3WmKkJjSsEXM8qI0l
 // ── Roles que aparecen en la tabla semanal (asignaciones por reunión) ──
 const ROLES_LABELS = {
   LECTOR:               'Lector',
-  SONIDO:               'Sonido',
+  SONIDO_1:             'Sonido 1',
+  SONIDO_2:             'Sonido 2',
   PLATAFORMA:           'Plataforma',
-  MICROFONISTAS:        'Micrófonos',
+  MICROFONISTAS_1:      'Micrófonos 1',
+  MICROFONISTAS_2:      'Micrófonos 2',
   ACOMODADOR_AUDITORIO: 'Acod. Auditorio',
   ACOMODADOR_ENTRADA:   'Acod. Entrada',
   PRESIDENTE:           'Presidente',
@@ -13,6 +15,15 @@ const ROLES_LABELS = {
   PUBLICACIONES:        'Publicaciones',
 };
 const ROLES = Object.keys(ROLES_LABELS);
+
+// Mapeo: columna de programación → lista de hermanos a usar en el selector
+// SONIDO_1 y SONIDO_2 comparten la lista del rol SONIDO; igual para MICROFONISTAS
+const ROL_LISTA_MAP = {
+  SONIDO_1:        'SONIDO',
+  SONIDO_2:        'SONIDO',
+  MICROFONISTAS_1: 'MICROFONISTAS',
+  MICROFONISTAS_2: 'MICROFONISTAS',
+};
 
 // ── Roles que SOLO existen en la lista de hermanos (no en tabla semanal) ──
 const ROLES_LISTA_EXTRA = {
@@ -503,7 +514,8 @@ function renderEditar(rows, lunesDate) {
     div.dataset.dia = dia;
     const rolesHTML = ROLES.map(r => {
       if (r === 'PRESIDENTE' && dia === 'Miércoles') return '';
-      const lista = hermanos[r] || [];
+      const listaKey = ROL_LISTA_MAP[r] || r;
+      const lista = hermanos[listaKey] || [];
       const valActual = existing[r] || '';
       const opts = `<option value="">— Sin asignar —</option>` +
         lista.map(h => `<option value="${h}" ${norm(h)===norm(valActual)?'selected':''}>${h}</option>`).join('');
@@ -572,11 +584,15 @@ function generarAutomatico() {
     return;
   }
   const indices = {};
-  ROLES.forEach(r => { indices[r] = todasLasFilas.length % Math.max((hermanos[r]||[]).length, 1); });
+  ROLES.forEach(r => {
+    const listaKey = ROL_LISTA_MAP[r] || r;
+    indices[r] = todasLasFilas.length % Math.max((hermanos[listaKey]||[]).length, 1);
+  });
   autoResult = fechasAGenerar.map(({ fecha, dia }) => {
     const entry = { fecha, dia };
     ROLES.forEach(r => {
-      const lista = hermanos[r] || [];
+      const listaKey = ROL_LISTA_MAP[r] || r;
+      const lista = hermanos[listaKey] || [];
       if (lista.length === 0) { entry[r] = ''; return; }
       entry[r] = lista[indices[r] % lista.length];
       indices[r]++;
