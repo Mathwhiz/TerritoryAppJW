@@ -46,14 +46,13 @@ const DIA_COLORS = {
 ───────────────────────────────────────── */
 function show(id) {
   document.getElementById(id).style.display = '';
-  // Only manage floating buttons when showing a top-level view
   if (!id.startsWith('view-')) return;
   const homeBtn = document.getElementById('btn-home');
   const mapaBtn = document.getElementById('btn-mapa-float');
   if (homeBtn) {
     const showHome = ['view-config','view-preview','view-registrar','view-info','view-historial'].includes(id);
     if (showHome) homeBtn.classList.add('visible');
-    homeBtn.classList.remove('hidden-in-plan');  // casita visible en todas las vistas
+    homeBtn.classList.remove('hidden-in-plan');
   }
   if (mapaBtn) {
     if (id === 'view-info') {
@@ -159,15 +158,12 @@ async function fetchGrupo(grupo) {
 /* ─────────────────────────────────────────
    COVER / NAVEGACIÓN
 ───────────────────────────────────────── */
-// ─── Recuperar sesión si venimos del mapa ───
 (function() {
   const grupoGuardado = sessionStorage.getItem('selectedGrupo');
   if (grupoGuardado) {
     sessionStorage.removeItem('selectedGrupo');
-    // Esperar a que el DOM esté listo
     window.addEventListener('DOMContentLoaded', () => {
       selectedGrupo = isNaN(grupoGuardado) ? grupoGuardado : parseInt(grupoGuardado);
-      // Simular selección visual del botón
       document.querySelectorAll('.grupo-btn').forEach(btn => {
         if (String(btn.dataset.grupo) === String(grupoGuardado)) {
           selectGrupo(btn, isNaN(grupoGuardado) ? grupoGuardado : parseInt(grupoGuardado));
@@ -226,11 +222,11 @@ function goToModo() {
   label.style.color = color;
 
   const cardColors = [
-    { border: '#378ADD', bg: 'rgba(55,138,221,0.15)'  },  // Planificar
-    { border: '#1D9E75', bg: 'rgba(29,158,117,0.15)'  },  // Registrar
-    { border: '#7F77DD', bg: 'rgba(127,119,221,0.15)' },  // Ver mi grupo
-    { border: '#FAC775', bg: 'rgba(250,199,117,0.15)' },  // Historial
-    { border: '#5DCAA5', bg: 'rgba(93,202,165,0.15)'  },  // Mapa
+    { border: '#378ADD', bg: 'rgba(55,138,221,0.15)'  },
+    { border: '#1D9E75', bg: 'rgba(29,158,117,0.15)'  },
+    { border: '#7F77DD', bg: 'rgba(127,119,221,0.15)' },
+    { border: '#FAC775', bg: 'rgba(250,199,117,0.15)' },
+    { border: '#5DCAA5', bg: 'rgba(93,202,165,0.15)'  },
   ];
   document.querySelectorAll('.modo-card').forEach((card, i) => {
     const cc = cardColors[i] ?? cardColors[cardColors.length - 1];
@@ -508,7 +504,22 @@ function renderSalidaCard(s) {
     </div>
     <div class="form-row">
       <div><label>Conductor</label><select id="sal-cond-${s.id}">${getConductorOptions(selectedGrupo, s.conductor)}</select></div>
-      ${esTel ? '' : `<div><div style="display:flex;align-items:flex-end;gap:6px;"><div style="flex:1;"><label>Territorio</label><select id="sal-terr-${s.id}">${getTerritoryOptions()}</select></div><button type="button" onclick="addExtraTerritory(${s.id})" style="margin-bottom:1px;padding:6px 9px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">+</button></div><div id="extra-terrs-${s.id}"></div></div>`}
+      ${esTel ? '' : `
+      <div>
+        <div style="display:flex;align-items:flex-end;gap:6px;">
+          <div style="flex:1;">
+            <label>Territorio</label>
+            <select id="sal-terr-${s.id}">${getTerritoryOptions()}</select>
+          </div>
+          <button type="button" onclick="openMapaPicker(${s.id})" title="Elegir del mapa"
+            style="margin-bottom:1px;padding:6px 9px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;white-space:nowrap;">
+            🗺
+          </button>
+          <button type="button" onclick="addExtraTerritory(${s.id})"
+            style="margin-bottom:1px;padding:6px 9px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">+</button>
+        </div>
+        <div id="extra-terrs-${s.id}"></div>
+      </div>`}
     </div>
     <div>
       <label>Encuentro / Familia</label>
@@ -516,7 +527,6 @@ function renderSalidaCard(s) {
     </div>`;
   c.appendChild(div);
 }
-
 
 function addExtraTerritory(salidaId) {
   const container = document.getElementById('extra-terrs-' + salidaId);
@@ -528,6 +538,78 @@ function addExtraTerritory(salidaId) {
   wrap.innerHTML = `<select id="${uid}" style="flex:1;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">${getTerritoryOptions()}</select><button type="button" onclick="this.parentElement.remove()" style="padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
   container.appendChild(wrap);
 }
+
+/* ─────────────────────────────────────────
+   PICKER DE MAPA
+───────────────────────────────────────── */
+function openMapaPicker(salidaId) {
+  const g = selectedGrupo;
+  const popup  = document.getElementById('mapa-popup');
+  const iframe = document.getElementById('mapa-iframe');
+  const title  = document.getElementById('mapa-popup-title');
+
+  const grupoLabel = g === 'C' ? 'Congregación' : 'Grupo ' + g;
+  title.textContent = `Elegir territorio — ${grupoLabel}`;
+
+  iframe.src = `mapa.html?grupo=${g}&modo=picker&salidaid=${salidaId}`;
+  popup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+// Listener de mensajes del iframe (picker-result / picker-cancel)
+window.addEventListener('message', function(event) {
+  const data = event.data;
+  if (!data || !data.type) return;
+
+  if (data.type === 'picker-result') {
+    const { salidaId, territorios } = data;
+    closeMapaPopup();
+    if (!territorios || territorios.length === 0) return;
+
+    // Asignar primer territorio al selector principal
+    const mainSel = document.getElementById('sal-terr-' + salidaId);
+    if (mainSel && territorios[0]) {
+      const opt = [...mainSel.options].find(o => o.value === territorios[0]);
+      if (opt) {
+        mainSel.value = territorios[0];
+      } else {
+        const newOpt = document.createElement('option');
+        newOpt.value = territorios[0];
+        newOpt.textContent = `Terr. ${territorios[0]}`;
+        newOpt.selected = true;
+        mainSel.appendChild(newOpt);
+      }
+    }
+
+    // Los adicionales van a extra-terrs
+    const extraContainer = document.getElementById('extra-terrs-' + salidaId);
+    if (extraContainer && territorios.length > 1) {
+      territorios.slice(1).forEach(num => {
+        const idx = extraContainer.children.length + 2;
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;';
+        const uid = `sal-terr-${salidaId}-x${idx}`;
+        wrap.innerHTML = `<select id="${uid}" style="flex:1;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">${getTerritoryOptions()}</select><button type="button" onclick="this.parentElement.remove()" style="padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
+        extraContainer.appendChild(wrap);
+        const sel = document.getElementById(uid);
+        if (sel) {
+          const opt = [...sel.options].find(o => o.value === num);
+          if (opt) { sel.value = num; }
+          else {
+            const newOpt = document.createElement('option');
+            newOpt.value = num; newOpt.textContent = `Terr. ${num}`; newOpt.selected = true;
+            sel.appendChild(newOpt);
+          }
+        }
+      });
+    }
+  }
+
+  if (data.type === 'picker-cancel') {
+    closeMapaPopup();
+  }
+});
+
 /* ─────────────────────────────────────────
    VISTA PREVIA
 ───────────────────────────────────────── */
@@ -1079,13 +1161,11 @@ function openMapaPopup(modo) {
   const title  = document.getElementById('mapa-popup-title');
   const g      = selectedGrupo;
 
-  // Título
   const grupoLabel = g === 'C' ? 'Congregación' : 'Grupo ' + g;
   title.textContent = modo === 'registrar'
     ? `Mapa — ${grupoLabel} · En progreso`
     : `Mapa — ${grupoLabel}`;
 
-  // Pasar territorios en progreso si modo=registrar
   let enProgresoParam = '';
   if (modo === 'registrar') {
     const enProg = Object.keys(territoriosData).filter(n => territoriosData[n].enProgreso);
