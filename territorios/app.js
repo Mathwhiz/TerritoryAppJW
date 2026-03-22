@@ -53,6 +53,7 @@ const DIAS_ES    = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','
 let selectedGrupo = null;
 let selected      = [];
 let territoriosData = {};
+let allTerritoriosData = {};
 let configData    = {};
 let modalTerr     = null;
 let editingRow    = null;
@@ -407,10 +408,13 @@ async function goToStep1() {
 
   try {
     territoriosData = {};
-    const [raw] = await Promise.all([
-      fetchGrupo(selectedGrupo),
-      conductoresListos()
-    ]);
+    allTerritoriosData = {};
+    const fetchPromises = [fetchGrupo(selectedGrupo), conductoresListos()];
+    const extraGrupos = selectedGrupo === 'C' ? [1, 2, 3, 4] : [];
+    const extraPromises = extraGrupos.map(g => fetchGrupo(g));
+    const [raw] = await Promise.all([...fetchPromises, ...extraPromises.map((p, i) =>
+      p.then(data => { allTerritoriosData[extraGrupos[i]] = {}; Object.keys(data).forEach(terr => { allTerritoriosData[extraGrupos[i]][terr] = { lastFin: parseSheetDate(data[terr].lastFin), lastIni: parseSheetDate(data[terr].lastIni), enProgreso: data[terr].enProgreso }; }); })
+    )]);
     Object.keys(raw).forEach(terr => {
       const d = raw[terr];
       territoriosData[terr] = {
@@ -574,12 +578,12 @@ function renderSalidaCard(s) {
         <div style="display:flex;align-items:flex-end;gap:6px;">
           <div style="flex:1;">
             <label>Territorio</label>
-            <select id="sal-terr-${s.id}">${getTerritoryOptions()}</select>
+            <input type="hidden" id="sal-terr-${s.id}" value="">
+            <button type="button" id="sal-terr-btn-${s.id}" class="ui-fake-input empty"
+              onclick="openTerritorioPicker(${s.id}, 'sal-terr-${s.id}', 'sal-terr-btn-${s.id}')">
+              <span class="ui-fake-input-icon">🗺</span><span>Elegir territorio</span>
+            </button>
           </div>
-          <button type="button" onclick="openMapaPicker(${s.id})" title="Elegir del mapa"
-            style="margin-bottom:1px;padding:6px 14px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;white-space:nowrap;font-weight:500;">
-            🗺 Mapa
-          </button>
           <button type="button" onclick="addExtraTerritory(${s.id})"
             style="margin-bottom:1px;padding:6px 9px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">+</button>
         </div>
@@ -606,8 +610,15 @@ function addExtraTerritory(salidaId) {
   const idx = container.children.length + 2;
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;';
-  const uid = `sal-terr-${salidaId}-x${idx}`;
-  wrap.innerHTML = `<select id="${uid}" style="flex:1;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">${getTerritoryOptions()}</select><button type="button" onclick="this.parentElement.remove()" style="padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
+  const hiddenId = `sal-terr-${salidaId}-x${idx}`;
+  const btnId    = `sal-terr-btn-${salidaId}-x${idx}`;
+  wrap.innerHTML = `
+    <input type="hidden" id="${hiddenId}" value="">
+    <button type="button" id="${btnId}" class="ui-fake-input empty" style="flex:1;font-size:13px;"
+      onclick="openTerritorioPicker('${salidaId}', '${hiddenId}', '${btnId}')">
+      <span class="ui-fake-input-icon">🗺</span><span>Elegir territorio</span>
+    </button>
+    <button type="button" onclick="this.parentElement.remove()" style="padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
   container.appendChild(wrap);
 }
 
@@ -628,6 +639,36 @@ function openConductorPicker(selectId, grupo, btn) {
   }).then(resultado => {
     if (resultado === null) return;
     if (sel) sel.value = resultado;
+  });
+}
+
+/* ─────────────────────────────────────────
+   TERRITORIO PICKER
+───────────────────────────────────────── */
+function openTerritorioPicker(salidaId, hiddenId, btnId) {
+  if (!window.uiTerritorioPicker) return;
+  const hidden = document.getElementById(hiddenId);
+  const btn    = document.getElementById(btnId);
+  const color  = GCOLORS[selectedGrupo] || '#97C459';
+  uiTerritorioPicker({
+    territoriosData,
+    allData: allTerritoriosData,
+    grupo: selectedGrupo,
+    configData,
+    label: 'Elegir territorio',
+    color,
+  }).then(resultado => {
+    if (resultado === null) return;
+    if (hidden) hidden.value = resultado;
+    if (btn) {
+      if (resultado) {
+        btn.innerHTML = `<span class="ui-fake-input-icon">🗺</span><span style="color:#eee;">Territorio ${resultado}</span>`;
+        btn.classList.remove('empty');
+      } else {
+        btn.innerHTML = `<span class="ui-fake-input-icon">🗺</span><span>Elegir territorio</span>`;
+        btn.classList.add('empty');
+      }
+    }
   });
 }
 
@@ -657,39 +698,34 @@ window.addEventListener('message', function(event) {
     closeMapaPopup();
     if (!territorios || territorios.length === 0) return;
 
-    const mainSel = document.getElementById('sal-terr-' + salidaId);
-    if (mainSel && territorios[0]) {
-      const opt = [...mainSel.options].find(o => o.value === territorios[0]);
-      if (opt) {
-        mainSel.value = territorios[0];
-      } else {
-        const newOpt = document.createElement('option');
-        newOpt.value = territorios[0];
-        newOpt.textContent = `Terr. ${territorios[0]}`;
-        newOpt.selected = true;
-        mainSel.appendChild(newOpt);
+    // Territorio principal
+    const mainHidden = document.getElementById('sal-terr-' + salidaId);
+    const mainBtn    = document.getElementById('sal-terr-btn-' + salidaId);
+    if (mainHidden && territorios[0]) {
+      mainHidden.value = territorios[0];
+      if (mainBtn) {
+        mainBtn.innerHTML = `<span class="ui-fake-input-icon">🗺</span><span style="color:#eee;">Territorio ${territorios[0]}</span>`;
+        mainBtn.classList.remove('empty');
       }
     }
 
+    // Territorios extra
     const extraContainer = document.getElementById('extra-terrs-' + salidaId);
     if (extraContainer && territorios.length > 1) {
       territorios.slice(1).forEach(num => {
         const idx = extraContainer.children.length + 2;
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;';
-        const uid = `sal-terr-${salidaId}-x${idx}`;
-        wrap.innerHTML = `<select id="${uid}" style="flex:1;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">${getTerritoryOptions()}</select><button type="button" onclick="this.parentElement.remove()" style="padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
+        const hiddenId = `sal-terr-${salidaId}-x${idx}`;
+        const btnId    = `sal-terr-btn-${salidaId}-x${idx}`;
+        wrap.innerHTML = `
+          <input type="hidden" id="${hiddenId}" value="${num}">
+          <button type="button" id="${btnId}" class="ui-fake-input" style="flex:1;font-size:13px;"
+            onclick="openTerritorioPicker('${salidaId}', '${hiddenId}', '${btnId}')">
+            <span class="ui-fake-input-icon">🗺</span><span style="color:#eee;">Territorio ${num}</span>
+          </button>
+          <button type="button" onclick="this.parentElement.remove()" style="padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
         extraContainer.appendChild(wrap);
-        const sel = document.getElementById(uid);
-        if (sel) {
-          const opt = [...sel.options].find(o => o.value === num);
-          if (opt) { sel.value = num; }
-          else {
-            const newOpt = document.createElement('option');
-            newOpt.value = num; newOpt.textContent = `Terr. ${num}`; newOpt.selected = true;
-            sel.appendChild(newOpt);
-          }
-        }
       });
     }
   }
@@ -749,8 +785,8 @@ function generatePreview() {
     } else {
       const mainTerr = document.getElementById('sal-terr-' + s.id)?.value || '—';
       const extraContainer = document.getElementById('extra-terrs-' + s.id);
-      const extraSelects = extraContainer ? extraContainer.querySelectorAll('select') : [];
-      const extraTerrs = [...extraSelects].map(sel => sel.value).filter(v => v && v !== '—');
+      const extraSelects = extraContainer ? extraContainer.querySelectorAll('input[type="hidden"]') : [];
+      const extraTerrs = [...extraSelects].map(inp => inp.value).filter(v => v && v !== '—');
       const allTerrs = [mainTerr, ...extraTerrs].filter(v => v && v !== '—');
       const terrLabel = allTerrs.join(', ') || '—';
       rows.push({ enc, terr: terrLabel, tel:false, badge:getDiaBadge(fecha), fecha:formatShortFull(fecha).replace(/\//g,'-'), cond, hora:hora.replace(':','.') });
@@ -798,7 +834,7 @@ async function registrarEnProgreso() {
     const fecha = document.getElementById('sal-fecha-' + s.id)?.value;
     const mainTerrR = document.getElementById('sal-terr-' + s.id)?.value;
     const extraContR = document.getElementById('extra-terrs-' + s.id);
-    const allTerrsR = [mainTerrR, ...(extraContR ? [...extraContR.querySelectorAll('select')].map(sel => sel.value) : [])].filter(v => v && v !== '—');
+    const allTerrsR = [mainTerrR, ...(extraContR ? [...extraContR.querySelectorAll('input[type="hidden"]')].map(inp => inp.value) : [])].filter(v => v && v !== '—');
     allTerrsR.forEach(terr => territoriosARegistrar.push({ terr, cond: cond || '—', fecha }));
   });
   if (territoriosARegistrar.length === 0) {
