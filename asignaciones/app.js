@@ -302,8 +302,14 @@ async function goToAutomatico() {
   // Calcular fecha desde: primer miércoles o sábado vacío
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const fechasExistentes = new Set(todasLasFilas.map(r => r.fecha));
-  let desdeDate = new Date(hoy);
-  desdeDate.setDate(hoy.getDate() + 1);
+  // Buscar desde el último dato existente, no desde hoy
+  const fechasOrdenadas = todasLasFilas
+    .map(r => r.fecha)
+    .filter(Boolean)
+    .sort();
+  const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1];
+  let desdeDate = ultimaFecha ? new Date(ultimaFecha.split('/').reverse().map((v,i) => i===0 && v.length===2 ? '20'+v : v).join('-') + 'T00:00:00') : new Date(hoy);
+  desdeDate.setDate(desdeDate.getDate() + 1);
   for (let i = 0; i < 60; i++) {
     const dow = desdeDate.getDay();
     if ((dow === 3 || dow === 6) && !fechasExistentes.has(fmtFecha(desdeDate))) break;
@@ -678,8 +684,15 @@ function generarAutomatico() {
     });
   });
 
-  function getCount(nombre, rolGrupo) {
-    return (contadores[nombre]?.[rolGrupo] || 0);
+function getCount(nombre, rolGrupo) {
+    const base = contadores[nombre]?.[rolGrupo] || 0;
+    // Prioridad por exclusividad: cuantos menos roles tiene, menor puntaje base
+    // para que el algoritmo lo elija antes
+    const rolesDisponibles = Object.keys(hermanos).filter(listaKey => 
+      (hermanos[listaKey] || []).includes(nombre)
+    ).length;
+    const bonusExclusividad = rolesDisponibles <= 1 ? -0.5 : 0;
+    return base + bonusExclusividad;
   }
 
   function incrementar(nombre, rolGrupo) {
