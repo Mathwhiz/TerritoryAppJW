@@ -842,7 +842,7 @@ async function guardarAutomatico() {
   
   try {
     // Mandar de a 2 reuniones por vez para no superar límite de URL
-    const chunkSize = 2;
+    const chunkSize = 1;
     for (let i = 0; i < autoResult.length; i += chunkSize) {
       const chunk = autoResult.slice(i, i + chunkSize);
       await apiFetch({ action: 'saveProgramacion', data: JSON.stringify(chunk) });
