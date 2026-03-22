@@ -226,7 +226,7 @@ async function cerrarSesionEncargado() {
     msg: 'Vas a volver a la pantalla de inicio.',
     confirmText: 'Cerrar sesión',
     cancelText: 'Cancelar',
-    type: 'warn'
+    type: 'purple'
   });
   if (!ok) return;
   esEncargado = false;
