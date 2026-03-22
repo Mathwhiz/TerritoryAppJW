@@ -795,7 +795,23 @@ function generatePreview() {
       const terrLabel = allTerrs.join(', ') || '—';
       rows.push({ enc, terr: terrLabel, tel:false, badge:getDiaBadge(fecha), fecha:formatShortFull(fecha).replace(/\//g,'-'), cond, hora:hora.replace(':','.') });
     }
+
+    
   });
+
+rows.sort((a, b) => {
+  // Las telefónicas fijas de Congregación no tienen fecha real, van primero
+  if (a.tel && !a.fecha) return -1;
+  if (b.tel && !b.fecha) return 1;
+  const fechaA = a.fecha || '';
+  const fechaB = b.fecha || '';
+  if (fechaA !== fechaB) return fechaA.localeCompare(fechaB);
+  // Misma fecha: ordenar por hora (formato H.MM → reemplazar punto por :)
+  const horaA = (a.hora || '').replace('.', ':');
+  const horaB = (b.hora || '').replace('.', ':');
+  return horaA.localeCompare(horaB);
+});
+  
   document.getElementById('preview-body').innerHTML = rows.map(r => `
     <tr${r.tel ? ' class="tel-row"' : ''}>
       <td>${r.enc}</td>
