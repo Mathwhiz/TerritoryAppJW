@@ -848,14 +848,12 @@ async function guardarAutomatico() {
   if(status){status.style.color='#888';status.textContent='Guardando...';}
   
   try {
-    const reemplazar = document.getElementById('auto-reemplazar')?.checked;
     const chunkSize = 1;
     for (let i = 0; i < autoResult.length; i += chunkSize) {
       const chunk = autoResult.slice(i, i + chunkSize);
       await apiFetch({ 
         action: 'saveProgramacion', 
-        data: JSON.stringify(chunk),
-        reemplazar: reemplazar ? '1' : '0'
+        data: JSON.stringify(chunk)
       });
       if(status) status.textContent = `Guardando... ${Math.min(i + chunkSize, autoResult.length)}/${autoResult.length}`;
     }
