@@ -705,10 +705,35 @@ function generarAutomatico() {
     { rolGrupo:'PRESIDENTE', listaKey:'PRESIDENTE', cantidad:1, roles:['PRESIDENTE'] },
   ];
 
-  autoResult = fechasAGenerar.map(({ fecha, dia }) => {
+ // ── Registrar última reunión en que trabajó cada persona en cada rol ──
+  const ultimaVez = {}; // { nombre: { rolGrupo: índice de reunión } }
+  todasLasFilas.forEach((row, idx) => {
+    ROLES.forEach(r => {
+      const nombre = row[r];
+      if (!nombre) return;
+      const rg = getRolGrupo(r);
+      if (!ultimaVez[nombre]) ultimaVez[nombre] = {};
+      ultimaVez[nombre][rg] = idx;
+    });
+  });
+
+  function trabajoEnAnterior(nombre, rolGrupo, reunionIdx) {
+    if (!ultimaVez[nombre]?.[rolGrupo]) return false;
+    return ultimaVez[nombre][rolGrupo] === reunionIdx - 1;
+  }
+
+  function actualizarUltimaVez(nombre, rolGrupo, reunionIdx) {
+    if (!ultimaVez[nombre]) ultimaVez[nombre] = {};
+    ultimaVez[nombre][rolGrupo] = reunionIdx;
+  }
+
+  autoResult = fechasAGenerar.map(({ fecha, dia }, reunionIdx) => {
     const entry = { fecha, dia };
     const yaAsignados = new Set();
     const slots = dia === 'Miércoles' ? SLOTS_MIERC : SLOTS_SAB;
+
+    // Índice global contando el historial existente
+    const idxGlobal = todasLasFilas.length + reunionIdx;
 
     slots.forEach(slot => {
       const lista = hermanos[slot.listaKey] || [];
@@ -717,22 +742,21 @@ function generarAutomatico() {
         return;
       }
 
-      // Ordenar disponibles por menor cantidad de veces en ese rolGrupo
       const disponibles = lista
         .filter(h => !yaAsignados.has(h))
         .sort((a, b) => {
-          const diff = getCount(a, slot.rolGrupo) - getCount(b, slot.rolGrupo);
+          // Penalizar si trabajó ese rol la reunión anterior
+          const penA = trabajoEnAnterior(a, slot.rolGrupo, idxGlobal) ? 1000 : 0;
+          const penB = trabajoEnAnterior(b, slot.rolGrupo, idxGlobal) ? 1000 : 0;
+          const diff = (getCount(a, slot.rolGrupo) + penA) - (getCount(b, slot.rolGrupo) + penB);
           if (diff !== 0) return diff;
-          // Empate: menor carga total
           const totalA = Object.values(contadores[a] || {}).reduce((s,v) => s+v, 0);
           const totalB = Object.values(contadores[b] || {}).reduce((s,v) => s+v, 0);
           return totalA - totalB;
         });
 
-      // Tomar los primeros N según cantidad necesaria
       const elegidos = disponibles.slice(0, slot.cantidad);
 
-      // Si no hay suficientes disponibles, completar con los menos usados aunque ya estén
       if (elegidos.length < slot.cantidad) {
         const faltantes = slot.cantidad - elegidos.length;
         const yaElegidos = new Set(elegidos);
@@ -749,11 +773,11 @@ function generarAutomatico() {
         if (nombre) {
           yaAsignados.add(nombre);
           incrementar(nombre, slot.rolGrupo);
+          actualizarUltimaVez(nombre, slot.rolGrupo, idxGlobal);
         }
       });
     });
 
-    // Rellenar roles que no están en slots (PRESIDENTE en Miércoles)
     ROLES.forEach(r => {
       if (!(r in entry)) entry[r] = '';
     });
@@ -761,11 +785,6 @@ function generarAutomatico() {
     return entry;
   });
 
-  hide('auto-loading');
-  renderAutoPreview(autoResult);
-  show('auto-preview');
-  show('auto-guardar-wrap');
-}
 function renderAutoPreview(rows) {
   const c = document.getElementById('auto-preview');
   if (!c) return;
