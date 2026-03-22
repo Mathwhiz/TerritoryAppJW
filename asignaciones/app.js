@@ -658,6 +658,7 @@ function generarAutomatico() {
 
   show('auto-loading'); hide('auto-preview'); hide('auto-guardar-wrap');
 
+  const reemplazar = document.getElementById('auto-reemplazar')?.checked;
   const fechasExistentes = new Set(todasLasFilas.map(r => r.fecha));
   const fechasAGenerar = [];
   const cursor = new Date(desde);
@@ -665,7 +666,7 @@ function generarAutomatico() {
     const dow = cursor.getDay();
     if (dow === 3 || dow === 6) {
       const f = fmtFecha(cursor);
-      if (!fechasExistentes.has(f))
+      if (!fechasExistentes.has(f) || reemplazar)
         fechasAGenerar.push({ fecha: f, dia: dow === 3 ? 'Miércoles' : 'Sábado' });
     }
     cursor.setDate(cursor.getDate() + 1);
@@ -847,11 +848,15 @@ async function guardarAutomatico() {
   if(status){status.style.color='#888';status.textContent='Guardando...';}
   
   try {
-    // Mandar de a 2 reuniones por vez para no superar límite de URL
+    const reemplazar = document.getElementById('auto-reemplazar')?.checked;
     const chunkSize = 1;
     for (let i = 0; i < autoResult.length; i += chunkSize) {
       const chunk = autoResult.slice(i, i + chunkSize);
-      await apiFetch({ action: 'saveProgramacion', data: JSON.stringify(chunk) });
+      await apiFetch({ 
+        action: 'saveProgramacion', 
+        data: JSON.stringify(chunk),
+        reemplazar: reemplazar ? '1' : '0'
+      });
       if(status) status.textContent = `Guardando... ${Math.min(i + chunkSize, autoResult.length)}/${autoResult.length}`;
     }
     todasLasFilas = [];
