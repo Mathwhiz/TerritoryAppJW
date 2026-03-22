@@ -787,21 +787,22 @@ function generarAutomatico() {
   
     hide('auto-loading');
     renderAutoPreview(autoResult);
-    show('auto-preview');
     show('auto-guardar-wrap');
   }
   
-  function renderAutoPreview(rows) {
-  const c = document.getElementById('auto-preview');
-  if (!c) return;
-  c.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:10px;">${rows.length} reuniones a generar — revisá antes de guardar</div>`;
+function renderAutoPreview(rows) {
+  const body = document.getElementById('auto-preview-modal-body');
+  const title = document.getElementById('auto-preview-modal-title');
+  if (!body) return;
+  title.textContent = `${rows.length} reuniones a generar`;
+  body.innerHTML = '';
   rows.forEach(row => {
     const diaColor = DIA_COLORS[row.dia] || '#eee';
     const diaBg    = DIA_BG[row.dia] || '#1e1e1e';
     const rolesHTML = ROLES.map(r => row[r] ?
       `<div class="rol-row"><span class="rol-label">${ROLES_LABELS[r]}</span><span class="rol-valor">${row[r]}</span></div>` : ''
     ).filter(Boolean).join('');
-    c.innerHTML += `
+    body.innerHTML += `
       <div class="reunion-card">
         <div class="reunion-header" style="background:${diaBg};border-left:3px solid ${diaColor};">
           <span class="reunion-dia" style="color:${diaColor};">${row.dia}</span>
@@ -810,6 +811,11 @@ function generarAutomatico() {
         <div class="roles-list">${rolesHTML}</div>
       </div>`;
   });
+  document.getElementById('auto-preview-modal').style.display = 'flex';
+}
+
+function cerrarPreviewModal() {
+  document.getElementById('auto-preview-modal').style.display = 'none';
 }
 
 async function guardarAutomatico() {
