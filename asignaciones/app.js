@@ -303,10 +303,17 @@ async function goToAutomatico() {
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const fechasExistentes = new Set(todasLasFilas.map(r => r.fecha));
   // Buscar desde el último dato existente, no desde hoy
-  const fechasOrdenadas = todasLasFilas
+const fechasOrdenadas = todasLasFilas
     .map(r => r.fecha)
     .filter(Boolean)
-    .sort();
+    .sort((a, b) => {
+      const toNum = f => {
+        const p = f.split('/');
+        const anio = p[2]?.length === 2 ? '20' + p[2] : p[2];
+        return parseInt(anio + p[1].padStart(2,'0') + p[0].padStart(2,'0'));
+      };
+      return toNum(a) - toNum(b);
+    });
   const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1];
 let desdeDate;
   if (ultimaFecha) {
