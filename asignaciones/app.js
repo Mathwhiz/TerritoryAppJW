@@ -747,13 +747,20 @@ function renderAutoPreview(rows) {
 async function guardarAutomatico() {
   const status = document.getElementById('auto-status');
   if (!autoResult.length) { if(status){status.style.color='#888';status.textContent='Nada que guardar.';} return; }
-  if (status){status.style.color='#888';status.textContent='Guardando...';}
+  if(status){status.style.color='#888';status.textContent='Guardando...';}
+  
   try {
-    await apiFetch({ action: 'saveProgramacion', data: JSON.stringify(autoResult) });
+    // Mandar de a 2 reuniones por vez para no superar límite de URL
+    const chunkSize = 2;
+    for (let i = 0; i < autoResult.length; i += chunkSize) {
+      const chunk = autoResult.slice(i, i + chunkSize);
+      await apiFetch({ action: 'saveProgramacion', data: JSON.stringify(chunk) });
+      if(status) status.textContent = `Guardando... ${Math.min(i + chunkSize, autoResult.length)}/${autoResult.length}`;
+    }
     todasLasFilas = [];
-    if (status){status.style.color='#5DCAA5';status.textContent=`✓ ${autoResult.length} reuniones guardadas`;}
+    if(status){status.style.color='#5DCAA5';status.textContent=`✓ ${autoResult.length} reuniones guardadas`;}
   } catch(err) {
-    if (status){status.style.color='#F09595';status.textContent='Error: '+err.message;}
+    if(status){status.style.color='#F09595';status.textContent='Error: '+err.message;}
   }
 }
 
