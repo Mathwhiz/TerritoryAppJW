@@ -38,6 +38,7 @@
 .ui-modal-icon.warn   { background: rgba(239,159,39,0.15); }
 .ui-modal-icon.danger { background: rgba(240,149,149,0.15); }
 .ui-modal-icon.info   { background: rgba(29,158,117,0.15); }
+.ui-modal-icon.purple { background: rgba(127,119,221,0.15); }
 
 .ui-modal-title {
   font-size: 17px; font-weight: 600; color: #eee;
@@ -60,9 +61,11 @@
 .ui-btn-confirm-warn   { background: #EF9F27; color: #fff; }
 .ui-btn-confirm-danger { background: #A32D2D; color: #F09595; }
 .ui-btn-confirm-info   { background: #1D9E75; color: #fff; }
+.ui-btn-confirm-purple { background: #7F77DD; color: #fff; }
 .ui-btn-confirm-warn:hover,
 .ui-btn-confirm-danger:hover,
-.ui-btn-confirm-info:hover { filter: brightness(1.1); }
+.ui-btn-confirm-info:hover,
+.ui-btn-confirm-purple:hover { filter: brightness(1.1); }
 .ui-btn-ok { background: #333; color: #eee; border: 0.5px solid #555 !important; }
 .ui-btn-ok:hover { filter: brightness(1.15); }
 
