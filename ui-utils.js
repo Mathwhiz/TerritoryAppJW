@@ -193,47 +193,74 @@
    CONDUCTOR PICKER
 ═══════════════════════════════════════════ */
 .cp-search-wrap {
-  padding: 0 16px 10px;
+  padding: 0 14px 8px;
   position: relative;
 }
 .cp-search-input {
   width: 100%; padding: 9px 12px 9px 36px;
-  background: #1e1e1e; border: 0.5px solid #444; border-radius: 12px;
+  background: #1e1e1e; border: 0.5px solid #444; border-radius: 10px;
   color: #eee; font-size: 14px; outline: none;
   transition: border-color 0.15s;
   box-sizing: border-box;
 }
 .cp-search-input:focus { border-color: #666; }
 .cp-search-icon {
-  position: absolute; left: 28px; top: 50%; transform: translateY(-50%);
-  color: #555; pointer-events: none; font-size: 15px;
+  position: absolute; left: 26px; top: 50%; transform: translateY(-50%);
+  color: #555; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px;
 }
 .cp-list {
-  max-height: 260px; overflow-y: auto;
-  padding: 0 8px 8px;
+  max-height: 280px; overflow-y: auto;
+  padding: 0 6px 10px;
 }
-.cp-list::-webkit-scrollbar { width: 4px; }
+.cp-list::-webkit-scrollbar { width: 3px; }
 .cp-list::-webkit-scrollbar-track { background: transparent; }
-.cp-list::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+.cp-list::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 2px; }
 .cp-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 10px; border-radius: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 10px; cursor: pointer;
   transition: background 0.1s; border: none; background: transparent;
   width: 100%; text-align: left;
 }
-.cp-item:hover { background: #2e2e2e; }
-.cp-item.selected { background: rgba(24,95,165,0.2); }
-.cp-item-name { font-size: 14px; font-weight: 500; color: #eee; }
-.cp-item-check { color: #185FA5; font-size: 16px; opacity: 0; transition: opacity 0.1s; }
+.cp-item:hover { background: #2a2a2a; }
+.cp-item.selected { background: rgba(24,95,165,0.18); }
+.cp-item-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: #2e2e2e; border: 1px solid #3a3a3a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #888;
+  text-transform: uppercase;
+}
+.cp-item.selected .cp-item-avatar {
+  background: rgba(24,95,165,0.25); border-color: #185FA5; color: #85B7EB;
+}
+.cp-item-name { font-size: 14px; font-weight: 500; color: #ddd; flex: 1; }
+.cp-item.selected .cp-item-name { color: #eee; }
+.cp-item-check {
+  color: #185FA5; flex-shrink: 0;
+  opacity: 0; transition: opacity 0.1s;
+  display: flex; align-items: center;
+}
 .cp-item.selected .cp-item-check { opacity: 1; }
-.cp-empty { text-align: center; padding: 24px; color: #555; font-size: 13px; }
+.cp-empty { text-align: center; padding: 28px 16px; color: #555; font-size: 13px; }
+.cp-divider {
+  height: 0.5px; background: #2e2e2e;
+  margin: 2px 10px 6px;
+}
 .cp-sin-asignar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 10px 14px; margin: 0 8px;
-  border-bottom: 0.5px solid #2e2e2e; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 10px; cursor: pointer;
+  border: none; background: transparent; width: 100%; text-align: left;
+  transition: background 0.1s;
+}
+.cp-sin-asignar:hover { background: #2a2a2a; }
+.cp-sin-asignar-icon {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: #252525; border: 1px solid #333;
+  display: flex; align-items: center; justify-content: center;
 }
 .cp-sin-asignar-txt { font-size: 13px; color: #666; }
-.cp-sin-asignar:hover .cp-sin-asignar-txt { color: #888; }
 
 /* ── Fake input (reemplaza select/date/time nativos) ── */
 .ui-fake-input {
@@ -650,23 +677,46 @@ window.uiConductorPicker = function({ conductores = [], value = '', label = 'Ele
           <div class="bs-handle"></div>
           <div class="bs-header">
             <div class="bs-title">${label}</div>
-            <button class="bs-close-btn">✕</button>
+            <button class="bs-close-btn">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
           </div>
           <div class="cp-search-wrap">
-            <span class="cp-search-icon">🔍</span>
-            <input class="cp-search-input" type="text" placeholder="Buscar conductor..." value="${query}" autocomplete="off">
+            <span class="cp-search-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <input class="cp-search-input" type="text" placeholder="Buscar..." value="${query}" autocomplete="off">
           </div>
           <div class="cp-list">
             <button class="cp-sin-asignar" data-clear>
-              <span class="cp-sin-asignar-txt">— Sin asignar —</span>
+              <span class="cp-sin-asignar-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8" r="4" stroke="#555" stroke-width="1.8"/>
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="cp-sin-asignar-txt">Sin asignar</span>
             </button>
+            <div class="cp-divider"></div>
             ${lista.length === 0
               ? `<div class="cp-empty">Sin resultados</div>`
-              : lista.map(c => `
-                <button class="cp-item ${c===sel?'selected':''}" data-name="${c.replace(/"/g,'&quot;')}">
-                  <span class="cp-item-name">${c}</span>
-                  <span class="cp-item-check">✓</span>
-                </button>`).join('')
+              : lista.map(c => {
+                  const initials = c.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+                  return `<button class="cp-item ${c===sel?'selected':''}" data-name="${c.replace(/"/g,'&quot;')}">
+                    <span class="cp-item-avatar">${initials}</span>
+                    <span class="cp-item-name">${c}</span>
+                    <span class="cp-item-check">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="#185FA5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </button>`;
+                }).join('')
             }
           </div>
         </div>`;
