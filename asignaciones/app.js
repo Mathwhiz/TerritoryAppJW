@@ -18,14 +18,11 @@ const ROLES = Object.keys(ROLES_LABELS);
 
 // Mapeo: columna de programación → lista de hermanos a usar en el selector
 // SONIDO_1 y SONIDO_2 comparten la lista del rol SONIDO; igual para MICROFONISTAS
-// El sheet ahora tiene columnas SONIDO y MICROFONISTAS (sin número).
-// El script devuelve SONIDO_1/2 vacíos, pero sí devuelve SONIDO.
-// Este mapa indica qué clave buscar en hermanos para cada slot de la tabla semanal.
+// El Apps Script (Code.gs actualizado) devuelve SONIDO_1 y SONIDO_2 con la misma lista,
+// igual para MICROFONISTAS_1 y MICROFONISTAS_2. SONIDO_2 solo necesita apuntar a SONIDO_1.
 const ROL_LISTA_MAP = {
-  SONIDO_1:        'SONIDO',
-  SONIDO_2:        'SONIDO',
-  MICROFONISTAS_1: 'MICROFONISTAS',
-  MICROFONISTAS_2: 'MICROFONISTAS',
+  SONIDO_2:        'SONIDO_1',
+  MICROFONISTAS_2: 'MICROFONISTAS_1',
 };
 
 // ── Roles que SOLO existen en la lista de hermanos (no en tabla semanal) ──
@@ -131,31 +128,26 @@ function getLunesDeOffset(offset) {
   return monday;
 }
 
+// Convierte "dd/mm/yy" a número YYYYMMDD para comparación sin timezone
+function fechaToNum(str) {
+  if (!str) return 0;
+  const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (!m) return 0;
+  const y = m[3].length === 2 ? 2000 + parseInt(m[3]) : parseInt(m[3]);
+  return y * 10000 + parseInt(m[2]) * 100 + parseInt(m[1]);
+}
+
 function getFilasDeSemana(rows, offset) {
   const lunes = getLunesDeOffset(offset);
   const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
-  // Comparar solo por fecha (dd/mm/yy string) para evitar problemas de timezone
-  const lunesStr  = fmtFecha(lunes);
-  const domStr    = fmtFecha(domingo);
-  const filas = rows.filter(r => {
-    if (!r.fecha) return false;
-    return r.fecha >= lunesStr || compareFechaStr(r.fecha, lunesStr) >= 0 && compareFechaStr(r.fecha, domStr) <= 0;
-  });
-  // Filtro más robusto: comparar como Date
-  const filasOk = rows.filter(r => {
-    const d = parseFecha(r.fecha);
-    if (!d) return false;
-    const dStr = fmtFecha(d);
-    return compareFechaStr(dStr, lunesStr) >= 0 && compareFechaStr(dStr, domStr) <= 0;
-  });
-  return filasOk.sort((a,b) => parseFecha(a.fecha) - parseFecha(b.fecha));
-}
-
-// Compara fechas en formato dd/mm/yy  → -1, 0, 1
-function compareFechaStr(a, b) {
-  const pa = parseFecha(a), pb = parseFecha(b);
-  if (!pa || !pb) return 0;
-  return pa < pb ? -1 : pa > pb ? 1 : 0;
+  const lunesNum  = fechaToNum(fmtFecha(lunes));
+  const domNum    = fechaToNum(fmtFecha(domingo));
+  return rows
+    .filter(r => {
+      const n = fechaToNum(r.fecha);
+      return n >= lunesNum && n <= domNum;
+    })
+    .sort((a, b) => fechaToNum(a.fecha) - fechaToNum(b.fecha));
 }
 
 // Mantener por compatibilidad (usado en buscarHermano)
