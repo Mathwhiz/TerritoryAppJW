@@ -308,7 +308,14 @@ async function goToAutomatico() {
     .filter(Boolean)
     .sort();
   const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1];
-  let desdeDate = ultimaFecha ? new Date(ultimaFecha.split('/').reverse().map((v,i) => i===0 && v.length===2 ? '20'+v : v).join('-') + 'T00:00:00') : new Date(hoy);
+let desdeDate;
+  if (ultimaFecha) {
+    const p = ultimaFecha.split('/');
+    const dia = p[0], mes = p[1], anio = p[2]?.length === 2 ? '20' + p[2] : p[2];
+    desdeDate = new Date(`${anio}-${mes}-${dia}T00:00:00`);
+  } else {
+    desdeDate = new Date(hoy);
+  }
   desdeDate.setDate(desdeDate.getDate() + 1);
     while (true) {
       const dow = desdeDate.getDay();
