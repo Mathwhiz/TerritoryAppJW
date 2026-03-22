@@ -685,17 +685,6 @@ function generarAutomatico() {
     return rol;
   }
 
-  const contadores = {};
-  todasLasFilas.forEach(row => {
-    ROLES.forEach(r => {
-      const nombre = row[r];
-      if (!nombre) return;
-      const rg = getRolGrupo(r);
-      if (!contadores[nombre]) contadores[nombre] = {};
-      contadores[nombre][rg] = (contadores[nombre][rg] || 0) + 1;
-    });
-  });
-
   function getCount(nombre, rolGrupo) {
     return (contadores[nombre]?.[rolGrupo] || 0);
   }
@@ -721,16 +710,33 @@ function generarAutomatico() {
     { rolGrupo:'PRESIDENTE', listaKey:'PRESIDENTE', cantidad:1, roles:['PRESIDENTE'] },
   ];
 
-  const ultimaVez = {};
-  todasLasFilas.forEach((row, idx) => {
-    ROLES.forEach(r => {
-      const nombre = row[r];
-      if (!nombre) return;
-      const rg = getRolGrupo(r);
-      if (!ultimaVez[nombre]) ultimaVez[nombre] = {};
-      ultimaVez[nombre][rg] = idx;
+const usarHistorial = document.getElementById('auto-usar-historial')?.checked;
+
+  const contadores = {};
+  if (usarHistorial) {
+    todasLasFilas.forEach(row => {
+      ROLES.forEach(r => {
+        const nombre = row[r];
+        if (!nombre) return;
+        const rg = getRolGrupo(r);
+        if (!contadores[nombre]) contadores[nombre] = {};
+        contadores[nombre][rg] = (contadores[nombre][rg] || 0) + 1;
+      });
     });
-  });
+  }
+
+  const ultimaVez = {};
+  if (usarHistorial) {
+    todasLasFilas.forEach((row, idx) => {
+      ROLES.forEach(r => {
+        const nombre = row[r];
+        if (!nombre) return;
+        const rg = getRolGrupo(r);
+        if (!ultimaVez[nombre]) ultimaVez[nombre] = {};
+        ultimaVez[nombre][rg] = idx;
+      });
+    });
+  }
 
   function trabajoEnAnterior(nombre, rolGrupo, reunionIdx) {
     if (!ultimaVez[nombre]?.[rolGrupo]) return false;
