@@ -584,10 +584,6 @@ function renderSalidaCard(s) {
               <span class="ui-fake-input-icon">🗺</span><span>Elegir territorio</span>
             </button>
           </div>
-          <button type="button" onclick="openMapaPicker(${s.id})" title="Elegir del mapa"
-            style="margin-bottom:1px;padding:6px 10px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;font-weight:500;">
-            🗺
-          </button>
           <button type="button" onclick="addExtraTerritory(${s.id})"
             style="margin-bottom:1px;padding:6px 9px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">+</button>
         </div>
@@ -834,7 +830,7 @@ const IMGBB_API_KEY    = 'bd4a80a2669ac560375bd8137350ef7e';
 
 // Números de WhatsApp por grupo — completar con los reales
 const WHATSAPP_GRUPOS = {
-  1: '5492954315701',
+  1: '',
   2: '',
   3: '',
   4: '',
@@ -863,36 +859,24 @@ async function enviarWhatsapp() {
     if (!imgData.success) throw new Error('Error subiendo imagen: ' + JSON.stringify(imgData));
     const imageUrl = imgData.data.url;
 
-    // 3. Determinar destinatario
-    const destino = WHATSAPP_GRUPOS[selectedGrupo];
-    if (!destino) throw new Error('No hay número configurado para este grupo. Completá WHATSAPP_GRUPOS en app.js.');
-
-    // 4. Enviar por Kapso
+    // 3. Llamar al Apps Script (que llama a Kapso sin CORS)
     const grupoLabel = selectedGrupo === 'C' ? 'Congregación' : 'Grupo ' + selectedGrupo;
-    const kaResp = await fetch(`https://api.kapso.ai/meta/whatsapp/v24.0/${KAPSO_PHONE_ID}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': KAPSO_API_KEY
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: destino,
-        type: 'image',
-        image: { link: imageUrl, caption: `Salidas ${grupoLabel} — semana del ${document.getElementById('week-info')?.textContent || ''}` }
-      })
-    });
-    const kaData = await kaResp.json();
-    if (!kaResp.ok) throw new Error('Error Kapso: ' + JSON.stringify(kaData));
+    const caption = `Salidas ${grupoLabel} — ${document.getElementById('week-info')?.textContent || ''}`;
+    const scriptUrl = SCRIPT_URL
+      + '?action=sendWhatsapp'
+      + '&grupo=' + encodeURIComponent(selectedGrupo)
+      + '&imageUrl=' + encodeURIComponent(imageUrl)
+      + '&caption=' + encodeURIComponent(caption);
+
+    const resp = await fetch(scriptUrl);
+    const data = JSON.parse(await resp.text());
+    if (data.error) throw new Error(data.error);
 
     if (window.uiToast) uiToast('Imagen enviada por WhatsApp ✓', 'success');
-    else alert('Imagen enviada por WhatsApp ✓');
 
   } catch(err) {
     console.error(err);
     if (window.uiToast) uiToast('Error: ' + err.message, 'error');
-    else alert('Error: ' + err.message);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '📲 Enviar al grupo'; }
   }
