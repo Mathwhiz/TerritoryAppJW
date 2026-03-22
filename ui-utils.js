@@ -418,16 +418,16 @@
 window.CS_LOGO_SVG = `<svg class="cs-logo-svg" width="80" height="80" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="csLogoGrad" x1="8" y1="4" x2="64" y2="68" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#4FC3C3"/>
-      <stop offset="50%" stop-color="#2E86C1"/>
-      <stop offset="100%" stop-color="#1A5C9A"/>
+      <stop offset="0%" stop-color="#9B8FFF"/>
+      <stop offset="50%" stop-color="#7061E0"/>
+      <stop offset="100%" stop-color="#4A3FB5"/>
     </linearGradient>
     <linearGradient id="csIconGrad" x1="18" y1="18" x2="54" y2="54" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#7DE8E8"/>
-      <stop offset="100%" stop-color="#4FB8E0"/>
+      <stop offset="0%" stop-color="#C4BEFF"/>
+      <stop offset="100%" stop-color="#9B8FFF"/>
     </linearGradient>
     <filter id="csShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#1A5C9A" flood-opacity="0.5"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#4A3FB5" flood-opacity="0.5"/>
     </filter>
   </defs>
   <path d="M36 4 L64 20 L64 52 L36 68 L8 52 L8 20 Z"
