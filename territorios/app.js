@@ -288,6 +288,7 @@ function goToMapa() {
 }
 
 function cerrarSesion() {
+  if (!confirm('¿Cerrar sesión?')) return;
   selectedGrupo = null;
   _conductoresListos = false;
   _conductoresResolvers = [];
