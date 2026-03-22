@@ -907,14 +907,14 @@ async function guardarRegistros() {
     return;
   }
   try {
-    for (const s of saves) {
+    await Promise.all(saves.map(s => {
       const url = SCRIPT_URL + '?action=saveRecord&grupo=' + encodeURIComponent(selectedGrupo) +
         '&territorio='  + encodeURIComponent(s.territorio) +
         '&conductor='   + encodeURIComponent(s.conductor) +
         '&fechaInicio=' + encodeURIComponent(s.fechaInicio) +
         '&fechaFin='    + encodeURIComponent(s.fechaFin);
-      await fetch(url);
-    }
+      return fetch(url);
+    }));
     territoriosData = {};
     status.style.color = '#5DCAA5';
     status.textContent = 'Guardado correctamente';
