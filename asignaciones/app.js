@@ -834,3 +834,6 @@ async function confirmarEliminar(nombre) {
     alert('Error al eliminar: ' + err.message);
   }
 }
+
+window.addEventListener('online',  () => document.getElementById('offline-banner')?.classList.remove('visible'));
+window.addEventListener('offline', () => document.getElementById('offline-banner')?.classList.add('visible'));
