@@ -8,19 +8,18 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, sans-serif;
-      background: #1e1e1e;
-      color: #eee;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 2rem 1rem;
+      color: #eee;
     }
     .wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 14px;
       width: 100%;
       max-width: 320px;
     }
@@ -29,82 +28,46 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 18px;
     }
-    .logo-title {
-      font-size: 32px;
-      font-weight: 500;
-      color: #eee;
-      letter-spacing: -0.5px;
-    }
-    .logo-sub { font-size: 14px; color: #888; }
-    .nav-card {
-      width: 100%;
-      background: #2a2a2a;
-      border: 1.5px solid #444;
-      border-radius: 16px;
-      padding: 1.25rem 1.5rem;
-      cursor: pointer;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      transition: border-color 0.15s, background 0.15s, transform 0.1s;
-      text-decoration: none;
-      color: inherit;
-    }
-    .nav-card:hover { transform: scale(1.02); }
-    .nav-card:active { transform: scale(0.98); }
-    .nav-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .nav-title { font-size: 17px; font-weight: 500; color: #eee; margin-bottom: 3px; }
-    .nav-sub   { font-size: 13px; color: #888; }
-    .card-terr  { border-color: #97C459; }
-    .card-terr  .nav-icon { background: rgba(151,196,89,0.15); }
-    .card-terr:hover { background: rgba(151,196,89,0.07); }
-    .card-asign { border-color: #7F77DD; }
-    .card-asign .nav-icon { background: rgba(127,119,221,0.15); }
-    .card-asign:hover { background: rgba(127,119,221,0.07); }
-    .footer { font-size: 12px; color: #555; margin-top: 8px; }
   </style>
 </head>
-<body>
+<body class="cs-home-body">
   <div class="wrap">
+
     <div class="logo">
       <div class="cs-logo-placeholder"></div>
-      <div class="logo-title">Congregación Sur</div>
-      <div class="logo-sub">Seleccioná un módulo</div>
+      <div class="cs-logo-title">Congregación Sur</div>
+      <div class="cs-logo-sub">Seleccioná un módulo</div>
     </div>
 
-    <a class="nav-card card-terr" href="territorios/index.html">
-      <div class="nav-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <a class="cs-nav-card cs-nav-card-terr" href="territorios/index.html">
+      <div class="cs-nav-icon cs-nav-icon-terr">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"
-            stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            stroke="#5DB85D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
-        <div class="nav-title">Territorios</div>
-        <div class="nav-sub">Planificar y registrar salidas</div>
+        <div class="cs-nav-title">Territorios</div>
+        <div class="cs-nav-sub">Planificar y registrar salidas</div>
       </div>
     </a>
 
-    <a class="nav-card card-asign" href="asignaciones/index.html">
-      <div class="nav-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <a class="cs-nav-card cs-nav-card-asign" href="asignaciones/index.html">
+      <div class="cs-nav-icon cs-nav-icon-asign">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
-            stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            stroke="#5B8DDE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
-        <div class="nav-title">Asignaciones</div>
-        <div class="nav-sub">Acomodadores, sonido y más</div>
+        <div class="cs-nav-title">Asignaciones</div>
+        <div class="cs-nav-sub">Acomodadores, sonido y más</div>
       </div>
     </a>
 
-    <div class="footer">Congregación Sur · App interna</div>
+    <div class="cs-footer">Congregación Sur · App interna</div>
   </div>
   <script src="ui-utils.js"></script>
 </body>

@@ -332,6 +332,59 @@
 }
 
 /* ═══════════════════════════════════════════
+   PANTALLA INICIAL (index.html)
+═══════════════════════════════════════════ */
+.cs-home-body {
+  background: #1a1c1f;
+  background-image:
+    radial-gradient(ellipse at 60% 20%, rgba(46,134,193,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(79,195,195,0.04) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+.cs-nav-card {
+  width: 100%;
+  background: #232628;
+  border: 1px solid #2e3033;
+  border-radius: 18px;
+  padding: 1.1rem 1.25rem;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color 0.18s, background 0.18s, transform 0.1s, box-shadow 0.18s;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+}
+.cs-nav-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+}
+.cs-nav-card:active { transform: scale(0.98); box-shadow: none; }
+
+.cs-nav-icon {
+  width: 46px; height: 46px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cs-nav-icon-terr  { background: #1a3a1a; }
+.cs-nav-icon-asign { background: #1a2340; }
+
+.cs-nav-card-terr:hover  { border-color: #3a6b3a; background: #242826; }
+.cs-nav-card-asign:hover { border-color: #2e4070; background: #23252e; }
+
+.cs-nav-title { font-size: 17px; font-weight: 600; color: #e8e8e8; margin-bottom: 2px; }
+.cs-nav-sub   { font-size: 13px; color: #666; }
+
+.cs-logo-title {
+  font-size: 34px; font-weight: 700;
+  color: #f0f0f0; letter-spacing: -0.5px;
+}
+.cs-logo-sub { font-size: 14px; color: #555; }
+.cs-footer   { font-size: 12px; color: #3a3a3a; margin-top: 4px; }
+
+/* ═══════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════ */
 .ui-toast-container {
@@ -358,36 +411,31 @@
 })();
 
 /* ─────────────────────────────────────────
-   LOGO SVG — Hexágono violeta
+   LOGO SVG — Hexágono azul-teal
 ───────────────────────────────────────── */
-window.CS_LOGO_SVG = `<svg class="cs-logo-svg" width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+window.CS_LOGO_SVG = `<svg class="cs-logo-svg" width="80" height="80" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="csLogoGrad" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#8B7FE8"/>
-      <stop offset="50%" stop-color="#6B5FD4"/>
-      <stop offset="100%" stop-color="#4A44A5"/>
+    <linearGradient id="csLogoGrad" x1="8" y1="4" x2="64" y2="68" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4FC3C3"/>
+      <stop offset="50%" stop-color="#2E86C1"/>
+      <stop offset="100%" stop-color="#1A5C9A"/>
     </linearGradient>
-    <linearGradient id="csIconGrad" x1="20" y1="20" x2="52" y2="52" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#C4BFFF"/>
-      <stop offset="100%" stop-color="#8B7FE8"/>
+    <linearGradient id="csIconGrad" x1="18" y1="18" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7DE8E8"/>
+      <stop offset="100%" stop-color="#4FB8E0"/>
     </linearGradient>
     <filter id="csShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#4A44A5" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#1A5C9A" flood-opacity="0.5"/>
     </filter>
   </defs>
-  <!-- Hexágono -->
   <path d="M36 4 L64 20 L64 52 L36 68 L8 52 L8 20 Z"
     fill="url(#csLogoGrad)" filter="url(#csShadow)"/>
-  <!-- Borde interior sutil -->
-  <path d="M36 8 L61 22.5 L61 49.5 L36 64 L11 49.5 L11 22.5 Z"
-    fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-  <!-- Personas (dos figuras) -->
-  <!-- Persona izquierda -->
+  <path d="M36 9 L60 23 L60 49 L36 63 L12 49 L12 23 Z"
+    fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
   <circle cx="28" cy="27" r="6" fill="url(#csIconGrad)"/>
-  <path d="M16 48 C16 40 22 36 28 36 C31 36 33.5 37.2 35.5 39" stroke="url(#csIconGrad)" stroke-width="3" stroke-linecap="round" fill="none"/>
-  <!-- Persona derecha (más grande, delante) -->
+  <path d="M16 48 C16 40 22 36 28 36 C31 36 33.5 37.2 35.5 39" stroke="url(#csIconGrad)" stroke-width="2.8" stroke-linecap="round" fill="none"/>
   <circle cx="40" cy="25" r="7" fill="url(#csIconGrad)"/>
-  <path d="M26 50 C27 41.5 33 37 40 37 C47 37 53 41.5 54 50" stroke="url(#csIconGrad)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <path d="M26 50 C27 41.5 33 37 40 37 C47 37 53 41.5 54 50" stroke="url(#csIconGrad)" stroke-width="3.2" stroke-linecap="round" fill="none"/>
 </svg>`;
 
 /* Helper para insertar el logo donde haya .cs-logo-placeholder */
