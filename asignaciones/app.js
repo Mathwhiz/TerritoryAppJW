@@ -679,15 +679,13 @@ function generarAutomatico() {
     return;
   }
 
-  // ── Contar historial por persona y rol-grupo ──
-  // Agrupamos SONIDO_1/SONIDO_2 como 'SONIDO' y MICROFONISTAS_1/2 como 'MICROFONISTAS'
   function getRolGrupo(rol) {
     if (rol === 'SONIDO_1' || rol === 'SONIDO_2') return 'SONIDO';
     if (rol === 'MICROFONISTAS_1' || rol === 'MICROFONISTAS_2') return 'MICROFONISTAS';
     return rol;
   }
 
-  const contadores = {}; // { nombre: { rolGrupo: count } }
+  const contadores = {};
   todasLasFilas.forEach(row => {
     ROLES.forEach(r => {
       const nombre = row[r];
@@ -697,18 +695,9 @@ function generarAutomatico() {
       contadores[nombre][rg] = (contadores[nombre][rg] || 0) + 1;
     });
   });
-function getCount(nombre, rolGrupo) {
-    const base = contadores[nombre]?.[rolGrupo] || 0;
-    // Mientras más roles tiene alguien, más probable que ya esté ocupado
-    // por eso no necesita bonus. El que tiene pocos roles necesita
-    // que se distribuya mejor entre ellos.
-    // La solución es normalizar: dividir el conteo por la cantidad de roles
-    // para que alguien con 1 rol "gaste" más rápido su turno
-    const rolesDisponibles = Object.keys(hermanos).filter(listaKey => 
-      (hermanos[listaKey] || []).includes(nombre)
-    ).length;
-    const factor = Math.max(1, rolesDisponibles);
-    return base / factor;
+
+  function getCount(nombre, rolGrupo) {
+    return (contadores[nombre]?.[rolGrupo] || 0);
   }
 
   function incrementar(nombre, rolGrupo) {
@@ -716,17 +705,15 @@ function getCount(nombre, rolGrupo) {
     contadores[nombre][rolGrupo] = (contadores[nombre][rolGrupo] || 0) + 1;
   }
 
-  // ── Definir slots por reunión ──
-  // Cada slot tiene: rolGrupo, listaKey, cantidad, roles[] (los campos a llenar)
   const SLOTS_MIERC = [
-    { rolGrupo:'LECTOR',               listaKey:'LECTOR',               cantidad:1, roles:['LECTOR'] },
-    { rolGrupo:'SONIDO',               listaKey:'SONIDO_1',              cantidad:2, roles:['SONIDO_1','SONIDO_2'] },
-    { rolGrupo:'PLATAFORMA',           listaKey:'PLATAFORMA',            cantidad:1, roles:['PLATAFORMA'] },
-    { rolGrupo:'MICROFONISTAS',        listaKey:'MICROFONISTAS_1',       cantidad:2, roles:['MICROFONISTAS_1','MICROFONISTAS_2'] },
-    { rolGrupo:'ACOMODADOR_AUDITORIO', listaKey:'ACOMODADOR_AUDITORIO',  cantidad:1, roles:['ACOMODADOR_AUDITORIO'] },
-    { rolGrupo:'ACOMODADOR_ENTRADA',   listaKey:'ACOMODADOR_ENTRADA',    cantidad:1, roles:['ACOMODADOR_ENTRADA'] },
-    { rolGrupo:'REVISTAS',             listaKey:'REVISTAS',              cantidad:1, roles:['REVISTAS'] },
-    { rolGrupo:'PUBLICACIONES',        listaKey:'PUBLICACIONES',         cantidad:1, roles:['PUBLICACIONES'] },
+    { rolGrupo:'LECTOR',               listaKey:'LECTOR',              cantidad:1, roles:['LECTOR'] },
+    { rolGrupo:'SONIDO',               listaKey:'SONIDO_1',             cantidad:2, roles:['SONIDO_1','SONIDO_2'] },
+    { rolGrupo:'PLATAFORMA',           listaKey:'PLATAFORMA',           cantidad:1, roles:['PLATAFORMA'] },
+    { rolGrupo:'MICROFONISTAS',        listaKey:'MICROFONISTAS_1',      cantidad:2, roles:['MICROFONISTAS_1','MICROFONISTAS_2'] },
+    { rolGrupo:'ACOMODADOR_AUDITORIO', listaKey:'ACOMODADOR_AUDITORIO', cantidad:1, roles:['ACOMODADOR_AUDITORIO'] },
+    { rolGrupo:'ACOMODADOR_ENTRADA',   listaKey:'ACOMODADOR_ENTRADA',   cantidad:1, roles:['ACOMODADOR_ENTRADA'] },
+    { rolGrupo:'REVISTAS',             listaKey:'REVISTAS',             cantidad:1, roles:['REVISTAS'] },
+    { rolGrupo:'PUBLICACIONES',        listaKey:'PUBLICACIONES',        cantidad:1, roles:['PUBLICACIONES'] },
   ];
 
   const SLOTS_SAB = [
@@ -734,8 +721,7 @@ function getCount(nombre, rolGrupo) {
     { rolGrupo:'PRESIDENTE', listaKey:'PRESIDENTE', cantidad:1, roles:['PRESIDENTE'] },
   ];
 
- // ── Registrar última reunión en que trabajó cada persona en cada rol ──
-  const ultimaVez = {}; // { nombre: { rolGrupo: índice de reunión } }
+  const ultimaVez = {};
   todasLasFilas.forEach((row, idx) => {
     ROLES.forEach(r => {
       const nombre = row[r];
@@ -760,8 +746,6 @@ function getCount(nombre, rolGrupo) {
     const entry = { fecha, dia };
     const yaAsignados = new Set();
     const slots = dia === 'Miércoles' ? SLOTS_MIERC : SLOTS_SAB;
-
-    // Índice global contando el historial existente
     const idxGlobal = todasLasFilas.length + reunionIdx;
 
     slots.forEach(slot => {
@@ -774,11 +758,15 @@ function getCount(nombre, rolGrupo) {
       const disponibles = lista
         .filter(h => !yaAsignados.has(h))
         .sort((a, b) => {
-          // Penalizar si trabajó ese rol la reunión anterior
           const penA = trabajoEnAnterior(a, slot.rolGrupo, idxGlobal) ? 1000 : 0;
           const penB = trabajoEnAnterior(b, slot.rolGrupo, idxGlobal) ? 1000 : 0;
           const diff = (getCount(a, slot.rolGrupo) + penA) - (getCount(b, slot.rolGrupo) + penB);
           if (diff !== 0) return diff;
+          // Empate: priorizar al que tiene menos roles disponibles
+          const rolesA = Object.keys(hermanos).filter(k => (hermanos[k]||[]).includes(a)).length;
+          const rolesB = Object.keys(hermanos).filter(k => (hermanos[k]||[]).includes(b)).length;
+          if (rolesA !== rolesB) return rolesA - rolesB;
+          // Segundo empate: menor carga total
           const totalA = Object.values(contadores[a] || {}).reduce((s,v) => s+v, 0);
           const totalB = Object.values(contadores[b] || {}).reduce((s,v) => s+v, 0);
           return totalA - totalB;
@@ -812,12 +800,12 @@ function getCount(nombre, rolGrupo) {
     });
 
     return entry;
-    });
-  
-    hide('auto-loading');
-    renderAutoPreview(autoResult);
-    show('auto-guardar-wrap');
-  }
+  });
+
+  hide('auto-loading');
+  renderAutoPreview(autoResult);
+  show('auto-guardar-wrap');
+}
   
 function renderAutoPreview(rows) {
   const body = document.getElementById('auto-preview-modal-body');
