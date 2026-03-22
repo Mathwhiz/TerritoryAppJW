@@ -286,7 +286,15 @@ function goToMapa() {
   window.location.href = 'mapa.html';
 }
 
-function cerrarSesion() {
+async function cerrarSesion() {
+  const ok = await uiConfirm({
+    title: '¿Cerrar sesión?',
+    msg: 'Vas a volver a la pantalla de grupos.',
+    confirmText: 'Cerrar sesión',
+    cancelText: 'Cancelar',
+    type: 'warn'
+  });
+  if (!ok) return;
   selectedGrupo = null;
   _conductoresListos = false;
   _conductoresResolvers = [];
