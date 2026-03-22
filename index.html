@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <script>
-  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.people.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||({}));
-  posthog.init('phc_obb7Qh52WhPp01smBZOJpc6ozU0H7PSyxZ9HEMouOHl', {
-    api_host: 'https://app.posthog.com',
-    person_profiles: 'identified_only'
-  })
-</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Congregación Sur</title>
@@ -35,7 +28,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 12px;
     }
     .logo-title {
@@ -44,10 +37,7 @@
       color: #eee;
       letter-spacing: -0.5px;
     }
-    .logo-sub {
-      font-size: 14px;
-      color: #888;
-    }
+    .logo-sub { font-size: 14px; color: #888; }
     .nav-card {
       width: 100%;
       background: #2a2a2a;
@@ -66,36 +56,24 @@
     .nav-card:hover { transform: scale(1.02); }
     .nav-card:active { transform: scale(0.98); }
     .nav-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .nav-title { font-size: 17px; font-weight: 500; color: #eee; margin-bottom: 3px; }
     .nav-sub   { font-size: 13px; color: #888; }
-
     .card-terr  { border-color: #97C459; }
     .card-terr  .nav-icon { background: rgba(151,196,89,0.15); }
     .card-terr:hover { background: rgba(151,196,89,0.07); }
-
     .card-asign { border-color: #7F77DD; }
     .card-asign .nav-icon { background: rgba(127,119,221,0.15); }
     .card-asign:hover { background: rgba(127,119,221,0.07); }
-
     .footer { font-size: 12px; color: #555; margin-top: 8px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-
     <div class="logo">
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-          stroke="#7F77DD" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <div class="cs-logo-placeholder"></div>
       <div class="logo-title">Congregación Sur</div>
       <div class="logo-sub">Seleccioná un módulo</div>
     </div>
@@ -128,5 +106,6 @@
 
     <div class="footer">Congregación Sur · App interna</div>
   </div>
+  <script src="ui-utils.js"></script>
 </body>
 </html>

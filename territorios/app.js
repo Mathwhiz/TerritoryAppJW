@@ -400,8 +400,10 @@ async function goToStep1() {
   show('view-config'); setStep(1);
   semanaOffset = 0;
   updateWeekInfo();
-  show('terr-loading');
   hide('terr-error');
+
+  if (window.uiLoading) uiLoading.show('Cargando territorios...');
+  else show('terr-loading');
 
   try {
     territoriosData = {};
@@ -420,10 +422,10 @@ async function goToStep1() {
     const cfgUrl = SCRIPT_URL + '?action=getConfig&grupo=' + encodeURIComponent(selectedGrupo);
     const cfgResp = await fetch(cfgUrl);
     configData = JSON.parse(await cfgResp.text());
-    hide('terr-loading');
+    if (window.uiLoading) uiLoading.hide(); else hide('terr-loading');
     renderSalidas();
   } catch(err) {
-    hide('terr-loading');
+    if (window.uiLoading) uiLoading.hide(); else hide('terr-loading');
     const errEl = document.getElementById('terr-error');
     errEl.innerHTML = `<div class="error-wrap">Error al cargar: ${err.message}. <button class="btn-secondary" style="font-size:12px;padding:4px 10px;margin-left:8px;" onclick="goToStep1()">Reintentar</button></div>`;
     show('terr-error');
@@ -557,7 +559,16 @@ function renderSalidaCard(s) {
       <div><label>Hora</label><input type="time" id="sal-hora-${s.id}" value="${s.hora}"></div>
     </div>
     <div class="form-row">
-      <div><label>Conductor</label><select id="sal-cond-${s.id}">${getConductorOptions(selectedGrupo, s.conductor)}</select></div>
+      <div>
+        <label>Conductor</label>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <select id="sal-cond-${s.id}" style="flex:1;">${getConductorOptions(selectedGrupo, s.conductor)}</select>
+          <button type="button" onclick="openConductorPicker('sal-cond-${s.id}', selectedGrupo, this)"
+            style="padding:6px 10px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;flex-shrink:0;font-weight:500;">
+            👤
+          </button>
+        </div>
+      </div>
       ${esTel ? '' : `
       <div>
         <div style="display:flex;align-items:flex-end;gap:6px;">
@@ -598,6 +609,26 @@ function addExtraTerritory(salidaId) {
   const uid = `sal-terr-${salidaId}-x${idx}`;
   wrap.innerHTML = `<select id="${uid}" style="flex:1;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">${getTerritoryOptions()}</select><button type="button" onclick="this.parentElement.remove()" style="padding:6px 9px;background:#2e1a1a;color:#F09595;border:0.5px solid #A32D2D;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">−</button>`;
   container.appendChild(wrap);
+}
+
+/* ─────────────────────────────────────────
+   CONDUCTOR PICKER
+───────────────────────────────────────── */
+function openConductorPicker(selectId, grupo, btn) {
+  const conductores = CONDUCTORES_BY_GROUP[grupo] || [];
+  if (!window.uiConductorPicker || conductores.length === 0) return;
+  const sel = document.getElementById(selectId);
+  const valActual = sel ? sel.value : '';
+  const color = GCOLORS[grupo] || '#97C459';
+  uiConductorPicker({
+    conductores,
+    value: valActual,
+    label: 'Elegí el conductor',
+    color,
+  }).then(resultado => {
+    if (resultado === null) return;
+    if (sel) sel.value = resultado;
+  });
 }
 
 /* ─────────────────────────────────────────
@@ -776,8 +807,8 @@ async function registrarEnProgreso() {
     return;
   }
   btn.disabled = true;
-  status.style.color = '#888';
-  status.textContent = `Registrando ${territoriosARegistrar.length} territorio(s)...`;
+  if (window.uiLoading) uiLoading.show(`Registrando ${territoriosARegistrar.length} territorio(s)...`);
+  else { status.style.color = '#888'; status.textContent = `Registrando ${territoriosARegistrar.length} territorio(s)...`; }
   try {
     for (const t of territoriosARegistrar) {
       const url = SCRIPT_URL + '?action=saveRecord&grupo=' + encodeURIComponent(selectedGrupo) +
@@ -797,11 +828,13 @@ async function registrarEnProgreso() {
     const histUrl = SCRIPT_URL + '?action=saveHistorial&grupo=' + encodeURIComponent(selectedGrupo) +
       '&salidas=' + encodeURIComponent(JSON.stringify(salidasParaHistorial));
     await fetch(histUrl);
+    if (window.uiLoading) uiLoading.hide();
     status.style.color = '#5DCAA5';
     status.textContent = `✓ ${territoriosARegistrar.length} territorio(s) registrado(s) como en progreso`;
     btn.disabled = true;
     btn.textContent = 'Ya registrado ✓';
   } catch(err) {
+    if (window.uiLoading) uiLoading.hide();
     status.style.color = '#F09595';
     status.textContent = 'Error: ' + err.message;
     btn.disabled = false;
@@ -866,7 +899,16 @@ function renderRegistrar() {
       </div>
       <div id="reg-fields-${n}">
         <div class="form-row">
-          <div><label>Conductor</label>${condSelect('reg-cond-'+n, selectedGrupo)}</div>
+          <div>
+            <label>Conductor</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <select id="reg-cond-${n}" style="flex:1;">${getConductorOptions(selectedGrupo)}</select>
+              <button type="button" onclick="openConductorPicker('reg-cond-${n}', selectedGrupo, this)"
+                style="padding:6px 10px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;flex-shrink:0;font-weight:500;">
+                👤
+              </button>
+            </div>
+          </div>
           <div><label>Fecha inicio</label><input type="date" id="reg-ini-${n}" value="${ini}"></div>
         </div>
         <div><label>Fecha fin</label><input type="date" id="reg-fin-${n}" value="${ini}" style="width:100%;font-size:13px;padding:6px 8px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;margin-top:3px;"></div>
@@ -901,8 +943,6 @@ async function guardarRegistros() {
   const btn    = document.getElementById('btn-guardar');
   const status = document.getElementById('save-status');
   btn.disabled = true;
-  status.style.color = '#888';
-  status.textContent = 'Guardando...';
   const cards = document.querySelectorAll('[id^="reg-card-"]');
   const saves = [];
   cards.forEach(card => {
@@ -920,6 +960,8 @@ async function guardarRegistros() {
     btn.disabled = false;
     return;
   }
+  if (window.uiLoading) uiLoading.show('Guardando registros...');
+  else { status.style.color = '#888'; status.textContent = 'Guardando...'; }
   try {
     for (const s of saves) {
       const url = SCRIPT_URL + '?action=saveRecord&grupo=' + encodeURIComponent(selectedGrupo) +
@@ -930,10 +972,12 @@ async function guardarRegistros() {
       await fetch(url);
     }
     territoriosData = {};
+    if (window.uiLoading) uiLoading.hide();
     status.style.color = '#5DCAA5';
     status.textContent = 'Guardado correctamente';
     btn.disabled = false;
   } catch(err) {
+    if (window.uiLoading) uiLoading.hide();
     status.style.color = '#F09595';
     status.textContent = 'Error al guardar: ' + err.message;
     btn.disabled = false;
