@@ -30,7 +30,6 @@ async function cargarConductores() {
       h.roles.forEach(rol => {
         const grupo = MAP[rol.trim().toUpperCase()];
         if (grupo !== undefined) {
-          // Asegurar que la clave exista (int y string pueden diferir)
           if (!CONDUCTORES_BY_GROUP[grupo]) CONDUCTORES_BY_GROUP[grupo] = [];
           if (!CONDUCTORES_BY_GROUP[grupo].includes(h.nombre)) {
             CONDUCTORES_BY_GROUP[grupo].push(h.nombre);
@@ -288,7 +287,6 @@ function goToMapa() {
 }
 
 function cerrarSesion() {
-  if (!confirm('¿Cerrar sesión?')) return;
   selectedGrupo = null;
   _conductoresListos = false;
   _conductoresResolvers = [];
@@ -351,7 +349,7 @@ function checkPin() {
     document.getElementById('pin-modal').style.display = 'none';
     pinBuffer = '';
     goToModo();
-    cargarConductores(); // en segundo plano, sin bloquear
+    cargarConductores();
   } else {
     document.getElementById('pin-error').textContent = 'PIN incorrecto, intentá de nuevo';
     pinBuffer = '';
@@ -463,6 +461,8 @@ function renderSalidas() {
         <div><label>Hora tarde</label><input type="time" id="tel-fija-tarde" value="17:00"></div>
       </div>`;
     c.appendChild(telBlock);
+    // upgrade inmediato para el bloque telefónica
+    if (window.upgradeInputs) upgradeInputs(telBlock);
   }
 
   const plantilla = getPlantilla(selectedGrupo);
@@ -558,8 +558,8 @@ function renderSalidaCard(s) {
             <select id="sal-terr-${s.id}">${getTerritoryOptions()}</select>
           </div>
           <button type="button" onclick="openMapaPicker(${s.id})" title="Elegir del mapa"
-            style="margin-bottom:1px;padding:6px 8px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:12px;line-height:1;flex-shrink:0;white-space:nowrap;font-weight:500;">
-            🗺
+            style="margin-bottom:1px;padding:6px 14px;background:#1a1a2e;color:#7F77DD;border:0.5px solid #4A44A5;border-radius:8px;cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;white-space:nowrap;font-weight:500;">
+            🗺 Mapa
           </button>
           <button type="button" onclick="addExtraTerritory(${s.id})"
             style="margin-bottom:1px;padding:6px 9px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">+</button>
@@ -572,6 +572,13 @@ function renderSalidaCard(s) {
       <input type="text" id="sal-enc-${s.id}" value="${s.encuentro}" placeholder="Ej: Flia. García / esq. X y Y">
     </div>`;
   c.appendChild(div);
+  // Upgrade de date/time inputs en el card recién creado
+  if (window.upgradeInputs) upgradeInputs(div);
+  // Actualizar label del día cuando cambie la fecha
+  const fechaInput = div.querySelector(`#sal-fecha-${s.id}`);
+  if (fechaInput) {
+    fechaInput.addEventListener('change', () => updateDiaLabel(s.id));
+  }
 }
 
 function addExtraTerritory(salidaId) {
@@ -602,7 +609,6 @@ function openMapaPicker(salidaId) {
   document.body.style.overflow = 'hidden';
 }
 
-// Listener de mensajes del iframe (picker-result / picker-cancel)
 window.addEventListener('message', function(event) {
   const data = event.data;
   if (!data || !data.type) return;
@@ -612,7 +618,6 @@ window.addEventListener('message', function(event) {
     closeMapaPopup();
     if (!territorios || territorios.length === 0) return;
 
-    // Asignar primer territorio al selector principal
     const mainSel = document.getElementById('sal-terr-' + salidaId);
     if (mainSel && territorios[0]) {
       const opt = [...mainSel.options].find(o => o.value === territorios[0]);
@@ -627,7 +632,6 @@ window.addEventListener('message', function(event) {
       }
     }
 
-    // Los adicionales van a extra-terrs
     const extraContainer = document.getElementById('extra-terrs-' + salidaId);
     if (extraContainer && territorios.length > 1) {
       territorios.slice(1).forEach(num => {
@@ -862,6 +866,8 @@ function renderRegistrar() {
     c.appendChild(div);
   });
   show('reg-container'); show('reg-footer');
+  // Upgrade date inputs en las cards de registro
+  if (window.upgradeInputs) upgradeInputs(c);
 }
 
 function setEstado(n, estado) {
@@ -907,14 +913,14 @@ async function guardarRegistros() {
     return;
   }
   try {
-    await Promise.all(saves.map(s => {
+    for (const s of saves) {
       const url = SCRIPT_URL + '?action=saveRecord&grupo=' + encodeURIComponent(selectedGrupo) +
         '&territorio='  + encodeURIComponent(s.territorio) +
         '&conductor='   + encodeURIComponent(s.conductor) +
         '&fechaInicio=' + encodeURIComponent(s.fechaInicio) +
         '&fechaFin='    + encodeURIComponent(s.fechaFin);
-      return fetch(url);
-    }));
+      await fetch(url);
+    }
     territoriosData = {};
     status.style.color = '#5DCAA5';
     status.textContent = 'Guardado correctamente';
@@ -1045,7 +1051,15 @@ function renderHistorial(rows) {
 }
 
 async function deleteEntry(rowIndex) {
-  if (!confirm('¿Eliminar esta entrada?')) return;
+  // ── REEMPLAZA confirm() nativo ──
+  const ok = await uiConfirm({
+    title: '¿Eliminar entrada?',
+    msg: 'Esta acción no se puede deshacer.',
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+    type: 'danger'
+  });
+  if (!ok) return;
   const url = SCRIPT_URL + '?action=deleteRecord&grupo=' + encodeURIComponent(selectedGrupo) +
     '&territorio=' + encodeURIComponent(modalTerr) + '&rowIndex=' + encodeURIComponent(rowIndex);
   await fetch(url);
@@ -1062,6 +1076,8 @@ function startAddEntry() {
   input.value = '';
   document.getElementById('edit-ini').value = '';
   document.getElementById('edit-fin').value = '';
+  // Upgrade date inputs del formulario de edición
+  if (window.upgradeInputs) upgradeInputs(document.getElementById('modal-edit-form'));
 }
 
 function startEdit(idx, rowIndex, conductor, ini, fin) {
@@ -1081,6 +1097,8 @@ function startEdit(idx, rowIndex, conductor, ini, fin) {
   }
   document.getElementById('edit-ini').value = toInputDate(ini);
   document.getElementById('edit-fin').value = toInputDate(fin);
+  // Upgrade date inputs del formulario de edición
+  if (window.upgradeInputs) upgradeInputs(document.getElementById('modal-edit-form'));
 }
 
 function cancelEdit() {
@@ -1092,7 +1110,11 @@ async function saveEdit() {
   const conductor = document.getElementById('edit-cond').value.trim();
   const ini = document.getElementById('edit-ini').value;
   const fin = document.getElementById('edit-fin').value;
-  if (!conductor) { alert('Elegí un conductor'); return; }
+  if (!conductor) {
+    // ── REEMPLAZA alert() nativo ──
+    await uiAlert('Elegí un conductor antes de guardar.', 'Falta el conductor');
+    return;
+  }
   if (editingRow) {
     const url = SCRIPT_URL + '?action=updateRecord&grupo=' + encodeURIComponent(selectedGrupo) +
       '&territorio=' + encodeURIComponent(modalTerr) + '&rowIndex=' + encodeURIComponent(editingRow) +
@@ -1189,7 +1211,15 @@ function renderHistorialSalidas(rows) {
 }
 
 async function deleteHistorialGrupo(startRowIndex, count, btn) {
-  if (!confirm('¿Eliminar todas las salidas de esta semana?')) return;
+  // ── REEMPLAZA confirm() nativo ──
+  const ok = await uiConfirm({
+    title: '¿Eliminar semana?',
+    msg: `Se eliminarán ${count} salida${count !== 1 ? 's' : ''} de esta semana. Esta acción no se puede deshacer.`,
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+    type: 'danger'
+  });
+  if (!ok) return;
   btn.disabled = true;
   for (let i = count - 1; i >= 0; i--) {
     const url = SCRIPT_URL + '?action=deleteHistorialRow&grupo=' + encodeURIComponent(selectedGrupo) + '&rowIndex=' + (startRowIndex + i);
@@ -1230,14 +1260,3 @@ function closeMapaPopup() {
   iframe.src = '';
   document.body.style.overflow = '';
 }
-
-
-window.addEventListener('online',  () => document.getElementById('offline-banner')?.classList.remove('visible'));
-window.addEventListener('offline', () => document.getElementById('offline-banner')?.classList.add('visible'));
-
-
-
-
-
-
-

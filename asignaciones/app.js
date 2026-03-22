@@ -16,10 +16,6 @@ const ROLES_LABELS = {
 };
 const ROLES = Object.keys(ROLES_LABELS);
 
-// Mapeo: columna de programación → lista de hermanos a usar en el selector
-// SONIDO_1 y SONIDO_2 comparten la lista del rol SONIDO; igual para MICROFONISTAS
-// El Apps Script (Code.gs actualizado) devuelve SONIDO_1 y SONIDO_2 con la misma lista,
-// igual para MICROFONISTAS_1 y MICROFONISTAS_2. SONIDO_2 solo necesita apuntar a SONIDO_1.
 const ROL_LISTA_MAP = {
   SONIDO_2:        'SONIDO_1',
   MICROFONISTAS_2: 'MICROFONISTAS_1',
@@ -128,7 +124,6 @@ function getLunesDeOffset(offset) {
   return monday;
 }
 
-// Convierte "dd/mm/yy" a número YYYYMMDD para comparación sin timezone
 function fechaToNum(str) {
   if (!str) return 0;
   const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
@@ -150,7 +145,6 @@ function getFilasDeSemana(rows, offset) {
     .sort((a, b) => fechaToNum(a.fecha) - fechaToNum(b.fecha));
 }
 
-// Mantener por compatibilidad (usado en buscarHermano)
 function getFilasSemanaActual(rows) { return getFilasDeSemana(rows, 0); }
 
 function getLabelSemana(rows) {
@@ -226,11 +220,7 @@ function pinCancel() { hide('pin-modal'); pinBuffer = ''; }
 /* ─── Navegación ─── */
 function goToCover() { showView('view-cover'); }
 function goToPin()   { openPin(); }
-function cerrarSesionEncargado() {
-  if (!confirm('¿Cerrar sesión?')) return;
-  esEncargado = false;
-  goToCover();
-}
+function cerrarSesionEncargado() { esEncargado = false; goToCover(); }
 function goToEncargado() { showView('view-encargado'); }
 
 async function goToVerSemana() {
@@ -298,45 +288,6 @@ async function goToAutomatico() {
     try { hermanos = await apiFetch({ action: 'getHermanos' }); } catch(e) {}
   if (todasLasFilas.length === 0)
     try { const d = await apiFetch({ action: 'getProgramacion' }); todasLasFilas = d.rows || []; } catch(e) {}
-
-  // Calcular fecha desde: primer miércoles o sábado vacío
-  const hoy = new Date(); hoy.setHours(0,0,0,0);
-  const fechasExistentes = new Set(todasLasFilas.map(r => r.fecha));
-  // Buscar desde el último dato existente, no desde hoy
-const fechasOrdenadas = todasLasFilas
-    .map(r => r.fecha)
-    .filter(Boolean)
-    .sort((a, b) => {
-      const toNum = f => {
-        const p = f.split('/');
-        const anio = p[2]?.length === 2 ? '20' + p[2] : p[2];
-        return parseInt(anio + p[1].padStart(2,'0') + p[0].padStart(2,'0'));
-      };
-      return toNum(a) - toNum(b);
-    });
-  const ultimaFecha = fechasOrdenadas[fechasOrdenadas.length - 1];
-let desdeDate;
-  if (ultimaFecha) {
-    const p = ultimaFecha.split('/');
-    const dia = p[0], mes = p[1], anio = p[2]?.length === 2 ? '20' + p[2] : p[2];
-    desdeDate = new Date(`${anio}-${mes}-${dia}T00:00:00`);
-  } else {
-    desdeDate = new Date(hoy);
-  }
-  desdeDate.setDate(desdeDate.getDate() + 1);
-    while (true) {
-      const dow = desdeDate.getDay();
-      if (dow === 3 || dow === 6) break;
-      desdeDate.setDate(desdeDate.getDate() + 1);
-    }
-
-  // Fecha hasta: 3 meses desde desde
-  const hastaDate = new Date(desdeDate);
-  hastaDate.setMonth(hastaDate.getMonth() + 3);
-
-  document.getElementById('auto-desde').value = desdeDate.toISOString().split('T')[0];
-  document.getElementById('auto-hasta').value = hastaDate.toISOString().split('T')[0];
-  document.getElementById('auto-desde').min = hoy.toISOString().split('T')[0];
 }
 
 async function goToGenerarImagen() {
@@ -641,192 +592,61 @@ function generarAutomatico() {
     setText('auto-status', 'Cargando hermanos...');
     return;
   }
-
-  const desdeVal = document.getElementById('auto-desde').value;
-  const hastaVal = document.getElementById('auto-hasta').value;
-  if (!desdeVal || !hastaVal) {
-    setText('auto-status', 'Elegí las fechas primero.');
-    return;
-  }
-
-  const desde = new Date(desdeVal + 'T00:00:00');
-  const hasta  = new Date(hastaVal + 'T00:00:00');
-  if (desde > hasta) {
-    setText('auto-status', 'La fecha desde no puede ser mayor que hasta.');
-    return;
-  }
-
   show('auto-loading'); hide('auto-preview'); hide('auto-guardar-wrap');
-
-  const reemplazar = document.getElementById('auto-reemplazar')?.checked;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const finRango = new Date(hoy); finRango.setMonth(finRango.getMonth() + 3);
   const fechasExistentes = new Set(todasLasFilas.map(r => r.fecha));
   const fechasAGenerar = [];
-  const cursor = new Date(desde);
-  while (cursor <= hasta) {
+  const cursor = new Date(hoy);
+  while (cursor <= finRango) {
     const dow = cursor.getDay();
     if (dow === 3 || dow === 6) {
       const f = fmtFecha(cursor);
-      if (!fechasExistentes.has(f) || reemplazar)
+      if (!fechasExistentes.has(f))
         fechasAGenerar.push({ fecha: f, dia: dow === 3 ? 'Miércoles' : 'Sábado' });
     }
     cursor.setDate(cursor.getDate() + 1);
   }
-
   if (fechasAGenerar.length === 0) {
     hide('auto-loading');
-    setText('auto-status', 'Ya existe programación para el rango elegido.');
+    setText('auto-status', 'Ya existe programación para los próximos 3 meses.');
     show('auto-guardar-wrap');
     autoResult = [];
     return;
   }
-
-  function getRolGrupo(rol) {
-    if (rol === 'SONIDO_1' || rol === 'SONIDO_2') return 'SONIDO';
-    if (rol === 'MICROFONISTAS_1' || rol === 'MICROFONISTAS_2') return 'MICROFONISTAS';
-    return rol;
-  }
-
-  function getCount(nombre, rolGrupo) {
-    return (contadores[nombre]?.[rolGrupo] || 0);
-  }
-
-  function incrementar(nombre, rolGrupo) {
-    if (!contadores[nombre]) contadores[nombre] = {};
-    contadores[nombre][rolGrupo] = (contadores[nombre][rolGrupo] || 0) + 1;
-  }
-
-  const SLOTS_MIERC = [
-    { rolGrupo:'LECTOR',               listaKey:'LECTOR',              cantidad:1, roles:['LECTOR'] },
-    { rolGrupo:'SONIDO',               listaKey:'SONIDO_1',             cantidad:2, roles:['SONIDO_1','SONIDO_2'] },
-    { rolGrupo:'PLATAFORMA',           listaKey:'PLATAFORMA',           cantidad:1, roles:['PLATAFORMA'] },
-    { rolGrupo:'MICROFONISTAS',        listaKey:'MICROFONISTAS_1',      cantidad:2, roles:['MICROFONISTAS_1','MICROFONISTAS_2'] },
-    { rolGrupo:'ACOMODADOR_AUDITORIO', listaKey:'ACOMODADOR_AUDITORIO', cantidad:1, roles:['ACOMODADOR_AUDITORIO'] },
-    { rolGrupo:'ACOMODADOR_ENTRADA',   listaKey:'ACOMODADOR_ENTRADA',   cantidad:1, roles:['ACOMODADOR_ENTRADA'] },
-    { rolGrupo:'REVISTAS',             listaKey:'REVISTAS',             cantidad:1, roles:['REVISTAS'] },
-    { rolGrupo:'PUBLICACIONES',        listaKey:'PUBLICACIONES',        cantidad:1, roles:['PUBLICACIONES'] },
-  ];
-
-  const SLOTS_SAB = [
-    ...SLOTS_MIERC,
-    { rolGrupo:'PRESIDENTE', listaKey:'PRESIDENTE', cantidad:1, roles:['PRESIDENTE'] },
-  ];
-
-const usarHistorial = document.getElementById('auto-usar-historial')?.checked;
-
-  const contadores = {};
-  if (usarHistorial) {
-    todasLasFilas.forEach(row => {
-      ROLES.forEach(r => {
-        const nombre = row[r];
-        if (!nombre) return;
-        const rg = getRolGrupo(r);
-        if (!contadores[nombre]) contadores[nombre] = {};
-        contadores[nombre][rg] = (contadores[nombre][rg] || 0) + 1;
-      });
-    });
-  }
-
-  const ultimaVez = {};
-  if (usarHistorial) {
-    todasLasFilas.forEach((row, idx) => {
-      ROLES.forEach(r => {
-        const nombre = row[r];
-        if (!nombre) return;
-        const rg = getRolGrupo(r);
-        if (!ultimaVez[nombre]) ultimaVez[nombre] = {};
-        ultimaVez[nombre][rg] = idx;
-      });
-    });
-  }
-
-  function trabajoEnAnterior(nombre, rolGrupo, reunionIdx) {
-    if (!ultimaVez[nombre]?.[rolGrupo]) return false;
-    return ultimaVez[nombre][rolGrupo] === reunionIdx - 1;
-  }
-
-  function actualizarUltimaVez(nombre, rolGrupo, reunionIdx) {
-    if (!ultimaVez[nombre]) ultimaVez[nombre] = {};
-    ultimaVez[nombre][rolGrupo] = reunionIdx;
-  }
-
-  autoResult = fechasAGenerar.map(({ fecha, dia }, reunionIdx) => {
+  const indices = {};
+  ROLES.forEach(r => {
+    const listaKey = ROL_LISTA_MAP[r] || r;
+    indices[r] = todasLasFilas.length % Math.max((hermanos[listaKey]||[]).length, 1);
+  });
+  autoResult = fechasAGenerar.map(({ fecha, dia }) => {
     const entry = { fecha, dia };
-    const yaAsignados = new Set();
-    const slots = dia === 'Miércoles' ? SLOTS_MIERC : SLOTS_SAB;
-    const idxGlobal = todasLasFilas.length + reunionIdx;
-
-    slots.forEach(slot => {
-      const lista = hermanos[slot.listaKey] || [];
-      if (lista.length === 0) {
-        slot.roles.forEach(r => { entry[r] = ''; });
-        return;
-      }
-
-      const disponibles = lista
-        .filter(h => !yaAsignados.has(h))
-        .sort((a, b) => {
-          const penA = trabajoEnAnterior(a, slot.rolGrupo, idxGlobal) ? 1000 : 0;
-          const penB = trabajoEnAnterior(b, slot.rolGrupo, idxGlobal) ? 1000 : 0;
-          const diff = (getCount(a, slot.rolGrupo) + penA) - (getCount(b, slot.rolGrupo) + penB);
-          if (diff !== 0) return diff;
-          // Empate: priorizar al que tiene menos roles disponibles
-          const rolesA = Object.keys(hermanos).filter(k => (hermanos[k]||[]).includes(a)).length;
-          const rolesB = Object.keys(hermanos).filter(k => (hermanos[k]||[]).includes(b)).length;
-          if (rolesA !== rolesB) return rolesA - rolesB;
-          // Segundo empate: menor carga total
-          const totalA = Object.values(contadores[a] || {}).reduce((s,v) => s+v, 0);
-          const totalB = Object.values(contadores[b] || {}).reduce((s,v) => s+v, 0);
-          return totalA - totalB;
-        });
-
-      const elegidos = disponibles.slice(0, slot.cantidad);
-
-      if (elegidos.length < slot.cantidad) {
-        const faltantes = slot.cantidad - elegidos.length;
-        const yaElegidos = new Set(elegidos);
-        const extras = lista
-          .filter(h => !yaElegidos.has(h))
-          .sort((a, b) => getCount(a, slot.rolGrupo) - getCount(b, slot.rolGrupo))
-          .slice(0, faltantes);
-        elegidos.push(...extras);
-      }
-
-      slot.roles.forEach((r, i) => {
-        const nombre = elegidos[i] || '';
-        entry[r] = nombre;
-        if (nombre) {
-          yaAsignados.add(nombre);
-          incrementar(nombre, slot.rolGrupo);
-          actualizarUltimaVez(nombre, slot.rolGrupo, idxGlobal);
-        }
-      });
-    });
-
     ROLES.forEach(r => {
-      if (!(r in entry)) entry[r] = '';
+      const listaKey = ROL_LISTA_MAP[r] || r;
+      const lista = hermanos[listaKey] || [];
+      if (lista.length === 0) { entry[r] = ''; return; }
+      entry[r] = lista[indices[r] % lista.length];
+      indices[r]++;
     });
-
     return entry;
   });
-
   hide('auto-loading');
   renderAutoPreview(autoResult);
+  show('auto-preview');
   show('auto-guardar-wrap');
 }
-  
+
 function renderAutoPreview(rows) {
-  const body = document.getElementById('auto-preview-modal-body');
-  const title = document.getElementById('auto-preview-modal-title');
-  if (!body) return;
-  title.textContent = `${rows.length} reuniones a generar`;
-  body.innerHTML = '';
+  const c = document.getElementById('auto-preview');
+  if (!c) return;
+  c.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:10px;">${rows.length} reuniones a generar — revisá antes de guardar</div>`;
   rows.forEach(row => {
     const diaColor = DIA_COLORS[row.dia] || '#eee';
     const diaBg    = DIA_BG[row.dia] || '#1e1e1e';
     const rolesHTML = ROLES.map(r => row[r] ?
       `<div class="rol-row"><span class="rol-label">${ROLES_LABELS[r]}</span><span class="rol-valor">${row[r]}</span></div>` : ''
     ).filter(Boolean).join('');
-    body.innerHTML += `
+    c.innerHTML += `
       <div class="reunion-card">
         <div class="reunion-header" style="background:${diaBg};border-left:3px solid ${diaColor};">
           <span class="reunion-dia" style="color:${diaColor};">${row.dia}</span>
@@ -835,32 +655,18 @@ function renderAutoPreview(rows) {
         <div class="roles-list">${rolesHTML}</div>
       </div>`;
   });
-  document.getElementById('auto-preview-modal').style.display = 'flex';
-}
-
-function cerrarPreviewModal() {
-  document.getElementById('auto-preview-modal').style.display = 'none';
 }
 
 async function guardarAutomatico() {
   const status = document.getElementById('auto-status');
   if (!autoResult.length) { if(status){status.style.color='#888';status.textContent='Nada que guardar.';} return; }
-  if(status){status.style.color='#888';status.textContent='Guardando...';}
-  
+  if (status){status.style.color='#888';status.textContent='Guardando...';}
   try {
-    const chunkSize = 1;
-    for (let i = 0; i < autoResult.length; i += chunkSize) {
-      const chunk = autoResult.slice(i, i + chunkSize);
-      await apiFetch({ 
-        action: 'saveProgramacion', 
-        data: JSON.stringify(chunk)
-      });
-      if(status) status.textContent = `Guardando... ${Math.min(i + chunkSize, autoResult.length)}/${autoResult.length}`;
-    }
+    await apiFetch({ action: 'saveProgramacion', data: JSON.stringify(autoResult) });
     todasLasFilas = [];
-    if(status){status.style.color='#5DCAA5';status.textContent=`✓ ${autoResult.length} reuniones guardadas`;}
+    if (status){status.style.color='#5DCAA5';status.textContent=`✓ ${autoResult.length} reuniones guardadas`;}
   } catch(err) {
-    if(status){status.style.color='#F09595';status.textContent='Error: '+err.message;}
+    if (status){status.style.color='#F09595';status.textContent='Error: '+err.message;}
   }
 }
 
@@ -1012,16 +818,21 @@ async function guardarHermano() {
 }
 
 async function confirmarEliminar(nombre) {
-  if (!confirm(`¿Eliminar a ${nombre} de la lista?`)) return;
+  // ── REEMPLAZA confirm() nativo ──
+  const ok = await uiConfirm({
+    title: `¿Eliminar a ${nombre}?`,
+    msg: 'Se quitará de la lista de hermanos. Esta acción no se puede deshacer.',
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+    type: 'danger'
+  });
+  if (!ok) return;
   try {
     await apiFetch({ action: 'deleteHermano', nombre });
     listaHermanos = listaHermanos.filter(h => h.nombre !== nombre);
     hermanos = {};
     renderLista(listaHermanos);
   } catch(err) {
-    alert('Error al eliminar: ' + err.message);
+    await uiAlert('Error al eliminar: ' + err.message, 'Error');
   }
 }
-
-window.addEventListener('online',  () => document.getElementById('offline-banner')?.classList.remove('visible'));
-window.addEventListener('offline', () => document.getElementById('offline-banner')?.classList.add('visible'));
