@@ -4,6 +4,14 @@ const ASIGNACIONES_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxy3WmK
 
 const CONDUCTORES_BY_GROUP = { 1: [], 2: [], 3: [], 4: [], C: [] };
 
+let _conductoresListos = false;
+let _conductoresResolvers = [];
+
+function conductoresListos() {
+  if (_conductoresListos) return Promise.resolve();
+  return new Promise(res => _conductoresResolvers.push(res));
+}
+
 async function cargarConductores() {
   try {
     const url = ASIGNACIONES_SCRIPT_URL + '?action=getLista';
@@ -32,6 +40,10 @@ async function cargarConductores() {
     });
   } catch(e) {
     console.warn('No se pudo cargar conductores:', e);
+  } finally {
+    _conductoresListos = true;
+    _conductoresResolvers.forEach(r => r());
+    _conductoresResolvers = [];
   }
 }
 
@@ -277,6 +289,8 @@ function goToMapa() {
 
 function cerrarSesion() {
   selectedGrupo = null;
+  _conductoresListos = false;
+  _conductoresResolvers = [];
   document.querySelectorAll('.grupo-btn').forEach(b => {
     b.classList.remove('selected');
     b.style.background = '#2a2a2a';
@@ -330,13 +344,13 @@ function updatePinDots() {
   }
 }
 
-async function checkPin() {
+function checkPin() {
   const correct = PINS[pinGrupo];
   if (pinBuffer === correct) {
     document.getElementById('pin-modal').style.display = 'none';
     pinBuffer = '';
-    await cargarConductores();
     goToModo();
+    cargarConductores(); // en segundo plano, sin bloquear
   } else {
     document.getElementById('pin-error').textContent = 'PIN incorrecto, intentá de nuevo';
     pinBuffer = '';
@@ -384,7 +398,10 @@ async function goToStep1() {
 
   try {
     territoriosData = {};
-    const raw = await fetchGrupo(selectedGrupo);
+    const [raw] = await Promise.all([
+      fetchGrupo(selectedGrupo),
+      conductoresListos()
+    ]);
     Object.keys(raw).forEach(terr => {
       const d = raw[terr];
       territoriosData[terr] = {
