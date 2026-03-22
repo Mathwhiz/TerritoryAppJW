@@ -257,6 +257,10 @@
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button class="btn-secondary" onclick="goBackToConfig()" style="flex:1;">← Editar</button>
       <button class="btn-save"      onclick="guardarImagen()"  style="flex:1;">Guardar imagen</button>
+      <button id="btn-enviar-wa" onclick="enviarWhatsapp()"
+        style="flex:1;padding:11px;background:#1a2e0a;color:#97C459;border:0.5px solid #3B6D11;border-radius:12px;cursor:pointer;font-size:13px;font-weight:500;">
+        📲 Enviar al grupo
+      </button>
     </div>
     <button class="btn-registrar-prog" id="btn-reg-prog" onclick="registrarEnProgreso()">Registrar territorios como en progreso</button>
     <div class="reg-prog-status" id="reg-prog-status"></div>
