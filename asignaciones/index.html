@@ -76,8 +76,12 @@
 
   <!-- ── VER SEMANA ── -->
   <div id="view-semana" class="view" style="display:none;">
-    <p class="section-title">Semana actual</p>
-    <p class="section-sub" id="semana-label">Cargando...</p>
+    <p class="section-title">Programación</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px;">
+      <button onclick="cambiarSemanaVer(-1)" class="semana-nav-btn">←</button>
+      <span id="semana-label" style="font-size:14px;color:#888;text-align:center;"></span>
+      <button onclick="cambiarSemanaVer(1)" class="semana-nav-btn">→</button>
+    </div>
     <div id="semana-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando programación...</div></div>
     <div id="semana-error" style="display:none;"></div>
     <div id="semana-content" style="display:none;"><div id="semana-reuniones"></div></div>
@@ -217,7 +221,11 @@
   <!-- ── GENERAR IMAGEN ── -->
   <div id="view-imagen" class="view" style="display:none;">
     <p class="section-title">Tabla para WhatsApp</p>
-    <p class="section-sub" id="imagen-semana-label"></p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px;">
+      <button onclick="cambiarSemanaImagen(-1)" class="semana-nav-btn">←</button>
+      <span id="imagen-semana-label" style="font-size:14px;color:#888;text-align:center;"></span>
+      <button onclick="cambiarSemanaImagen(1)" class="semana-nav-btn">→</button>
+    </div>
     <div id="imagen-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
     <div id="imagen-content" style="display:none;">
       <div class="card-tabla" id="card-tabla">

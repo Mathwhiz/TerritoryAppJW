@@ -18,11 +18,14 @@ const ROLES = Object.keys(ROLES_LABELS);
 
 // Mapeo: columna de programación → lista de hermanos a usar en el selector
 // SONIDO_1 y SONIDO_2 comparten la lista del rol SONIDO; igual para MICROFONISTAS
-// El script de Google devuelve las listas con claves SONIDO_1, SONIDO_2, etc.
-// SONIDO_2 comparte la misma lista que SONIDO_1; igual para MICROFONISTAS_2
+// El sheet ahora tiene columnas SONIDO y MICROFONISTAS (sin número).
+// El script devuelve SONIDO_1/2 vacíos, pero sí devuelve SONIDO.
+// Este mapa indica qué clave buscar en hermanos para cada slot de la tabla semanal.
 const ROL_LISTA_MAP = {
-  SONIDO_2:        'SONIDO_1',
-  MICROFONISTAS_2: 'MICROFONISTAS_1',
+  SONIDO_1:        'SONIDO',
+  SONIDO_2:        'SONIDO',
+  MICROFONISTAS_1: 'MICROFONISTAS',
+  MICROFONISTAS_2: 'MICROFONISTAS',
 };
 
 // ── Roles que SOLO existen en la lista de hermanos (no en tabla semanal) ──
@@ -71,6 +74,8 @@ let autoResult    = [];
 let esEncargado   = false;
 let pinBuffer     = '';
 let semanaOffsetEdit = 0;
+let semanaOffsetVer   = 0;
+let semanaOffsetImagen = 0;
 let suggIndex     = -1;
 
 /* ─── Utilidades DOM ─── */
@@ -126,28 +131,35 @@ function getLunesDeOffset(offset) {
   return monday;
 }
 
-function getFilasSemanaActual(rows) {
-  const lunes = getLunesDeHoy();
+function getFilasDeSemana(rows, offset) {
+  const lunes = getLunesDeOffset(offset);
   const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
-  let filas = rows.filter(r => {
-    const d = parseFecha(r.fecha);
-    return d && d >= lunes && d <= domingo;
+  // Comparar solo por fecha (dd/mm/yy string) para evitar problemas de timezone
+  const lunesStr  = fmtFecha(lunes);
+  const domStr    = fmtFecha(domingo);
+  const filas = rows.filter(r => {
+    if (!r.fecha) return false;
+    return r.fecha >= lunesStr || compareFechaStr(r.fecha, lunesStr) >= 0 && compareFechaStr(r.fecha, domStr) <= 0;
   });
-  if (filas.length === 0) {
-    const futuras = rows
-      .filter(r => { const d = parseFecha(r.fecha); return d && d >= lunes; })
-      .sort((a,b) => parseFecha(a.fecha) - parseFecha(b.fecha));
-    if (futuras.length > 0) {
-      const primera = parseFecha(futuras[0].fecha);
-      const lunesFut = new Date(primera);
-      const df = lunesFut.getDay();
-      lunesFut.setDate(lunesFut.getDate() - (df === 0 ? 6 : df - 1));
-      const domFut = new Date(lunesFut); domFut.setDate(lunesFut.getDate() + 6);
-      filas = rows.filter(r => { const d = parseFecha(r.fecha); return d && d >= lunesFut && d <= domFut; });
-    }
-  }
-  return filas.sort((a,b) => parseFecha(a.fecha) - parseFecha(b.fecha));
+  // Filtro más robusto: comparar como Date
+  const filasOk = rows.filter(r => {
+    const d = parseFecha(r.fecha);
+    if (!d) return false;
+    const dStr = fmtFecha(d);
+    return compareFechaStr(dStr, lunesStr) >= 0 && compareFechaStr(dStr, domStr) <= 0;
+  });
+  return filasOk.sort((a,b) => parseFecha(a.fecha) - parseFecha(b.fecha));
 }
+
+// Compara fechas en formato dd/mm/yy  → -1, 0, 1
+function compareFechaStr(a, b) {
+  const pa = parseFecha(a), pb = parseFecha(b);
+  if (!pa || !pb) return 0;
+  return pa < pb ? -1 : pa > pb ? 1 : 0;
+}
+
+// Mantener por compatibilidad (usado en buscarHermano)
+function getFilasSemanaActual(rows) { return getFilasDeSemana(rows, 0); }
 
 function getLabelSemana(rows) {
   if (!rows || rows.length === 0) return '—';
@@ -226,22 +238,38 @@ function cerrarSesionEncargado() { esEncargado = false; goToCover(); }
 function goToEncargado() { showView('view-encargado'); }
 
 async function goToVerSemana() {
+  semanaOffsetVer = 0;
   showView('view-semana');
+  await cargarVerSemana();
+}
+
+function updateSemanaVerInfo() {
+  const lunes = getLunesDeOffset(semanaOffsetVer);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+  setText('semana-label', `Semana del ${fmtFecha(lunes)} al ${fmtFecha(domingo)}`);
+}
+
+async function cambiarSemanaVer(dir) {
+  semanaOffsetVer += dir;
+  await cargarVerSemana();
+}
+
+async function cargarVerSemana() {
+  updateSemanaVerInfo();
   show('semana-loading'); hide('semana-content'); hide('semana-error');
   try {
     if (todasLasFilas.length === 0) {
       const data = await apiFetch({ action: 'getProgramacion' });
       todasLasFilas = data.rows || [];
     }
-    const filas = getFilasSemanaActual(todasLasFilas);
-    setText('semana-label', `Semana del ${getLabelSemana(filas)}`);
+    const filas = getFilasDeSemana(todasLasFilas, semanaOffsetVer);
     hide('semana-loading');
     renderSemana(filas, 'semana-reuniones');
     show('semana-content');
   } catch(err) {
     hide('semana-loading');
     const errEl = document.getElementById('semana-error');
-    if (errEl) errEl.innerHTML = `<div class="error-wrap">Error: ${err.message}. <button class="btn-secondary" style="font-size:12px;padding:4px 10px;margin-left:8px;" onclick="goToVerSemana()">Reintentar</button></div>`;
+    if (errEl) errEl.innerHTML = `<div class="error-wrap">Error: ${err.message}. <button class="btn-secondary" style="font-size:12px;padding:4px 10px;margin-left:8px;" onclick="cargarVerSemana()">Reintentar</button></div>`;
     show('semana-error');
   }
 }
@@ -277,16 +305,33 @@ async function goToAutomatico() {
 }
 
 async function goToGenerarImagen() {
+  semanaOffsetImagen = 0;
   showView('view-imagen');
+  await cargarImagen();
+}
+
+function updateSemanaImagenInfo() {
+  const lunes = getLunesDeOffset(semanaOffsetImagen);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+  const label = `${fmtFecha(lunes)} al ${fmtFecha(domingo)}`;
+  setText('imagen-semana-label', `Semana del ${label}`);
+  setText('imagen-titulo', `Asignaciones — Semana del ${label}`);
+}
+
+async function cambiarSemanaImagen(dir) {
+  semanaOffsetImagen += dir;
+  await cargarImagen();
+}
+
+async function cargarImagen() {
+  updateSemanaImagenInfo();
   show('imagen-loading'); hide('imagen-content');
   try {
     if (todasLasFilas.length === 0) {
       const data = await apiFetch({ action: 'getProgramacion' });
       todasLasFilas = data.rows || [];
     }
-    const filas = getFilasSemanaActual(todasLasFilas);
-    setText('imagen-semana-label', `Semana del ${getLabelSemana(filas)}`);
-    setText('imagen-titulo', `Asignaciones — Semana del ${getLabelSemana(filas)}`);
+    const filas = getFilasDeSemana(todasLasFilas, semanaOffsetImagen);
     hide('imagen-loading');
     renderTablaImagen(filas);
     show('imagen-content');
