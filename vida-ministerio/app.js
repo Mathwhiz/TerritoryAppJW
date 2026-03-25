@@ -686,10 +686,9 @@ window.guardarSemana = async function() {
 // ─────────────────────────────────────────
 // Proxies en orden de preferencia — si uno falla se prueba el siguiente
 const WOL_PROXIES = [
-  { build: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, text: r => r.text() },
-  { build: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,      text: async r => { const j = await r.json(); return j.contents; } },
-  { build: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,      text: r => r.text() },
-  { build: url => `https://corsproxy.io/?${encodeURIComponent(url)}`,                   text: r => r.text() },
+  { build: url => `https://super-math-a40f.mnsmys12.workers.dev/?url=${encodeURIComponent(url)}`, text: r => r.text() },
+  { build: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,           text: r => r.text() },
+  { build: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,                text: async r => { const j = await r.json(); return j.contents; } },
 ];
 
 function wolUrl(fecha) {
