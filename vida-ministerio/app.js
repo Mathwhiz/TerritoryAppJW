@@ -709,79 +709,76 @@ function limpiaTitulo(text) {
 }
 
 function parseWOL(html) {
-  const doc  = new DOMParser().parseFromString(html, 'text/html');
-  // Usar article#article como raíz para evitar IDs duplicados de navegación
-  const root = doc.querySelector('article#article') || doc;
+  const doc     = new DOMParser().parseFromString(html, 'text/html');
+  const root    = doc.querySelector('article#article') || doc;
+  const allH3   = Array.from(root.querySelectorAll('h3, h4'));
+  const allFlat = Array.from(root.querySelectorAll('*'));
 
-  // DEBUG: estructura de headings y strongs numerados
-  const h3s = Array.from(root.querySelectorAll('h3, h4')).map(e => e.textContent.trim().slice(0, 80));
-  const strongNums = Array.from(root.querySelectorAll('strong')).filter(s => /^\d+\./.test(s.textContent.trim())).map(s => s.textContent.trim().slice(0, 80));
-  console.log('[WOL-DBG] h3/h4:', JSON.stringify(h3s));
-  console.log('[WOL-DBG] strong#:', JSON.stringify(strongNums));
-  console.log('[WOL-DBG] p6:', root.querySelector('#p6')?.textContent?.trim().slice(0,100));
-  console.log('[WOL-DBG] p13:', root.querySelector('#p13')?.textContent?.trim().slice(0,100));
-  console.log('[WOL-DBG] p17:', root.querySelector('#p17')?.textContent?.trim().slice(0,100));
+  // Partes numeradas: h3/h4 cuyo texto empieza con "N. "
+  const numbered = allH3
+    .filter(h => /^\d+\.\s/.test(h.textContent.trim()))
+    .map(h => {
+      const m = h.textContent.trim().match(/^(\d+)\.\s+(.+)/);
+      return { num: parseInt(m[1]), titulo: m[2].trim(), el: h, duracion: null };
+    });
 
-  const getText = id => limpiaTitulo(root.querySelector(id)?.textContent?.trim() || '');
+  if (numbered.length < 3) return null;
 
-  // ── Tesoros
-  const discursoTxt = getText('#p6');
-  const joyasTxt    = getText('#p7');
-  const lecturaTxt  = getText('#p10');
-
-  // ── Ministerio: p13-p15
-  const ministerio = ['#p13', '#p14', '#p15'].map(id => {
-    const t = getText(id);
-    return t ? { titulo: t, tipo: 'demostracion', duracion: parseDur(t), pubId: null, ayudante: null } : null;
-  }).filter(Boolean);
-
-  // ── Vida Cristiana: p17-p20
-  const vcRaw = ['#p17', '#p18', '#p19', '#p20']
-    .map(id => getText(id))
-    .filter(Boolean);
-
-  // Verificar que obtuvimos algo útil
-  if (!discursoTxt && !joyasTxt && !lecturaTxt && ministerio.length === 0 && vcRaw.length === 0) {
-    return null;
-  }
-
-  let vidaCristiana = [];
-  let estudioTitulo = '';
-
-  if (vcRaw.length > 0) {
-    const last = vcRaw[vcRaw.length - 1];
-    const esEstudio = /estudio\s+b[íi]blico|libro\s+del\s+a[ñn]o/i.test(last);
-    if (esEstudio) {
-      estudioTitulo = last;
-      vidaCristiana = vcRaw.slice(0, -1).map(t =>
-        ({ titulo: t, tipo: 'parte', duracion: parseDur(t), pubId: null })
-      );
-    } else {
-      // No se pudo detectar el estudio: tomar todo como partes
-      vidaCristiana = vcRaw.map(t =>
-        ({ titulo: t, tipo: 'parte', duracion: parseDur(t), pubId: null })
-      );
+  // Duración: primer elemento hoja con "(X mins.)" entre este h3 y el siguiente
+  numbered.forEach((part, i) => {
+    const startIdx = allFlat.indexOf(part.el) + 1;
+    const endIdx   = numbered[i + 1] ? allFlat.indexOf(numbered[i + 1].el) : allFlat.length;
+    for (let j = startIdx; j < endIdx; j++) {
+      if (allFlat[j].children.length === 0) {
+        const d = parseDur(allFlat[j].textContent);
+        if (d) { part.duracion = d; break; }
+      }
     }
+  });
+
+  // Canción intermedia: h3 con texto exactamente "Canción N" (sin "y oración")
+  // Marca la frontera entre Seamos Mejores Maestros y Nuestra Vida Cristiana
+  const midSongH3  = allH3.find(h => /^Canción\s+\d+$/.test(h.textContent.trim()));
+  const midSongPos = midSongH3 ? allH3.indexOf(midSongH3) : -1;
+
+  // Tesoros: siempre las primeras 3 partes numeradas
+  const tesorosParts = numbered.slice(0, 3);
+  const restParts    = numbered.slice(3);
+
+  let ministrioParts, vidaParts;
+  if (midSongPos !== -1) {
+    ministrioParts = restParts.filter(p => allH3.indexOf(p.el) < midSongPos);
+    vidaParts      = restParts.filter(p => allH3.indexOf(p.el) > midSongPos);
+  } else {
+    // Fallback sin canción intermedia: última parte = estudio, las demás van a ministerio
+    ministrioParts = restParts.slice(0, -1);
+    vidaParts      = restParts.slice(-1);
   }
 
-  // Fallbacks si alguna sección quedó vacía
-  if (ministerio.length === 0) {
-    ministerio.push({ titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null });
-    ministerio.push({ titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null });
-  }
-  if (vidaCristiana.length === 0) {
-    vidaCristiana.push({ titulo: '', tipo: 'parte', duracion: null, pubId: null });
-  }
+  // Última parte de vida cristiana = estudio bíblico
+  const estudioH3      = vidaParts.length ? vidaParts[vidaParts.length - 1] : null;
+  const vidaSinEstudio = vidaParts.slice(0, -1);
+
+  const ministerio = ministrioParts.length
+    ? ministrioParts.map(p => ({ titulo: p.titulo, tipo: 'demostracion', duracion: p.duracion, pubId: null, ayudante: null }))
+    : [
+        { titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null },
+        { titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null },
+      ];
+
+  const vidaCristiana = vidaSinEstudio.length
+    ? vidaSinEstudio.map(p => ({ titulo: p.titulo, tipo: 'parte', duracion: p.duracion, pubId: null }))
+    : [{ titulo: '', tipo: 'parte', duracion: null, pubId: null }];
 
   return {
     tesoros: {
-      discurso:       { titulo: discursoTxt, duracion: parseDur(discursoTxt) || 10, pubId: null },
-      joyas:          { titulo: joyasTxt || 'Joyas Espirituales', duracion: parseDur(joyasTxt) || 10, pubId: null },
-      lecturaBiblica: { titulo: lecturaTxt, duracion: parseDur(lecturaTxt) || 4, pubId: null, ayudante: null },
+      discurso:       { titulo: tesorosParts[0]?.titulo || '',                 duracion: tesorosParts[0]?.duracion || 10, pubId: null },
+      joyas:          { titulo: tesorosParts[1]?.titulo || 'Joyas Espirituales', duracion: tesorosParts[1]?.duracion || 10, pubId: null },
+      lecturaBiblica: { titulo: tesorosParts[2]?.titulo || '',                 duracion: tesorosParts[2]?.duracion || 4,  pubId: null, ayudante: null },
     },
     ministerio,
     vidaCristiana,
-    estudioBiblico: { titulo: estudioTitulo, duracion: 30, conductor: null, lector: null },
+    estudioBiblico: { titulo: estudioH3?.titulo || '', duracion: estudioH3?.duracion || 30, conductor: null, lector: null },
   };
 }
 
