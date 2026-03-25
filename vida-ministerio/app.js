@@ -711,6 +711,14 @@ function limpiaTitulo(text) {
 function parseWOL(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
+  // Debug: log estructura para diagnosticar
+  console.log('[WOL] HTML length:', html.length);
+  console.log('[WOL] title:', doc.title);
+  console.log('[WOL] #section2:', !!doc.querySelector('#section2'));
+  console.log('[WOL] article:', !!doc.querySelector('article'));
+  console.log('[WOL] .bodyTxt:', !!doc.querySelector('.bodyTxt'));
+  console.log('[WOL] first 500 chars:', html.slice(0, 500));
+
   const s1 = doc.querySelector('#section2');  // Tesoros
   const s2 = doc.querySelector('#section3');  // Ministerio
   const s3 = doc.querySelector('#section4');  // Vida Cristiana
