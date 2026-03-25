@@ -709,42 +709,32 @@ function limpiaTitulo(text) {
 }
 
 function parseWOL(html) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const doc  = new DOMParser().parseFromString(html, 'text/html');
+  // Usar article#article como raíz para evitar IDs duplicados de navegación
+  const root = doc.querySelector('article#article') || doc;
 
-  // Debug: log estructura para diagnosticar
-  console.log('[WOL] length:', html.length);
-  // IDs de todos los divs con id que empiecen con 'section' o 'p' seguido de número
-  const allIds = [...doc.querySelectorAll('[id]')].map(el => el.id).filter(id => /^(section|p)\d/.test(id));
-  console.log('[WOL] IDs section/p:', allIds.join(', '));
-  // Clases principales del contenido
-  const mainClasses = [...doc.querySelectorAll('article, .bodyTxt, .docSubContent, [class*="section"], [class*="meeting"], [class*="program"]')].map(el => el.tagName + '.' + el.className.trim().split(' ')[0] + (el.id ? '#'+el.id : ''));
-  console.log('[WOL] elementos clave:', mainClasses.join(' | '));
-
-  const s1 = doc.querySelector('#section2');  // Tesoros
-  const s2 = doc.querySelector('#section3');  // Ministerio
-  const s3 = doc.querySelector('#section4');  // Vida Cristiana
-
-  if (!s1 && !s2 && !s3) return null; // página no reconocida
-
-  const getText = (section, id) =>
-    limpiaTitulo(section?.querySelector(id)?.textContent?.trim() || '');
+  const getText = id => limpiaTitulo(root.querySelector(id)?.textContent?.trim() || '');
 
   // ── Tesoros
-  const discursoTxt = getText(s1, '#p6');
-  const joyasTxt    = getText(s1, '#p7');
-  const lecturaTxt  = getText(s1, '#p10');
+  const discursoTxt = getText('#p6');
+  const joyasTxt    = getText('#p7');
+  const lecturaTxt  = getText('#p10');
 
   // ── Ministerio: p13-p15
   const ministerio = ['#p13', '#p14', '#p15'].map(id => {
-    const t = getText(s2, id);
+    const t = getText(id);
     return t ? { titulo: t, tipo: 'demostracion', duracion: parseDur(t), pubId: null, ayudante: null } : null;
   }).filter(Boolean);
 
   // ── Vida Cristiana: p17-p20
-  // La última parte suele ser el estudio bíblico congregacional
   const vcRaw = ['#p17', '#p18', '#p19', '#p20']
-    .map(id => getText(s3, id))
+    .map(id => getText(id))
     .filter(Boolean);
+
+  // Verificar que obtuvimos algo útil
+  if (!discursoTxt && !joyasTxt && !lecturaTxt && ministerio.length === 0 && vcRaw.length === 0) {
+    return null;
+  }
 
   let vidaCristiana = [];
   let estudioTitulo = '';
