@@ -221,6 +221,14 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
 
 .guardar-btn { margin-top: 8px; }
 
+.btn-wol {
+  width: 100%; background: transparent; border: 1px solid rgba(239,159,39,0.3);
+  border-radius: 10px; color: #EF9F27; font-size: 13px; font-weight: 600;
+  padding: 10px; cursor: pointer; margin-top: 14px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-wol:hover { background: rgba(239,159,39,0.08); border-color: rgba(239,159,39,0.6); }
+
 /* ── Programa público (read-only) ── */
 .pub-seccion { margin-bottom: 14px; }
 .pub-seccion-hdr {

@@ -591,6 +591,7 @@ function renderSemanaEdit() {
     ${vcPartes}${btnAddVC}${estudioHtml}
   </div>`;
 
+  html += `<button class="btn-wol" onclick="reimportarDeWOL()">↓ Reimportar títulos de WOL</button>`;
   html += `<button class="btn-primary guardar-btn" onclick="guardarSemana()">Guardar programa</button>`;
   html += `<div style="height:2rem;"></div>`;
 
@@ -681,6 +682,164 @@ window.guardarSemana = async function() {
 };
 
 // ─────────────────────────────────────────
+//   IMPORTACIÓN WOL
+// ─────────────────────────────────────────
+const WOL_PROXY = 'https://api.allorigins.win/raw?url=';
+
+function wolUrl(fecha) {
+  const [y, m, d] = fecha.split('-').map(Number);
+  return `https://wol.jw.org/es/wol/dt/r4/lp-s/${y}/${m}/${d}`;
+}
+
+function parseDur(text) {
+  const m = text?.match(/\((\d+)\s*min/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function limpiaTitulo(text) {
+  if (!text) return '';
+  // Quita el número de párrafo tipo "1. " al inicio si lo hay
+  return text.replace(/^\d+\.\s*/, '').trim();
+}
+
+function parseWOL(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  const s1 = doc.querySelector('#section2');  // Tesoros
+  const s2 = doc.querySelector('#section3');  // Ministerio
+  const s3 = doc.querySelector('#section4');  // Vida Cristiana
+
+  if (!s1 && !s2 && !s3) return null; // página no reconocida
+
+  const getText = (section, id) =>
+    limpiaTitulo(section?.querySelector(id)?.textContent?.trim() || '');
+
+  // ── Tesoros
+  const discursoTxt = getText(s1, '#p6');
+  const joyasTxt    = getText(s1, '#p7');
+  const lecturaTxt  = getText(s1, '#p10');
+
+  // ── Ministerio: p13-p15
+  const ministerio = ['#p13', '#p14', '#p15'].map(id => {
+    const t = getText(s2, id);
+    return t ? { titulo: t, tipo: 'demostracion', duracion: parseDur(t), pubId: null, ayudante: null } : null;
+  }).filter(Boolean);
+
+  // ── Vida Cristiana: p17-p20
+  // La última parte suele ser el estudio bíblico congregacional
+  const vcRaw = ['#p17', '#p18', '#p19', '#p20']
+    .map(id => getText(s3, id))
+    .filter(Boolean);
+
+  let vidaCristiana = [];
+  let estudioTitulo = '';
+
+  if (vcRaw.length > 0) {
+    const last = vcRaw[vcRaw.length - 1];
+    const esEstudio = /estudio\s+b[íi]blico|libro\s+del\s+a[ñn]o/i.test(last);
+    if (esEstudio) {
+      estudioTitulo = last;
+      vidaCristiana = vcRaw.slice(0, -1).map(t =>
+        ({ titulo: t, tipo: 'parte', duracion: parseDur(t), pubId: null })
+      );
+    } else {
+      // No se pudo detectar el estudio: tomar todo como partes
+      vidaCristiana = vcRaw.map(t =>
+        ({ titulo: t, tipo: 'parte', duracion: parseDur(t), pubId: null })
+      );
+    }
+  }
+
+  // Fallbacks si alguna sección quedó vacía
+  if (ministerio.length === 0) {
+    ministerio.push({ titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null });
+    ministerio.push({ titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null });
+  }
+  if (vidaCristiana.length === 0) {
+    vidaCristiana.push({ titulo: '', tipo: 'parte', duracion: null, pubId: null });
+  }
+
+  return {
+    tesoros: {
+      discurso:       { titulo: discursoTxt, duracion: parseDur(discursoTxt) || 10, pubId: null },
+      joyas:          { titulo: joyasTxt || 'Joyas Espirituales', duracion: parseDur(joyasTxt) || 10, pubId: null },
+      lecturaBiblica: { titulo: lecturaTxt, duracion: parseDur(lecturaTxt) || 4, pubId: null, ayudante: null },
+    },
+    ministerio,
+    vidaCristiana,
+    estudioBiblico: { titulo: estudioTitulo, duracion: 30, conductor: null, lector: null },
+  };
+}
+
+async function fetchWOL(fecha) {
+  const url = WOL_PROXY + encodeURIComponent(wolUrl(fecha));
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+}
+
+// Aplica títulos/duraciones importados sin pisar las asignaciones ya hechas
+function aplicarWOLaSemana(importado) {
+  if (!importado || !semanaData) return;
+
+  const merge = (destParte, srcParte) => {
+    if (!destParte || !srcParte) return;
+    if (srcParte.titulo) destParte.titulo = srcParte.titulo;
+    if (srcParte.duracion) destParte.duracion = srcParte.duracion;
+  };
+
+  merge(semanaData.tesoros.discurso,       importado.tesoros.discurso);
+  merge(semanaData.tesoros.joyas,          importado.tesoros.joyas);
+  merge(semanaData.tesoros.lecturaBiblica, importado.tesoros.lecturaBiblica);
+
+  // Ministerio: reemplaza la lista completa de títulos/duraciones, conserva pubIds
+  const minOld = semanaData.ministerio || [];
+  semanaData.ministerio = importado.ministerio.map((p, i) => ({
+    ...p,
+    pubId:    minOld[i]?.pubId    ?? null,
+    ayudante: minOld[i]?.ayudante ?? null,
+  }));
+
+  // Vida Cristiana: ídem
+  const vcOld = semanaData.vidaCristiana || [];
+  semanaData.vidaCristiana = importado.vidaCristiana.map((p, i) => ({
+    ...p,
+    pubId: vcOld[i]?.pubId ?? null,
+  }));
+
+  // Estudio Bíblico: solo título
+  if (importado.estudioBiblico.titulo) {
+    semanaData.estudioBiblico = semanaData.estudioBiblico || {};
+    semanaData.estudioBiblico.titulo = importado.estudioBiblico.titulo;
+  }
+}
+
+window.reimportarDeWOL = async function() {
+  if (!semanaData) return;
+  const ok = await uiConfirm({
+    title: 'Reimportar de WOL',
+    msg: 'Se van a actualizar los títulos y duraciones desde wol.jw.org. Las asignaciones de hermanos no se tocan.',
+    confirmText: 'Importar',
+    cancelText: 'Cancelar',
+    type: 'info',
+  });
+  if (!ok) return;
+  uiLoading.show('Importando de WOL…');
+  try {
+    const html = await fetchWOL(semanaData.fecha);
+    const importado = parseWOL(html);
+    if (!importado) throw new Error('No se reconoció el formato de la página.');
+    aplicarWOLaSemana(importado);
+    uiLoading.hide();
+    renderSemanaEdit();
+    uiToast('Programa importado de WOL', 'success');
+  } catch(e) {
+    uiLoading.hide();
+    await uiAlert(`No se pudo importar: ${e.message}\n\nPodés cargar los títulos manualmente.`);
+  }
+};
+
+// ─────────────────────────────────────────
 //   CREAR SEMANA NUEVA
 // ─────────────────────────────────────────
 window.crearSemana = async function() {
@@ -718,6 +877,7 @@ window.crearSemana = async function() {
     return;
   }
 
+  // Estructura base (se pisa con datos de WOL si se importa)
   semanaData = {
     fecha,
     cancionApertura:   null,
@@ -739,6 +899,25 @@ window.crearSemana = async function() {
     ),
     estudioBiblico: { titulo: '', duracion: 30, conductor: null, lector: null },
   };
+
+  const importarWOL = document.getElementById('nueva-importar-wol')?.checked;
+  if (importarWOL) {
+    uiLoading.show('Importando programa de WOL…');
+    try {
+      const html = await fetchWOL(fecha);
+      const importado = parseWOL(html);
+      if (importado) {
+        aplicarWOLaSemana(importado);
+        uiToast('Programa importado de WOL', 'success');
+      } else {
+        uiToast('No se pudo parsear WOL — podés cargar los títulos manualmente', 'error');
+      }
+    } catch(e) {
+      // No bloquear si falla — simplemente abre el editor vacío
+      uiToast(`WOL no disponible (${e.message}) — podés cargar manualmente`, 'error');
+    }
+    uiLoading.hide();
+  }
 
   document.getElementById('semana-titulo-display').textContent = 'Semana del ' + fmtDisplay(fecha);
   renderSemanaEdit();
