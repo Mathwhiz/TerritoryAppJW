@@ -724,21 +724,22 @@ function parseWOL(html) {
 
   if (numbered.length < 3) return null;
 
-  // Duración: primer elemento hoja con "(X mins.)" entre este h3 y el siguiente
+  // Duración: primer elemento con "(X mins.)" entre este h3 y el siguiente
+  // No filtramos solo hojas porque párrafos de ministerio tienen links adentro
   numbered.forEach((part, i) => {
     const startIdx = allFlat.indexOf(part.el) + 1;
     const endIdx   = numbered[i + 1] ? allFlat.indexOf(numbered[i + 1].el) : allFlat.length;
     for (let j = startIdx; j < endIdx; j++) {
-      if (allFlat[j].children.length === 0) {
-        const d = parseDur(allFlat[j].textContent);
-        if (d) { part.duracion = d; break; }
-      }
+      const d = parseDur(allFlat[j].textContent);
+      if (d) { part.duracion = d; break; }
     }
   });
 
-  // Canción intermedia: h3 con texto exactamente "Canción N" (sin "y oración")
-  // Marca la frontera entre Seamos Mejores Maestros y Nuestra Vida Cristiana
+  // Canciones: extraer números de los h3 con "Canción N"
+  const songNum = h => h.textContent.match(/Canción\s+(\d+)/)?.[1] || '';
+  const openH3  = allH3.find(h => /Canción.+oración|oración.+Canción/i.test(h.textContent));
   const midSongH3  = allH3.find(h => /^Canción\s+\d+$/.test(h.textContent.trim()));
+  const closeH3 = [...allH3].reverse().find(h => /Canción.+oración|oración.+Canción|conclusión/i.test(h.textContent));
   const midSongPos = midSongH3 ? allH3.indexOf(midSongH3) : -1;
 
   // Tesoros: siempre las primeras 3 partes numeradas
@@ -771,10 +772,15 @@ function parseWOL(html) {
     : [{ titulo: '', tipo: 'parte', duracion: null, pubId: null }];
 
   return {
+    canciones: {
+      apertura:    songNum(openH3  || {}),
+      intermedia:  songNum(midSongH3 || {}),
+      cierre:      songNum(closeH3 || {}),
+    },
     tesoros: {
-      discurso:       { titulo: tesorosParts[0]?.titulo || '',                 duracion: tesorosParts[0]?.duracion || 10, pubId: null },
+      discurso:       { titulo: tesorosParts[0]?.titulo || '',                  duracion: tesorosParts[0]?.duracion || 10, pubId: null },
       joyas:          { titulo: tesorosParts[1]?.titulo || 'Joyas Espirituales', duracion: tesorosParts[1]?.duracion || 10, pubId: null },
-      lecturaBiblica: { titulo: tesorosParts[2]?.titulo || '',                 duracion: tesorosParts[2]?.duracion || 4,  pubId: null, ayudante: null },
+      lecturaBiblica: { titulo: tesorosParts[2]?.titulo || '',                  duracion: tesorosParts[2]?.duracion || 4,  pubId: null, ayudante: null },
     },
     ministerio,
     vidaCristiana,
@@ -811,6 +817,13 @@ function aplicarWOLaSemana(importado) {
     if (srcParte.titulo) destParte.titulo = srcParte.titulo;
     if (srcParte.duracion) destParte.duracion = srcParte.duracion;
   };
+
+  // Canciones
+  if (importado.canciones) {
+    if (importado.canciones.apertura)   semanaData.cancionApertura   = parseInt(importado.canciones.apertura);
+    if (importado.canciones.intermedia) semanaData.cancionIntermedia = parseInt(importado.canciones.intermedia);
+    if (importado.canciones.cierre)     semanaData.cancionCierre     = parseInt(importado.canciones.cierre);
+  }
 
   merge(semanaData.tesoros.discurso,       importado.tesoros.discurso);
   merge(semanaData.tesoros.joyas,          importado.tesoros.joyas);
