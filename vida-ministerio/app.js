@@ -684,11 +684,28 @@ window.guardarSemana = async function() {
 // ─────────────────────────────────────────
 //   IMPORTACIÓN WOL
 // ─────────────────────────────────────────
-const WOL_PROXY = 'https://api.allorigins.win/raw?url=';
+const WOL_PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+];
 
 function wolUrl(fecha) {
   const [y, m, d] = fecha.split('-').map(Number);
   return `https://wol.jw.org/es/wol/dt/r4/lp-s/${y}/${m}/${d}`;
+}
+
+async function fetchWithTimeout(url, ms = 10000) {
+  const ctrl = new AbortController();
+  const id   = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(id);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  } catch(e) {
+    clearTimeout(id);
+    throw e;
+  }
 }
 
 function parseDur(text) {
@@ -772,10 +789,16 @@ function parseWOL(html) {
 }
 
 async function fetchWOL(fecha) {
-  const url = WOL_PROXY + encodeURIComponent(wolUrl(fecha));
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.text();
+  const target = wolUrl(fecha);
+  let lastErr;
+  for (const proxyFn of WOL_PROXIES) {
+    try {
+      return await fetchWithTimeout(proxyFn(target));
+    } catch(e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('Todos los proxies fallaron');
 }
 
 // Aplica títulos/duraciones importados sin pisar las asignaciones ya hechas
