@@ -43,6 +43,7 @@ let pinVM       = null;
 let publicadores = [];
 let semanaData  = null;  // programa de la semana actualmente cargada/editada
 let modoEncargado = false;
+let tieneAuxiliar = false;
 
 // ─────────────────────────────────────────
 //   UTILS
@@ -119,6 +120,11 @@ function getSlotPubId(key) {
       return semanaData.tesoros?.[parts[1]]?.pubId;
     case 'ministerio': {
       const idx = parseInt(parts[1]);
+      if (parts[2] === 'salaAux') {
+        return parts[3] === 'ayudante'
+          ? semanaData.ministerio?.[idx]?.salaAux?.ayudante
+          : semanaData.ministerio?.[idx]?.salaAux?.pubId;
+      }
       if (parts[2] === 'ayudante') return semanaData.ministerio?.[idx]?.ayudante;
       return semanaData.ministerio?.[idx]?.pubId;
     }
@@ -149,8 +155,15 @@ function setSlotPubId(key, pubId) {
     case 'ministerio': {
       const idx = parseInt(parts[1]);
       if (!semanaData.ministerio[idx]) break;
-      if (parts[2] === 'ayudante') semanaData.ministerio[idx].ayudante = pubId;
-      else semanaData.ministerio[idx].pubId = pubId;
+      if (parts[2] === 'salaAux') {
+        if (!semanaData.ministerio[idx].salaAux) semanaData.ministerio[idx].salaAux = {};
+        if (parts[3] === 'ayudante') semanaData.ministerio[idx].salaAux.ayudante = pubId;
+        else semanaData.ministerio[idx].salaAux.pubId = pubId;
+      } else if (parts[2] === 'ayudante') {
+        semanaData.ministerio[idx].ayudante = pubId;
+      } else {
+        semanaData.ministerio[idx].pubId = pubId;
+      }
       break;
     }
     case 'vidaCristiana': {
@@ -169,7 +182,10 @@ function setSlotPubId(key, pubId) {
 
 function getRolParaSlot(key) {
   const parts = key.split('.');
-  if (parts[0] === 'ministerio')   return SLOT_ROL[parts[2] === 'ayudante' ? 'ministerio.ayudante' : 'ministerio'];
+  if (parts[0] === 'ministerio') {
+    if (parts[2] === 'salaAux') return SLOT_ROL[parts[3] === 'ayudante' ? 'ministerio.ayudante' : 'ministerio'];
+    return SLOT_ROL[parts[2] === 'ayudante' ? 'ministerio.ayudante' : 'ministerio'];
+  }
   if (parts[0] === 'vidaCristiana') return SLOT_ROL['vidaCristiana'];
   return SLOT_ROL[key] || null;
 }
@@ -204,8 +220,30 @@ window.goToVerPrograma = async function() {
 
 window.goToSemanas = async function() {
   document.getElementById('semanas-congre-sub').textContent = congreNombre || '—';
+  const btnCfg = document.getElementById('btn-config-vm');
+  if (btnCfg) btnCfg.style.display = modoEncargado ? '' : 'none';
   showView('view-semanas');
   await cargarSemanas();
+};
+
+window.goToConfig = function() {
+  document.getElementById('config-aux').checked = tieneAuxiliar;
+  showView('view-config');
+};
+
+window.guardarConfig = async function() {
+  const nuevo = document.getElementById('config-aux').checked;
+  uiLoading.show('Guardando…');
+  try {
+    await setDoc(doc(db, 'congregaciones', congreId), { tieneAuxiliar: nuevo }, { merge: true });
+    tieneAuxiliar = nuevo;
+    uiLoading.hide();
+    uiToast('Configuración guardada', 'success');
+    goToSemanas();
+  } catch(e) {
+    uiLoading.hide();
+    await uiAlert('Error al guardar: ' + e.message);
+  }
 };
 
 window.goToSemana = async function(fecha) {
@@ -401,18 +439,53 @@ function renderSemanaPublico(s) {
   }
 
   // Tesoros
+  const lect = s.tesoros?.lecturaBiblica;
+  let lectRow;
+  if (tieneAuxiliar && lect?.ayudante) {
+    const lNombre    = nombreDePub(lect.pubId);
+    const lAuxNombre = nombreDePub(lect.ayudante);
+    lectRow = `<div class="pub-parte-row">
+      <div class="pub-parte-titulo">${esc(lect.titulo || 'Lectura Bíblica')}</div>
+      <div class="pub-parte-nombre" style="text-align:right;">
+        ${lNombre   ? `<div>${esc(lNombre)}</div>`   : '<div><span class="pub-parte-sin">—</span></div>'}
+        ${lAuxNombre ? `<div style="font-size:11px;color:#888;">${esc(lAuxNombre)}</div>` : ''}
+      </div>
+    </div>`;
+  } else {
+    lectRow = row(lect?.titulo || 'Lectura Bíblica', lect?.pubId);
+  }
   html += `<div class="pub-seccion">
     <div class="pub-seccion-hdr">1. Tesoros de la Palabra de Dios</div>
     ${row(s.tesoros?.discurso?.titulo || 'Discurso', s.tesoros?.discurso?.pubId)}
     ${row(s.tesoros?.joyas?.titulo || 'Joyas Espirituales', s.tesoros?.joyas?.pubId)}
-    ${row(s.tesoros?.lecturaBiblica?.titulo || 'Lectura Bíblica', s.tesoros?.lecturaBiblica?.pubId)}
+    ${lectRow}
   </div>`;
 
   // Ministerio
   if (s.ministerio?.length) {
+    const minRows = s.ministerio.map(p => {
+      const nombre   = nombreDePub(p.pubId);
+      const ayNombre = nombreDePub(p.ayudante);
+      const mainStr  = nombre
+        ? esc(nombre) + (ayNombre ? ` / ${esc(ayNombre)}` : '')
+        : (ayNombre ? esc(ayNombre) : null);
+      let auxStr = null;
+      if (tieneAuxiliar && p.salaAux?.pubId) {
+        const auxN   = nombreDePub(p.salaAux.pubId);
+        const auxAyN = nombreDePub(p.salaAux.ayudante);
+        if (auxN) auxStr = esc(auxN) + (auxAyN ? ` / ${esc(auxAyN)}` : '');
+      }
+      return `<div class="pub-parte-row">
+        <div class="pub-parte-titulo">${esc(p.titulo || 'Parte')}</div>
+        <div class="pub-parte-nombre" style="text-align:right;">
+          ${mainStr ? `<div>${mainStr}</div>` : '<div><span class="pub-parte-sin">—</span></div>'}
+          ${auxStr  ? `<div style="font-size:11px;color:#888;">${auxStr}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
     html += `<div class="pub-seccion">
       <div class="pub-seccion-hdr">2. Seamos Mejores Maestros</div>
-      ${s.ministerio.map(p => row(p.titulo || 'Parte', p.pubId)).join('')}
+      ${minRows}
     </div>`;
   }
 
@@ -474,11 +547,31 @@ function renderParteItem(key, label, parte, opts = {}) {
 }
 
 function renderParteItemConAyudante(key, label, parte, opts = {}) {
-  const ayKey = key + '.ayudante';
-  const quitar = opts.onRemove
+  const ayKey       = key + '.ayudante';
+  const quitar      = opts.onRemove
     ? `<button class="btn-quitar-parte" onclick="${opts.onRemove}" title="Quitar">×</button>`
     : '';
-  const dur = parte?.duracion ? `<span class="parte-dur-badge">${parte.duracion} min</span>` : '';
+  const dur         = parte?.duracion ? `<span class="parte-dur-badge">${parte.duracion} min</span>` : '';
+  const isMinisterio = key.startsWith('ministerio.');
+
+  // Cuando hay sala auxiliar, etiquetar la sala principal explícitamente
+  const spLabel  = tieneAuxiliar ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
+  // Para lectura bíblica: el botón "ayudante" se convierte en "Sala Auxiliar"
+  const ayLabel  = (tieneAuxiliar && !isMinisterio) ? 'Sala Auxiliar' : '+ Ayudante';
+
+  // Para ministerio: bloque extra con dos pickers para la sala auxiliar
+  let auxHtml = '';
+  if (tieneAuxiliar && isMinisterio) {
+    const auxKey   = key + '.salaAux';
+    const auxAyKey = auxKey + '.ayudante';
+    auxHtml = `
+      <div class="sala-divider"><span>Sala Auxiliar</span></div>
+      <div class="asig-double-row">
+        ${renderAsigBtn(auxKey, parte?.salaAux?.pubId, 'Asignar hermano')}
+        ${renderAsigBtn(auxAyKey, parte?.salaAux?.ayudante, '+ Ayudante')}
+      </div>`;
+  }
+
   return `<div class="parte-item">
     <div class="parte-meta-row">
       <span class="parte-label-text">${label}</span>${dur}${quitar}
@@ -487,10 +580,12 @@ function renderParteItemConAyudante(key, label, parte, opts = {}) {
            placeholder="Título de la parte…"
            value="${esc(parte?.titulo || '')}"
            oninput="onTituloChange('${key}', this.value)">
+    ${spLabel}
     <div class="asig-double-row">
       ${renderAsigBtn(key, parte?.pubId, 'Asignar hermano')}
-      ${renderAsigBtn(ayKey, parte?.ayudante, '+ Ayudante')}
+      ${renderAsigBtn(ayKey, parte?.ayudante, ayLabel)}
     </div>
+    ${auxHtml}
   </div>`;
 }
 
@@ -835,6 +930,7 @@ function aplicarWOLaSemana(importado) {
     ...p,
     pubId:    minOld[i]?.pubId    ?? null,
     ayudante: minOld[i]?.ayudante ?? null,
+    ...(tieneAuxiliar ? { salaAux: minOld[i]?.salaAux ?? { pubId: null, ayudante: null } } : {}),
   }));
 
   // Vida Cristiana: ídem
@@ -928,9 +1024,10 @@ window.crearSemana = async function() {
       joyas:          { titulo: 'Joyas Espirituales', duracion: 10, pubId: null },
       lecturaBiblica: { titulo: '', duracion: 4, pubId: null, ayudante: null },
     },
-    ministerio:    Array.from({ length: nMin }, () =>
-      ({ titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null })
-    ),
+    ministerio:    Array.from({ length: nMin }, () => ({
+      titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null,
+      ...(tieneAuxiliar ? { salaAux: { pubId: null, ayudante: null } } : {}),
+    })),
     vidaCristiana: Array.from({ length: nVC }, () =>
       ({ titulo: '', tipo: 'parte', duracion: null, pubId: null })
     ),
@@ -982,6 +1079,7 @@ window.crearSemana = async function() {
     if (!snap.exists()) { window.location.href = '../index.html'; return; }
     const data = snap.data();
     pinVM = data.pinVidaMinisterio || '1234';
+    tieneAuxiliar = data.tieneAuxiliar === true;
     await cargarPublicadores();
   } catch(e) {
     console.error('Error al inicializar:', e);

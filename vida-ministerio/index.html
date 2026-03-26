@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vida y Ministerio — AppJW</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=1.0">
+  <link rel="stylesheet" href="styles.css?v=1.1">
 </head>
 <body>
 
@@ -116,6 +116,12 @@
           <div class="view-title">Semanas</div>
           <div class="view-sub" id="semanas-congre-sub">—</div>
         </div>
+        <button class="btn-config-vm" id="btn-config-vm" onclick="goToConfig()" title="Configuración" style="display:none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
       <div id="semanas-list">
         <div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div>
@@ -180,6 +186,29 @@
         <button class="btn-secondary" onclick="goToSemanas()">Cancelar</button>
         <button class="btn-primary" onclick="crearSemana()" style="flex:2">Crear semana →</button>
       </div>
+      <div style="height:2rem;"></div>
+    </div>
+  </div>
+
+  <!-- ── CONFIGURACIÓN (encargado) ── -->
+  <div id="view-config" class="view">
+    <div style="padding-top:4px;">
+      <div class="view-header">
+        <button class="btn-back" onclick="goToSemanas()">‹</button>
+        <div>
+          <div class="view-title">Configuración</div>
+          <div class="view-sub">Vida y Ministerio</div>
+        </div>
+      </div>
+      <div class="config-seccion">
+        <div class="config-seccion-titulo">Sala Auxiliar</div>
+        <label class="config-toggle-row">
+          <input type="checkbox" id="config-aux" style="width:18px;height:18px;accent-color:#EF9F27;cursor:pointer;">
+          <span>Esta congregación tiene sala auxiliar</span>
+        </label>
+        <div class="config-hint">Al activar, el programa muestra campos para asignar hermanos en la sala auxiliar en las partes de ministerio y en la lectura bíblica.</div>
+      </div>
+      <button class="btn-primary" onclick="guardarConfig()">Guardar</button>
       <div style="height:2rem;"></div>
     </div>
   </div>
