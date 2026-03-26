@@ -144,19 +144,44 @@ def parse_semana_str(text):
     return d.strftime("%Y-%m-%d")
 
 
+def parece_nombre(s):
+    """Heurística: ¿parece un nombre de persona?"""
+    if not s:
+        return False
+    s = s.strip()
+    return len(s) >= 3 and not s.isdigit()
+
+
 def split_par(val):
     """
-    Divide un par "Nombre1 - Nombre2" o "Nombre1/Nombre2" en [nombre1, nombre2].
-    Devuelve [nombre1, None] si no hay separador.
+    Divide un par "Nombre1 - Nombre2", "Nombre1/Nombre2" o "Nombre1-Nombre2" en [nombre1, nombre2].
+    Devuelve [nombre1, None] si no hay separador claro.
     """
     if not val:
         return None, None
     s = str(val).strip()
-    # Separador más común: " - " (con espacios)
-    for sep in [" - ", " / ", "/"]:
+    if not s or s in ("—", "-"):
+        return None, None
+
+    # Separadores con espacios primero
+    for sep in [" - ", " / "]:
         if sep in s:
             partes = [p.strip() for p in s.split(sep, 1)]
             return fmt_nombre(partes[0]), fmt_nombre(partes[1]) if len(partes) > 1 else None
+
+    # Slash sin espacio
+    if "/" in s:
+        partes = [p.strip() for p in s.split("/", 1)]
+        if all(parece_nombre(p) for p in partes):
+            return fmt_nombre(partes[0]), fmt_nombre(partes[1])
+
+    # Dash sin espacios: separar solo si ambas partes parecen nombres completos
+    if "-" in s:
+        partes = [p.strip() for p in s.split("-", 1)]
+        if (len(partes) == 2 and parece_nombre(partes[0]) and parece_nombre(partes[1])
+                and (" " in partes[0] or " " in partes[1])):
+            return fmt_nombre(partes[0]), fmt_nombre(partes[1])
+
     return fmt_nombre(s), None
 
 
@@ -164,6 +189,63 @@ def split_par(val):
 
 nombre_to_id: dict = {}
 unmatched_log: list = []
+
+# Correcciones: norm(forma incorrecta) → norm(forma canónica en Firestore)
+# Sincronizado con add_publicadores_from_excel.py
+CORRECCIONES_NORM = {
+    "armado nunez":                  "armando nunez",
+    "blanca diaz":                   "bianca diaz",
+    "dora madina":                   "dora medina",
+    "elizabeht camarata":            "elizabeth camarata",
+    "elizabeht diaz":                "elizabeth diaz",
+    "elizabeth camaratta":           "elizabeth camarata",
+    "elsa reynoso":                  "elsa reinoso",
+    "feliz villatoro":               "felix villatoro",
+    "frenando oberts":               "fernando oberts",
+    "gladis bazan":                  "gladys bazan",
+    "gisele hernandez":              "gisselle hernandez",
+    "hortencia payes":               "hortensia payes",
+    "jonathan zurita":               "jonatan zurita",
+    "jose luis lasierra":            "jose luis lasierra",
+    "jose luis lasierrra":           "jose luis lasierra",
+    "juliana guisetti":              "juliana guizzetti",
+    "juliana guissetti":             "juliana guizzetti",
+    "juliana guizeti":               "juliana guizzetti",
+    "juliana guizetti":              "juliana guizzetti",
+    "malanie scalese":               "melanie scalese",
+    "melanie scalece":               "melanie scalese",
+    "maria herhenreder":             "maria hergenreder",
+    "mauro tobres":                  "mauro tobares",
+    "miryan d'adam":                 "miryam d'adam",
+    "myriam d'adam":                 "miryam d'adam",
+    "orar flores":                   "omar flores",
+    "rodrigo bustos":                "rodrigo busto",
+    "rut carra":                     "ruth carra",
+    "stafano camarata":              "stefano camarata",
+    "stefano camarada":              "stefano camarata",
+    "susana ferrrer":                "susana ferrer",
+    "walther":                       "walther gil",
+    "analia bustos":                 "analia busto",
+    "isabela camarata":              "isabella camarata",
+    "ariel oberts":                  "ariel oberst",
+    "alejandra oberts":              "alejandra oberst",
+    "pamela buenos":                 "pamela bueno",
+    "benjamin bustos":               "benjamin busto",
+    "catalina basto":                "catalina bastos",
+    "ana maria llanos":              "ana llanos",
+    "loisa viviana":                 "viviana loisa",
+    "enzo acota":                    "enzo acosta",
+    "luis zorrillla":                "luis zorrilla",
+    "nelida rodriguezl":             "nelida rodriguez",
+    "zurita jonatan":                "jonatan zurita",
+    "espinal emmanuel":              "emmanuel espinal",
+    "fernandez andrea":              "andrea fernandez",
+    "sanchez patricia":              "patricia sanchez",
+    "benjamin oberts-":              "benjamin oberts",
+    "benjamin carrizo (reemplazo)":  "benjamin carrizo",
+    # Acento extra
+    "armando nunez":                 "armando nunez",
+}
 
 
 def match_pub(nombre_raw):
@@ -173,16 +255,29 @@ def match_pub(nombre_raw):
     n = normalize(nombre_raw)
     if not n:
         return None
+
+    # Aplicar correcciones de typos conocidos
+    n = CORRECCIONES_NORM.get(n, n)
+
     # Coincidencia exacta
     if n in nombre_to_id:
         return nombre_to_id[n]
+
     # Coincidencia parcial: todas las palabras del nombre están en el nombre del pub
     partes = n.split()
-    if len(partes) >= 2:
-        for key, pid in nombre_to_id.items():
-            kpartes = key.split()
-            if all(p in kpartes for p in partes):
-                return pid
+    for key, pid in nombre_to_id.items():
+        kpartes = key.split()
+        if all(p in kpartes for p in partes):
+            return pid
+
+    # Fallback: si parece un par sin splitear, intentar con la primera mitad
+    p1, p2 = split_par(nombre_raw)
+    if p2 is not None:
+        # Era un par — no loguear el par completo, sí loguear los individuales sin match
+        match_pub(p1)
+        match_pub(p2)
+        return match_pub(p1)  # retorna el pubId del primero (estudiante)
+
     # No encontrado
     if nombre_raw not in unmatched_log:
         unmatched_log.append(nombre_raw)
