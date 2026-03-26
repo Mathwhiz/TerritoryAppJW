@@ -146,6 +146,10 @@ Los PINs se cargan desde `congregaciones/{congreId}/grupos` al iniciar `territor
 - Tipo `no_predica`: territorio 131
 - Tipo `peligroso`: territorio 11
 
+### Multi-ciudad (pendiente)
+Algunas congregaciones tienen territorios en más de una ciudad/localidad.
+Pendiente agregar campo `ciudad` (string, opcional) al doc de territorio y filtros por ciudad en la app y en el mapa.
+
 ### Mapa (`mapa.html`)
 
 Modos via URL params:
@@ -280,28 +284,44 @@ Módulo para el **presidente de la reunión Vida y Ministerio Cristiano**: asign
 de partes semanales, importación del programa desde WOL (wol.jw.org), edición rápida y
 gestión de roles por publicador.
 
+**Estado:** Fases 1 (MVP) y 2 (import WOL) completas. Pendiente: Fase 3 (auto-asignación), import Excel histórico, `pinVidaMinisterio` en admin.
+
 ### Firestore
 
 ```
 congregaciones/{congreId}/
   └── vidaministerio/{semanaId}   ← semanaId = "YYYY-MM-DD" (lunes)
-        fecha, canciones, presidente, oraciones, tesoros{}, ministerio[], vidaCristiana[]
+        fecha, cancionApertura, cancionIntermedia, cancionCierre,
+        presidente, oracionApertura, oracionCierre,
+        tesoros{discurso, joyas, lecturaBiblica},
+        ministerio[], vidaCristiana[], estudioBiblico{}
 ```
 
-Campo nuevo en doc de congregación: `pinVidaMinisterio` (default `"1234"`).
+Campo nuevo en doc de congregación: `pinVidaMinisterio` (default `"1234"`). **Pendiente:** agregarlo al panel de admin.
 
 ### Roles VM en publicadores
 
 `VM_PRESIDENTE`, `VM_ORACION`, `VM_TESOROS`, `VM_JOYAS`, `VM_LECTURA`,
 `VM_MINISTERIO`, `VM_VIDA_CRISTIANA`, `VM_ESTUDIO_CONDUCTOR`, `VM_ESTUDIO_LECTOR`
 
-### Importación de WOL
+### Importación de WOL (✅ implementado)
 
-URL del programa: `https://wol.jw.org/es/wol/dt/r4/lp-s/{año}/{mes}/{día}`
-Fetch via CORS proxy (`allorigins.win`) + `DOMParser` en browser.
-IDs clave: `#section2`, `#section3`, `#section4`, `#p6`, `#p7`, `#p10`, `#p13–#p15`, `#p17–#p20`.
+URL: `https://wol.jw.org/es/wol/dt/r4/lp-s/{año}/{mes}/{día}`
+Fetch via Cloudflare Worker propio (`https://super-math-a40f.mnsmys12.workers.dev/`) + fallbacks.
 
-### Auto-asignación
+**Parser real** (los IDs `#pN` varían semana a semana — NO usarlos):
+- Los títulos de cada parte están en `h3/h4` con texto `"N. Título..."`.
+- La canción `"Canción N"` (sin "y oración") marca la frontera Ministerio / Vida Cristiana.
+- Duración: primer elemento con `"(X mins.)"` después del h3 correspondiente.
+- Canciones: extraídas de h3 con "Canción N" por posición (apertura / intermedia / cierre).
+- Tesoros: siempre los primeros 3 h3 numerados. Última parte de Vida Cristiana = estudio bíblico.
+
+### Import de historial desde Excel (pendiente)
+
+Archivo: `tools/Copia de Reunión Vida y Ministerio Cristiano.xlsx` — un año de reuniones.
+Pendiente: script Python (similar a `sync_historial.py`) que lea el Excel y suba a `vidaministerio/`.
+
+### Auto-asignación (pendiente — Fase 3)
 
 Round-robin por rol (igual que Asignaciones). Restricciones:
 - Oración apertura ≠ cierre
@@ -310,7 +330,7 @@ Round-robin por rol (igual que Asignaciones). Restricciones:
 
 ### Acceso
 
-PIN propio `pinVidaMinisterio` — configurable desde `admin.html` (pendiente de agregar).
+PIN propio `pinVidaMinisterio` — configurable desde `admin.html` (**pendiente de agregar**).
 
 ### Ubicación
 

@@ -120,57 +120,47 @@ https://wol.jw.org/es/wol/dt/r4/lp-s/{año}/{mes}/{día}
 ```
 Donde `{día}` es el lunes de la semana (o cualquier día de esa semana — WOL muestra la semana completa).
 
-### Estrategia — CORS proxy en browser
+### Estrategia — Cloudflare Worker propio (✅ implementado)
 
-Sin servidor, usamos un CORS proxy para hacer el fetch client-side:
+wol.jw.org bloquea proxies públicos conocidos. Se usa un Worker propio:
 
-```js
-const fecha = "2026-03-23"; // lunes de la semana
-const wolUrl = `https://wol.jw.org/es/wol/dt/r4/lp-s/${fecha.replace(/-/g,'/')}`;
-const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(wolUrl)}`;
-
-const html = await fetch(proxyUrl).then(r => r.text());
-const doc = new DOMParser().parseFromString(html, 'text/html');
+```
+https://super-math-a40f.mnsmys12.workers.dev/?url=<encoded-wol-url>
 ```
 
-### Parser (adaptado de JWGetter a JS)
+Con fallbacks a `codetabs.com` y `allorigins.win` (pueden estar bloqueados).
+El Worker hace el fetch server-to-server y devuelve el HTML con `Access-Control-Allow-Origin: *`.
 
-Los IDs fijos en el HTML de WOL que necesitamos:
+### Parser real (✅ implementado — los IDs `#pN` son inútiles)
+
+**Estructura actual de WOL**: los títulos de cada parte están en `h3`/`h4` con texto `"N. Título..."`.
+Los IDs `#p6`, `#p7`, etc. apuntan a párrafos de cuerpo (duración o body), no a los títulos.
+Los IDs varían cada semana según la cantidad de párrafos de cada parte.
 
 ```js
-// Sección 1 — Tesoros
-const s1 = doc.querySelector('#section2');
-const discurso      = s1?.querySelector('#p6')?.textContent?.trim();
-const joyas         = s1?.querySelector('#p7')?.textContent?.trim();
-const lecturaBiblica= s1?.querySelector('#p10')?.textContent?.trim();
+// Partes numeradas: h3/h4 con texto "N. Título..."
+const allH3   = Array.from(root.querySelectorAll('h3, h4'));
+const numbered = allH3.filter(h => /^\d+\.\s/.test(h.textContent.trim()));
 
-// Sección 2 — Ministerio
-const s2 = doc.querySelector('#section3');
-const ministerio = [];
-['#p13','#p14','#p15'].forEach(id => {
-  const el = s2?.querySelector(id);
-  if (el) ministerio.push(el.textContent.trim());
-});
+// Frontera Ministerio / Vida Cristiana:
+// h3 con texto exactamente "Canción N" (sin "y oración") = canción intermedia
+const midSongH3 = allH3.find(h => /^Canción\s+\d+$/.test(h.textContent.trim()));
 
-// Sección 3 — Vida Cristiana
-const s3 = doc.querySelector('#section4');
-const vidaCristiana = [];
-['#p17','#p18','#p19','#p20'].forEach(id => {
-  const el = s3?.querySelector(id);
-  if (el) vidaCristiana.push(el.textContent.trim());
-});
+// Tesoros: siempre los primeros 3 h3 numerados (discurso, joyas, lectura)
+// Ministerio: numerados antes del midSong
+// Vida Cristiana: numerados después del midSong (último = estudio bíblico)
+
+// Duración: primer elemento con "(X mins.)" entre un h3 y el siguiente
+// NO filtrar por hojas — párrafos de ministerio tienen <a> adentro
 ```
 
-**Riesgo**: los IDs de párrafo (`#p6`, `#p7`, etc.) pueden cambiar si JW.org modifica el HTML.
-El parser debe ser tolerante y hacer fallback a scraping por posición si los IDs no se encuentran.
+### Canciones — parsing desde h3
 
-### Duraciones — parsing de texto
-
-Las duraciones vienen en el título: `"Lea Hechos 7:1-16 (4 min.)"`.
-Extraer con regex:
 ```js
-const durMatch = titulo.match(/\((\d+)\s*min/);
-const duracion = durMatch ? parseInt(durMatch[1]) : null;
+// Apertura:    h3 con "Canción N y oración | Palabras de introducción"
+// Intermedia:  h3 con texto exactamente "Canción N"
+// Cierre:      h3 con "Palabras de conclusión | Canción N"
+const songNum = h => h.textContent.match(/Canción\s+(\d+)/)?.[1] || '';
 ```
 
 ---
@@ -267,31 +257,40 @@ El PIN se agrega al doc de congregación y se configura desde `admin.html`.
 
 ## Fases de implementación
 
-### Fase 1 — MVP
+### ✅ Fase 1 — MVP (completo)
 1. Estructura Firestore + PIN en admin
 2. Cover de módulo + card en index.html
 3. Vista lista de semanas
 4. Vista programa de semana (entrada manual de partes + asignación de publicadores)
-5. Gestión básica de roles VM en publicadores
 
-### Fase 2 — Importación WOL
-6. Parser WOL (CORS proxy + DOMParser)
-7. Botón "Importar de WOL" en crear semana
+### ✅ Fase 2 — Importación WOL (completo)
+5. Parser WOL via Cloudflare Worker + DOMParser
+6. Botón "Importar de WOL" en crear semana + reimportar
+7. Extrae títulos, duraciones y números de canciones
 
-### Fase 3 — Auto-generación
-8. Algoritmo round-robin para VM
-9. Vista Generar automático
+### Fase 3 — Import historial Excel (próxima)
+8. Script Python `tools/sync_vm_historial.py` que lea `Copia de Reunión Vida y Ministerio Cristiano.xlsx`
+   y suba ~1 año de reuniones a `congregaciones/{congreId}/vidaministerio/`
+   - Detectar columnas: fecha lunes, canciones, presidente, cada parte + asignado
+   - Crear documentos con la misma estructura que crea el módulo manualmente
+   - Idempotente: no sobreescribir si ya existe el doc para esa fecha
 
-### Fase 4 — Polish
-10. Estado de completitud por semana
-11. Historial de asignaciones VM
+### Fase 4 — Auto-generación
+9. Algoritmo round-robin para VM (igual que Asignaciones)
+10. Vista Generar automático con rango de fechas
+11. Gestión de roles VM en lista de publicadores
+
+### Fase 5 — Polish
+12. Estado de completitud por semana (✓ / ⚠ / vacía) — ya parcialmente hecho en lista
+13. Compartir programa (imagen/PDF)
+14. `pinVidaMinisterio` configurable desde `admin.html`
 
 ---
 
 ## Lo que NO hacer
 
 - No hardcodear el programa de ninguna congregación
-- No asumir que los IDs de WOL (`#p6`, `#p7`) son estables — hacer parser tolerante
+- **No usar IDs de párrafo WOL (`#p6`, `#p7`, etc.)** — varían cada semana según el contenido. Usar `h3/h4` numerados.
 - No mezclar roles VM con roles de Asignaciones en la misma lista
 - No usar `confirm()`, `alert()`, `prompt()` nativos
 - No usar `toISOString()` para fechas
