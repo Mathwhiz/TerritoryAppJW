@@ -1353,3 +1353,6 @@ window.cerrarModalHermano = cerrarModalHermano;
 window.guardarHermano = guardarHermano;
 window.confirmarEliminar = confirmarEliminar;   
 window.showView = showView;
+window.cargarEspeciales = cargarEspeciales; 
+window.renderTablaImagen = renderTablaImagen;
+window.filtrarHermanos = filtrarHermanos;
