@@ -909,9 +909,9 @@ window.uiTerritorioPicker = function({
         const dias = daysSince(lastDate);
         const ciudad = t.ciudad || null;
         if (t.enProgreso) {
-          enProgreso.push({ n, dias, lastDate, ciudad });
+          enProgreso.push({ n, dias, lastDate, ciudad, notas: t.notas || null });
         } else {
-          resto.push({ n, dias, lastDate, ciudad });
+          resto.push({ n, dias, lastDate, ciudad, notas: t.notas || null });
         }
       });
 
@@ -946,10 +946,11 @@ window.uiTerritorioPicker = function({
       const diasLabel = t.dias >= 9999 ? 'sin registros' : `${t.dias}d · ${t.lastDate ? t.lastDate.split('-').slice(1).reverse().join('/') : '—'}`;
       const sub = subOverride !== undefined ? subOverride
         : (t.enProgreso ? '<span style="color:#5DCAA5;">⟳ En progreso</span>' : diasLabel);
+      const notasIcon = t.notas ? ' <span title="' + t.notas + '" style="font-style:normal;">📝</span>' : '';
       return `<button class="tp-item" data-terr="${t.n}">
         <span class="tp-item-num" style="color:${col};border-color:${col}33;">${t.n}</span>
         <span class="tp-item-info">
-          <span class="tp-item-label">Territorio ${t.n}</span>
+          <span class="tp-item-label">Territorio ${t.n}${notasIcon}</span>
           <span class="tp-item-days">${sub}</span>
         </span>
       </button>`;

@@ -264,6 +264,7 @@ async function cargarTerritorios() {
       punto:  normPunto(t.punto),
       tipo:   t.tipo || 'normal',
       ciudad: t.ciudad || null,
+      notas:  t.notas  || null,
     })).filter(entry => entry.coords.length >= 3);
   });
 }
@@ -737,13 +738,17 @@ function openPopup(layer, numero, grupo) {
     diasHtml = `<span style="color:${col};font-weight:600;">${dias}d atrás</span>`;
   }
   const badge = info.enProgreso ? '<div class="badge-progreso">En progreso</div>' : '';
+  const terrEntry = TERRITORIOS.find(t => baseNum(t.num) === baseNum(numero));
+  const notasHtml = terrEntry?.notas
+    ? `<div class="terr-popup-row" style="margin-top:6px;"><span style="color:#888;font-style:italic;">${terrEntry.notas}</span></div>`
+    : '';
   const html = `
     <div>
       <div class="terr-popup-num" style="color:${c.fill};">${numero}</div>
       <div class="terr-popup-group" style="color:${c.fill};">${GRUPO_LABEL[grupo] || ''}</div>
       <div class="terr-popup-row"><span class="terr-popup-label">Último uso</span><span class="terr-popup-val">${lastDate ? fmtDate(lastDate) : '—'}</span></div>
       <div class="terr-popup-row"><span class="terr-popup-label">Hace</span><span class="terr-popup-val">${diasHtml}</span></div>
-      ${badge}
+      ${badge}${notasHtml}
     </div>`;
   const center = layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng();
   L.popup({ maxWidth: 240, closeButton: true }).setLatLng(center).setContent(html).openOn(map);

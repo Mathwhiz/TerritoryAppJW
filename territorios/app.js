@@ -246,7 +246,7 @@ async function fetchGrupo(grupo) {
       enProgreso = !h.fechaFin;
     }
 
-    result[id] = { lastFin, lastIni, enProgreso, tipo: terr.tipo || 'normal', ciudad: terr.ciudad || null, nombre: terr.nombre || null };
+    result[id] = { lastFin, lastIni, enProgreso, tipo: terr.tipo || 'normal', ciudad: terr.ciudad || null, nombre: terr.nombre || null, notas: terr.notas || null };
   }));
 
   return result;
@@ -1272,13 +1272,15 @@ async function openModal(n) {
   editingRow = null;
 
   try {
-    const histSnap = await getDocs(
-      query(histCol(n), orderBy('fechaInicio', 'desc'))
-    );
+    const [histSnap, terrSnap] = await Promise.all([
+      getDocs(query(histCol(n), orderBy('fechaInicio', 'desc'))),
+      getDoc(doc(terrCol(), String(n)))
+    ]);
     document.getElementById('modal-hist-loading').style.display = 'none';
     const rows = histSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderHistorial(rows);
     document.getElementById('modal-hist-content').style.display = '';
+    document.getElementById('modal-notas').value = terrSnap.exists() ? (terrSnap.data().notas || '') : '';
   } catch(err) {
     document.getElementById('modal-hist-loading').textContent = 'Error al cargar historial';
   }
@@ -1382,6 +1384,13 @@ function closeModal() {
   document.getElementById('estado-modal').style.display = 'none';
   modalTerr  = null;
   editingRow = null;
+}
+
+async function saveNota() {
+  if (!modalTerr) return;
+  const notas = document.getElementById('modal-notas').value.trim();
+  await updateDoc(doc(terrCol(), String(modalTerr)), { notas: notas || null });
+  uiToast('Nota guardada', 'success');
 }
 
 async function setTerritoryEstado(estado) {
