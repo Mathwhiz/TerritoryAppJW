@@ -158,13 +158,13 @@
       border-radius: 12px;
       color: #1D9E75;
       cursor: pointer;
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       transition: background .15s, border-color .15s, color .15s;
     }
     .btn-instalar:hover { background: #1c2420; border-color: rgba(29,158,117,0.6); color: #25c491; }
-    .btn-instalar.visible { display: flex; }
+    .btn-instalar.oculto { display: none; }
 
     /* ── Vida y Ministerio card ── */
     .cs-nav-card-vm:hover {
@@ -266,20 +266,34 @@
   <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
+    // Ocultar el botón si ya está instalada (modo standalone)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      document.getElementById('btn-instalar').classList.add('oculto');
+    }
+
     let _installPrompt = null;
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       _installPrompt = e;
-      document.getElementById('btn-instalar').classList.add('visible');
     });
     window.addEventListener('appinstalled', () => {
-      document.getElementById('btn-instalar').classList.remove('visible');
+      document.getElementById('btn-instalar').classList.add('oculto');
       _installPrompt = null;
     });
+
     function instalarApp() {
-      if (!_installPrompt) return;
-      _installPrompt.prompt();
-      _installPrompt.userChoice.then(() => { _installPrompt = null; });
+      if (_installPrompt) {
+        // Android Chrome: prompt nativo
+        _installPrompt.prompt();
+        _installPrompt.userChoice.then(() => { _installPrompt = null; });
+      } else {
+        // iOS o cuando Chrome no ofrece el prompt: mostrar instrucciones
+        const esIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        const msg = esIOS
+          ? 'Para instalar la app en iOS:\n\n1. Tocá el botón compartir (⬆) en la barra del navegador\n2. Seleccioná "Agregar a inicio"'
+          : 'Para instalar la app:\n\nTocá el menú (⋮) del navegador → "Instalar app" o "Agregar a pantalla de inicio"';
+        uiAlert(msg, 'Instalar AppJW');
+      }
     }
   </script>
   <script src="ui-utils.js"></script>
