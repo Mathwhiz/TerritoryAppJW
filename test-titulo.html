@@ -68,19 +68,60 @@
     }
 
     /* ══════════════════════════════════════
-       VARIANTE B — Card header con borde izquierdo
-       Nombre dentro de una card con acento lateral
+       VARIANTE B — Card con borde neon animado
+       El borde recorre el perímetro como un rayo
     ══════════════════════════════════════ */
-    .vb-card {
+    .vb-wrapper {
+      position: relative;
       width: 100%;
-      background: #232628;
-      border: 1px solid #2e3033;
-      border-left: 3px solid #378ADD;
       border-radius: 14px;
+      padding: 2px;
+      overflow: hidden;
+      box-shadow: 0 0 28px rgba(0,212,255,0.12), 0 0 10px rgba(55,138,221,0.15);
+    }
+    /* Fondo base del borde (el "hueco" entre el rayo) */
+    .vb-wrapper::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      border: 1px solid #2a2d30;
+      pointer-events: none;
+      z-index: 2;
+    }
+    /* El rayo que gira */
+    .vb-wrapper::before {
+      content: '';
+      position: absolute;
+      aspect-ratio: 1;
+      width: 220%;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(0deg);
+      background: conic-gradient(
+        from 0deg,
+        transparent 0%,
+        transparent 72%,
+        rgba(0,212,255,0.15) 78%,
+        #00d4ff 83%,
+        #378ADD 87%,
+        rgba(55,138,221,0.3) 90%,
+        transparent 100%
+      );
+      animation: vb-spin 2.8s linear infinite;
+      z-index: 0;
+    }
+    @keyframes vb-spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .vb-inner {
+      position: relative;
+      background: #232628;
+      border-radius: 13px;
       padding: 14px 18px;
       display: flex;
       align-items: center;
       gap: 12px;
+      z-index: 1;
     }
     .vb-dot {
       width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
@@ -153,11 +194,13 @@
   <div class="demo">
     <div class="demo-label">Variante B</div>
 
-    <div class="vb-card">
-      <div class="vb-dot">CS</div>
-      <div>
-        <div class="vb-nombre">Congregación Sur</div>
-        <div class="vb-sub">Sistema interno</div>
+    <div class="vb-wrapper">
+      <div class="vb-inner">
+        <div class="vb-dot">CS</div>
+        <div>
+          <div class="vb-nombre">Congregación Sur</div>
+          <div class="vb-sub">Sistema interno</div>
+        </div>
       </div>
     </div>
     <div class="cs-logo-sub">Seleccioná un módulo</div>
