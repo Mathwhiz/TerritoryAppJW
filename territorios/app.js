@@ -1551,3 +1551,6 @@ window.deleteHistorialDoc = deleteHistorialDoc;
 window.openMapaPicker      = openMapaPicker;
 window.openEncuentroPicker = openEncuentroPicker;
 window.saveNota            = saveNota;
+window.updateDiaLabel      = updateDiaLabel;
+window.addExtraTerritory   = addExtraTerritory;
+window.removeSalida        = removeSalida;
