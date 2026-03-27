@@ -1550,3 +1550,4 @@ window.deleteEntry = deleteEntry;
 window.deleteHistorialDoc = deleteHistorialDoc;
 window.openMapaPicker      = openMapaPicker;
 window.openEncuentroPicker = openEncuentroPicker;
+window.saveNota            = saveNota;

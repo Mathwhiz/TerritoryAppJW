@@ -18,7 +18,7 @@ congregaciones/{congreId}/
   │         pinVidaMinisterio?, tieneAuxiliar?,
   │         ciudadPrincipal?, ciudadesExtras?)
   ├── grupos/{grupoId}         → id, label, color, pin
-  ├── territorios/{terrId}     → id, nombre, tipo, grupoId, punto, poligonos, ciudad?
+  ├── territorios/{terrId}     → id, nombre, tipo, grupoId, punto, poligonos, ciudad?, notas?
   ├── historial/{entryId}      → conductor, fechaInicio, fechaFin, territorioId
   ├── salidas/{salidaId}       → grupoId, fechaReg, salidas[]
   ├── publicadores/{pubId}     → nombre, roles, activo
@@ -74,6 +74,8 @@ El ID de congregación es un slug legible (ej: `"sur"`, `"norte"`), elegido al c
 ├── vida-ministerio/
 │   ├── index.html          # App de VM
 │   ├── app.js              # Lógica principal
+│   ├── programa.html       # Visor público solo lectura (sin PIN)
+│   ├── programa.js         # Lógica del visor público
 │   └── styles.css
 └── tools/                  # Scripts de migración y sync (conservar como referencia)
     ├── kml_to_json.py
@@ -184,6 +186,7 @@ Sub-polígonos usan sufijos letra (92a, 92b) que mapean al mismo territorio base
   punto:     { lat, lng },
   poligonos: [{ coords: [{ lat, lng }, ...] }],
   ciudad:    null | "Ataliva Roca",    // null = ciudad principal
+  notas:     null | "Edificio de dptos, timbre en entrada",  // opcional
 }
 ```
 
@@ -233,8 +236,12 @@ Módulo para el **presidente de la reunión VM**: importar programa de WOL, asig
 gestionar publicadores por rol VM, sala auxiliar.
 
 **Estado al 2026-03-27:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI),
-PIN VM, navegación, vista mensual, editar títulos, duración visible y export/compartir — todos ✅.
+PIN VM, navegación, vista mensual, editar títulos, duración visible, export/compartir y visor público (`programa.html`) — todos ✅.
 **Pendiente:** auto-asignación (Fase 4) y que el generador de Asignaciones respete semanas especiales.
+
+### Visor público (`programa.html`)
+Página standalone sin PIN. URL: `vida-ministerio/programa.html?congre=sur&semana=2026-04-07`.
+Sin `semana` muestra la semana actual. Navegación ← →, botón compartir copia URL al portapapeles.
 
 ### Firestore (resumen)
 ```
