@@ -113,20 +113,59 @@
     }
 
     /* ── Título de congregación ── */
-    .menu-congre { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .menu-congre { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+
+    .menu-congre-wrapper {
+      position: relative;
+      width: 100%;
+      border-radius: 14px;
+      padding: 3px;
+      overflow: hidden;
+      --neon-color: #7F77DD;
+      --neon-color-dim: rgba(127,119,221,0.3);
+    }
+    .menu-congre-wrapper::before {
+      content: '';
+      position: absolute;
+      aspect-ratio: 1;
+      width: 220%;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(0deg);
+      background: conic-gradient(
+        from 0deg,
+        transparent 0%,
+        transparent 58%,
+        rgba(255,255,255,0.06) 65%,
+        var(--neon-color) 72%,
+        var(--neon-color-dim) 82%,
+        transparent 100%
+      );
+      animation: menu-border-spin 2.8s linear infinite;
+      z-index: 0;
+    }
+    @keyframes menu-border-spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .menu-congre-inner {
+      position: relative;
+      background: #232628;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1;
+    }
     .menu-congre-icon {
-      width: 54px; height: 54px; border-radius: 16px;
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 17px; font-weight: 700; letter-spacing: -0.5px;
-      flex-shrink: 0;
+      font-size: 13px; font-weight: 800;
     }
     #menu-titulo {
-      font-size: 26px;
+      font-size: 18px;
       font-weight: 700;
       color: #e8e8e8;
-      letter-spacing: -0.5px;
-      line-height: 1.2;
-      text-align: center;
+      letter-spacing: -0.3px;
     }
 
     /* ── Botón admin ── */
@@ -195,8 +234,12 @@
     <div class="menu-wrap">
       <div class="logo">
         <div class="menu-congre">
-          <div class="menu-congre-icon" id="menu-congre-icon"></div>
-          <div id="menu-titulo">—</div>
+          <div class="menu-congre-wrapper" id="menu-congre-wrapper">
+            <div class="menu-congre-inner">
+              <div class="menu-congre-icon" id="menu-congre-icon"></div>
+              <div id="menu-titulo">—</div>
+            </div>
+          </div>
         </div>
         <div class="cs-logo-sub">Seleccioná un módulo</div>
       </div>
@@ -335,12 +378,16 @@
     const btnAdmin   = document.querySelector('.btn-admin');
     const titulo     = document.getElementById('menu-titulo');
     const congreIcon = document.getElementById('menu-congre-icon');
+    const congreWrap = document.getElementById('menu-congre-wrapper');
 
     function mostrarMenu(nombre, color) {
       const col = color || '#7F77DD';
-      congreIcon.textContent  = iniciales(nombre);
+      congreWrap.style.setProperty('--neon-color', col);
+      congreWrap.style.setProperty('--neon-color-dim', hexToRgba(col, 0.3));
+      congreWrap.style.boxShadow = `0 0 28px ${hexToRgba(col, 0.12)}, 0 0 10px ${hexToRgba(col, 0.15)}`;
+      congreIcon.textContent      = iniciales(nombre);
       congreIcon.style.background = hexToRgba(col, 0.18);
-      congreIcon.style.border     = `1px solid ${hexToRgba(col, 0.35)}`;
+      congreIcon.style.border     = `1px solid ${hexToRgba(col, 0.3)}`;
       congreIcon.style.color      = col;
       titulo.textContent = nombre;
       document.getElementById('menu-footer').textContent = nombre + ' · App interna';
