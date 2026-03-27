@@ -198,7 +198,11 @@ function getWeekDates(offset = 0) {
   function d(o) {
     const x = new Date(monday);
     x.setDate(monday.getDate() + o);
-    return fmtDateLocal(x);
+    // devolver yyyy-mm-dd local (sin bug UTC)
+    const yyyy = x.getFullYear();
+    const mm   = String(x.getMonth() + 1).padStart(2, '0');
+    const dd   = String(x.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
   return { mon:d(0), tue:d(1), wed:d(2), thu:d(3), fri:d(4), sat:d(5), sun:d(6) };
 }
