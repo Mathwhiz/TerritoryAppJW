@@ -371,7 +371,7 @@ async function initMap() {
       btn.id = `filter-ciudad-${c.offset}`;
       btn.style.cssText = 'border-color:#5DCAA5;color:#5DCAA5;';
       btn.textContent = `📍 ${c.nombre}`;
-      btn.onclick = () => zoomCiudad(c.nombre);
+      btn.onclick = () => filterCiudad(c.nombre, `filter-ciudad-${c.offset}`);
       bar.appendChild(btn);
     });
   }
@@ -770,31 +770,60 @@ window.handleBack = function() {
   }
 };
 
-// ── Zoom a ciudad extra ──
-window.zoomCiudad = function(nombreCiudad) {
-  const cityLayers = allLayers.filter(l => l.ciudad === nombreCiudad && l.polygon.getBounds().isValid());
-  if (!cityLayers.length) return;
-  const b = cityLayers[0].polygon.getBounds();
-  cityLayers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
-  map.flyToBounds(b, { padding: [24, 24], maxZoom: 16, duration: 0.6 });
+// ── Filtro por ciudad extra (toggle) ──
+let _ciudadFiltro = null;
+
+window.filterCiudad = function(nombre, btnId) {
+  _ciudadFiltro = (_ciudadFiltro === nombre) ? null : nombre;
+  document.querySelectorAll('[id^="filter-ciudad-"]').forEach(b => b.classList.remove('active'));
+  if (_ciudadFiltro) {
+    const btn = document.getElementById(btnId);
+    if (btn) btn.classList.add('active');
+    // fly a la ciudad seleccionada
+    const cityValid = allLayers.filter(l => l.ciudad === _ciudadFiltro && l.polygon.getBounds().isValid());
+    if (cityValid.length) {
+      const b = cityValid[0].polygon.getBounds();
+      cityValid.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
+      map.flyToBounds(b, { padding: [24, 24], maxZoom: 16, duration: 0.6 });
+    }
+  } else {
+    // volver a ciudad principal
+    const mainValid = allLayers.filter(l => !l.ciudad && l.polygon.getBounds().isValid());
+    if (mainValid.length) {
+      const b = mainValid[0].polygon.getBounds();
+      mainValid.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
+      map.flyToBounds(b, { padding: [24, 24], maxZoom: 16, duration: 0.6 });
+    }
+  }
+  filterGroup(activeFilter);
+  map.closePopup();
 };
 
 // ── Filtros (modo full) ──
 window.filterGroup = function(group) {
   activeFilter = group;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn:not([id^="filter-ciudad-"])').forEach(b => b.classList.remove('active'));
   const activeBtn = document.getElementById('filter-' + group);
   if (activeBtn) activeBtn.classList.add('active');
 
   if (group === 'all') {
-    allLayers.forEach(({ polygon, label }) => {
-      if (!map.hasLayer(polygon)) polygon.addTo(map);
-      if (!map.hasLayer(label))   label.addTo(map);
-      polygon.setStyle({ fillOpacity: 0.22, weight: 2 });
+    allLayers.forEach(l => {
+      const show = !_ciudadFiltro || l.ciudad === _ciudadFiltro;
+      if (show) {
+        if (!map.hasLayer(l.polygon)) l.polygon.addTo(map);
+        if (!map.hasLayer(l.label))   l.label.addTo(map);
+        l.polygon.setStyle({ fillOpacity: 0.22, weight: 2 });
+      } else {
+        if (map.hasLayer(l.polygon)) map.removeLayer(l.polygon);
+        if (map.hasLayer(l.label))   map.removeLayer(l.label);
+      }
     });
   } else {
     const visible = [], hidden = [];
-    allLayers.forEach(l => (l.group === group ? visible : hidden).push(l));
+    allLayers.forEach(l => {
+      const cityOk = !_ciudadFiltro || l.ciudad === _ciudadFiltro;
+      ((l.group === group && cityOk) ? visible : hidden).push(l);
+    });
     hidden.forEach(({ polygon, label }) => {
       if (map.hasLayer(polygon)) map.removeLayer(polygon);
       if (map.hasLayer(label))   map.removeLayer(label);
@@ -804,13 +833,11 @@ window.filterGroup = function(group) {
       if (!map.hasLayer(label))   label.addTo(map);
       polygon.setStyle({ fillOpacity: 0.35, weight: 2.5 });
     });
-    if (visible.length) {
-      const validLayers = visible.filter(l => l.polygon.getBounds().isValid());
-      if (validLayers.length) {
-        const b = validLayers[0].polygon.getBounds();
-        validLayers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
-        map.flyToBounds(b, { padding:[30,30], maxZoom:16, duration:0.5 });
-      }
+    const validLayers = visible.filter(l => l.polygon.getBounds().isValid());
+    if (validLayers.length) {
+      const b = validLayers[0].polygon.getBounds();
+      validLayers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
+      map.flyToBounds(b, { padding:[30,30], maxZoom:16, duration:0.5 });
     }
   }
   map.closePopup();

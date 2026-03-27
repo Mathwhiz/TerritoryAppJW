@@ -1404,21 +1404,20 @@ async function goToHistorial() {
   titulo.style.color = GCOLORS[selectedGrupo] || '#97C459';
   show('hist-loading'); hide('hist-content'); hide('hist-error');
   try {
-    const q = query(
-      salidaCol(),
-      where('grupoId', '==', String(selectedGrupo)),
-      orderBy('fechaReg', 'desc')
-    );
+    const q = query(salidaCol(), where('grupoId', '==', String(selectedGrupo)));
     const snap = await getDocs(q);
     hide('hist-loading');
+    const sortedDocs = snap.docs.slice().sort((a, b) =>
+      (b.data().fechaReg || '').localeCompare(a.data().fechaReg || '')
+    );
     const rows = [];
-    snap.forEach(d => {
+    sortedDocs.forEach(d => {
       const data = d.data();
       (data.salidas || []).forEach(s => {
         rows.push({ ...s, fechaReg: data.fechaReg, salidaDocId: d.id });
       });
     });
-    renderHistorialSalidas(rows, snap.docs);
+    renderHistorialSalidas(rows, sortedDocs);
     show('hist-content');
   } catch(err) {
     hide('hist-loading');
