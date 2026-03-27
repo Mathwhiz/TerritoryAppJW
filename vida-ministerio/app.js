@@ -1,6 +1,6 @@
 import { db } from '../firebase.js';
 import {
-  collection, doc, getDoc, getDocs, setDoc, query, orderBy
+  collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 // ─────────────────────────────────────────
@@ -47,6 +47,7 @@ let tieneAuxiliar = false;
 let semanasLista      = [];  // cache para navegación encargado (orden desc)
 let pubFecha          = null; // fecha activa en vista pública
 let vmEspeciales      = {};   // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
+let vmScriptUrl       = null; // Apps Script URL para exportar a Sheets
 
 const VM_TIPO_LABELS = {
   conmemoracion:   'Conmemoración',
@@ -263,6 +264,15 @@ window.goToSemanas = async function() {
   document.getElementById('semanas-congre-sub').textContent = congreNombre || '—';
   const btnCfg = document.getElementById('btn-config-vm');
   if (btnCfg) btnCfg.style.display = modoEncargado ? '' : 'none';
+  const exportSec = document.getElementById('vm-export-section');
+  if (exportSec) {
+    exportSec.style.display = (modoEncargado && vmScriptUrl) ? '' : 'none';
+    const mesInput = document.getElementById('vm-export-mes');
+    if (mesInput && !mesInput.value) {
+      const hoy = new Date();
+      mesInput.value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+    }
+  }
   showView('view-semanas');
   await cargarSemanas();
 };
@@ -471,20 +481,47 @@ function renderSemanas(semanas) {
     const espBadge = esp
       ? `<span class="badge-especial" style="background:${espColor}22;color:${espColor};">${VM_TIPO_LABELS[esp.tipo] || esp.tipo}</span>`
       : '';
+    const actualBadge = esActual ? '<span class="badge-actual">esta semana</span>' : '';
+
+    // Mini info: canciones y presidente
+    const cStr = [s.cancionApertura, s.cancionIntermedia, s.cancionCierre].filter(Boolean).join(' · ');
+    const cRow = cStr ? `<div class="semana-mini-row has-data">♪ ${cStr}</div>` : `<div class="semana-mini-row">♪ —</div>`;
+    const pNombre = nombreDePub(s.presidente);
+    const pRow = pNombre
+      ? `<div class="semana-mini-row has-data">👤 ${esc(pNombre)}</div>`
+      : `<div class="semana-mini-row">👤 Sin presidente</div>`;
+
     return `
       <div class="semana-card${esActual ? ' semana-actual' : ''}" onclick="goToSemana('${s.fecha}')">
-        <div class="semana-card-info">
-          <div class="semana-fecha">
-            ${fmtDisplaySemana(s.fecha)}
-            ${esActual ? '<span class="badge-actual">esta semana</span>' : ''}
-            ${espBadge}
-          </div>
-          <div class="estado-${c.clase}">${c.texto}</div>
+        <div class="semana-card-top">
+          <div class="semana-fecha">${fmtDisplaySemana(s.fecha)}</div>
+          <button class="btn-del-semana" onclick="event.stopPropagation(); eliminarSemana('${s.fecha}')" title="Eliminar semana">×</button>
         </div>
-        <div class="semana-arrow">›</div>
+        <div class="semana-card-badges">${actualBadge}${espBadge}</div>
+        <div class="semana-card-meta">${cRow}${pRow}</div>
+        <div class="estado-${c.clase}">${c.texto}</div>
       </div>`;
   }).join('');
 }
+
+window.eliminarSemana = async function(fecha) {
+  const ok = await uiConfirm({
+    title: 'Eliminar semana',
+    msg: `¿Eliminar el programa de la semana del ${fmtDisplay(fecha)}? Esta acción no se puede deshacer.`,
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+    type: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
+    semanasLista = semanasLista.filter(s => s.fecha !== fecha);
+    renderSemanas(semanasLista);
+    uiToast('Semana eliminada', 'success');
+  } catch(e) {
+    uiToast('Error al eliminar: ' + e.message, 'error');
+  }
+};
 
 // ─────────────────────────────────────────
 //   RENDER — PROGRAMA PÚBLICO (solo lectura)
@@ -765,6 +802,7 @@ function renderSemanaEdit() {
 
   html += `<button class="btn-wol" onclick="reimportarDeWOL()">↓ Reimportar títulos de WOL</button>`;
   html += `<button class="btn-primary guardar-btn" onclick="guardarSemana()">Guardar programa</button>`;
+  html += `<button class="btn-danger-outline" onclick="eliminarSemana('${s.fecha}')">Eliminar esta semana</button>`;
   html += `<div style="height:2rem;"></div>`;
 
   document.getElementById('semana-content').innerHTML = html;
@@ -1136,6 +1174,141 @@ window.crearSemana = async function() {
 };
 
 // ─────────────────────────────────────────
+//   COMPARTIR FOTO (html2canvas)
+// ─────────────────────────────────────────
+window.compartirSemanaFoto = function() {
+  const el = document.getElementById('pub-contenido');
+  if (!el) return;
+  uiLoading.show('Generando imagen…');
+  // Forzar fondo para que html2canvas lo tome correctamente
+  const prevBg = el.style.background;
+  el.style.background = '#1e1e1e';
+  html2canvas(el, {
+    backgroundColor: '#1e1e1e',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+  }).then(canvas => {
+    el.style.background = prevBg;
+    uiLoading.hide();
+    const link = document.createElement('a');
+    const semStr = (pubFecha || lunesDeHoy()).replace(/-/g, '');
+    link.download = `vm-semana-${semStr}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.92);
+    link.click();
+  }).catch(e => {
+    el.style.background = prevBg;
+    uiLoading.hide();
+    uiToast('Error al generar imagen: ' + e.message, 'error');
+  });
+};
+
+// ─────────────────────────────────────────
+//   EXPORTAR A SHEETS
+// ─────────────────────────────────────────
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+async function apiFetchVM(params) {
+  const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  await fetch(`${vmScriptUrl}?${qs}`, { mode: 'no-cors' });
+}
+
+function formatSemanaParaSheets(s) {
+  const rows = [];
+  const n = id => (id && nombreDePub(id)) || '—';
+  const add = (parte, titulo, persona, ayudante) =>
+    rows.push([parte, titulo || '', persona || '—', ayudante || '']);
+
+  rows.push([`=== Semana del ${fmtDisplay(s.fecha)} ===`, '', '', '']);
+  const cStr = [
+    s.cancionApertura   ? `Ap: ${s.cancionApertura}`   : null,
+    s.cancionIntermedia ? `Int: ${s.cancionIntermedia}` : null,
+    s.cancionCierre     ? `Cie: ${s.cancionCierre}`     : null,
+  ].filter(Boolean).join('  ·  ');
+  rows.push(['Canciones', cStr || '—', '', '']);
+  rows.push(['', '', '', '']);
+
+  rows.push(['— PRESIDENCIA —', '', '', '']);
+  add('Presidente',      '',  n(s.presidente));
+  add('Oración apertura','',  n(s.oracionApertura));
+  add('Oración cierre',  '',  n(s.oracionCierre));
+  rows.push(['', '', '', '']);
+
+  rows.push(['— TESOROS DE LA PALABRA DE DIOS —', '', '', '']);
+  add('1. Discurso',       s.tesoros?.discurso?.titulo,       n(s.tesoros?.discurso?.pubId));
+  add('2. Joyas Espirituales', s.tesoros?.joyas?.titulo,      n(s.tesoros?.joyas?.pubId));
+  const lb = s.tesoros?.lecturaBiblica;
+  add('3. Lectura Bíblica', lb?.titulo, n(lb?.pubId), n(lb?.ayudante));
+  rows.push(['', '', '', '']);
+
+  rows.push(['— SEAMOS MEJORES MAESTROS —', '', '', '']);
+  (s.ministerio || []).forEach((p, i) =>
+    add(`Parte ${i+1}`, p.titulo, n(p.pubId), n(p.ayudante))
+  );
+  rows.push(['', '', '', '']);
+
+  rows.push(['— NUESTRA VIDA CRISTIANA —', '', '', '']);
+  (s.vidaCristiana || []).forEach((p, i) =>
+    add(`Parte ${i+1}`, p.titulo, n(p.pubId))
+  );
+  const est = s.estudioBiblico || {};
+  add('Estudio Bíblico', est.titulo, n(est.conductor), n(est.lector));
+  rows.push(['', '', '', '']); // separador entre semanas
+  return rows;
+}
+
+window.exportarMesASheets = async function() {
+  if (!vmScriptUrl) return;
+  const mesInput = document.getElementById('vm-export-mes');
+  const [anio, mes] = (mesInput?.value || '').split('-').map(Number);
+  if (!anio || !mes) { uiToast('Seleccioná un mes', 'error'); return; }
+
+  const hojaName = `${MESES_ES[mes-1]} ${anio}`;
+  const semanasDelMes = semanasLista.filter(s => {
+    const d = new Date(s.fecha + 'T12:00:00');
+    return d.getFullYear() === anio && d.getMonth() + 1 === mes;
+  });
+
+  if (!semanasDelMes.length) {
+    await uiAlert(`No hay semanas cargadas para ${hojaName}.`, 'Sin datos');
+    return;
+  }
+
+  // Cargar datos completos de Firestore para cada semana (semanasLista puede tener datos parciales)
+  const statusEl = document.getElementById('vm-export-status');
+  const setBtnDis = d => { const b = document.querySelector('.btn-sheets-vm'); if (b) b.disabled = d; };
+
+  setBtnDis(true);
+  try {
+    for (let i = 0; i < semanasDelMes.length; i++) {
+      const fecha = semanasDelMes[i].fecha;
+      if (statusEl) statusEl.textContent = `Enviando ${i+1}/${semanasDelMes.length}…`;
+
+      // Cargar doc completo para tener todos los pubId
+      const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
+      if (!snap.exists()) continue;
+      const filas = formatSemanaParaSheets(snap.data());
+
+      await apiFetchVM({
+        action: 'saveVMSemana',
+        hoja: hojaName,
+        semana: fecha,
+        clearFirst: i === 0 ? 'true' : 'false',
+        filas: JSON.stringify(filas),
+      });
+    }
+    if (statusEl) {
+      statusEl.style.color = '#5DCAA5';
+      statusEl.textContent = `✓ Exportado a hoja "${hojaName}"`;
+    }
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = '#e05050'; statusEl.textContent = 'Error: ' + e.message; }
+  }
+  setBtnDis(false);
+};
+
+// ─────────────────────────────────────────
 //   INIT
 // ─────────────────────────────────────────
 (async function init() {
@@ -1157,6 +1330,7 @@ window.crearSemana = async function() {
     const data = snap.data();
     pinVM = data.pinVidaMinisterio || '1234';
     tieneAuxiliar = data.tieneAuxiliar === true;
+    vmScriptUrl = data.scriptUrl || null;
     await cargarPublicadores();
     await cargarVmEspeciales();
   } catch(e) {

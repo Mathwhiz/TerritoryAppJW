@@ -95,20 +95,24 @@ Se agrega también en `admin.html` (editar congregación) y en `admin.js`.
 Los publicadores ya existen en `congregaciones/{congreId}/publicadores`.
 Se agregan nuevos roles a la lista de cada uno:
 
-| Rol (interno) | Display | Quiénes pueden tener |
-|---------------|---------|----------------------|
+| Rol (interno) | Display | Quiénes |
+|---------------|---------|---------|
 | `VM_PRESIDENTE` | Presidente RVM | Hermanos |
-| `VM_ORACION` | Oración | Hermanos |
+| `VM_ORACION` | Oración (apertura/cierre) | Hermanos |
 | `VM_TESOROS` | Discurso Tesoros | Hermanos |
 | `VM_JOYAS` | Joyas Espirituales | Hermanos |
-| `VM_LECTURA` | Lectura Bíblica | Hermanos (estudiantes) |
-| `VM_MINISTERIO` | Partes Ministerio | Hermanos y hermanas |
-| `VM_VIDA_CRISTIANA` | Vida Cristiana | Hermanos |
+| `VM_LECTURA` | Lectura Bíblica | Hermanos (varones) |
+| `VM_MINISTERIO_CONVERSACION` | Conversación (1a/2a) | Hermanos y hermanas |
+| `VM_MINISTERIO_REVISITA` | Revisita | Hermanos y hermanas |
+| `VM_MINISTERIO_ESCENIFICACION` | Escenificación | Hermanos y hermanas |
+| `VM_MINISTERIO_DISCURSO` | Discurso SMM | Hermanos (varones, ~5 min) |
+| `VM_VIDA_CRISTIANA` | Discurso Vida Cristiana | Hermanos |
 | `VM_ESTUDIO_CONDUCTOR` | Conductor Estudio | Hermanos |
-| `VM_ESTUDIO_LECTOR` | Lector Estudio | Hermanos |
 
-Para arrancar: se copia la lista de publicadores del módulo de Asignaciones y se
-asignan roles VM a mano. Más adelante el módulo tendrá su propia gestión de hermanos.
+> **Nota:** El lector del estudio bíblico ya está en el módulo de Asignaciones — no se duplica aquí.
+
+Los roles VM se agregan al array `roles` de los mismos publicadores de `congregaciones/{congreId}/publicadores`.
+La gestión de roles VM se hace desde la vista "Hermanos" del módulo VM (muestra solo roles VM, mismos IDs de persona).
 
 ---
 
@@ -165,38 +169,70 @@ const songNum = h => h.textContent.match(/Canción\s+(\d+)/)?.[1] || '';
 
 ---
 
+## Detección automática de tipo de parte (para auto-asignación)
+
+El título importado de WOL se analiza para determinar qué rol se necesita.
+
+### Seamos Mejores Maestros — mapeo título → rol
+
+```js
+function tipoMinisterioDesdeWOL(titulo) {
+  const t = titulo.toLowerCase();
+  if (t.includes('conversación'))  return 'conversacion';
+  if (t.includes('revisita'))      return 'revisita';
+  if (t.includes('escenificación') || t.includes('escenificacion')) return 'escenificacion';
+  if (t.includes('discurso'))      return 'discurso'; // varón, sin ayudante
+  return 'conversacion'; // fallback
+}
+
+const TIPO_ROL_MAP = {
+  conversacion:  'VM_MINISTERIO_CONVERSACION',
+  revisita:      'VM_MINISTERIO_REVISITA',
+  escenificacion:'VM_MINISTERIO_ESCENIFICACION',
+  discurso:      'VM_MINISTERIO_DISCURSO',  // varones, sin ayudante
+};
+```
+
+**Regla de ayudante:**
+- `tipo === 'discurso'` → sin ayudante (es un varón solo)
+- Todos los demás tipos → tienen ayudante (orador + ayudante, pueden ser h/h)
+
+El campo `tipo` se guarda en Firestore al importar de WOL para que el auto-asignador lo use.
+Si la semana fue creada manualmente sin WOL, el encargado puede editar el tipo de cada parte.
+
+---
+
 ## Algoritmo de auto-asignación
 
 Igual que el módulo de Asignaciones: **round-robin por rol** con índice persistente.
 
 ```js
-// Índices por rol (se calculan partiendo del último asignado en historial)
+// Índices por rol
 const indices = {
-  VM_PRESIDENTE: 0,
-  VM_ORACION:    0,
-  VM_TESOROS:    0,
-  // ...
+  VM_PRESIDENTE: 0, VM_ORACION: 0, VM_TESOROS: 0, VM_JOYAS: 0,
+  VM_LECTURA: 0, VM_MINISTERIO_CONVERSACION: 0, VM_MINISTERIO_REVISITA: 0,
+  VM_MINISTERIO_ESCENIFICACION: 0, VM_MINISTERIO_DISCURSO: 0,
+  VM_VIDA_CRISTIANA: 0, VM_ESTUDIO_CONDUCTOR: 0,
 };
 
 // Por semana:
-const enEstaSemana = new Set(); // detecta conflictos
+const enEstaSemana = new Set();
 for (const slot of slotsOrdenados) {
-  const lista = publicadoresConRol(slot.rolRequerido);
-  let i = indices[slot.rolRequerido];
-  // Saltear si ya tiene parte esta semana
-  while (enEstaSemana.has(lista[i % lista.length]?.id)) {
-    i++;
-  }
+  const rol = slot.rolRequerido;
+  const lista = publicadoresConRol(rol);
+  let i = indices[rol];
+  while (enEstaSemana.has(lista[i % lista.length]?.id)) i++;
   slot.pubId = lista[i % lista.length]?.id;
   enEstaSemana.add(slot.pubId);
-  indices[slot.rolRequerido] = (i + 1) % lista.length;
+  indices[rol] = (i + 1) % lista.length;
 }
 ```
 
 **Reglas especiales:**
-- `VM_ORACION` apertura y cierre: distintas personas (offset +1)
+- `VM_ORACION` apertura y cierre: distintas personas (índice +1 para el segundo)
 - Presidente ≠ oración apertura ni cierre
-- Conductor estudio ≠ lector estudio
+- Conductor estudio ≠ lector (lector viene de Asignaciones, no se asigna aquí)
+- Tipo `discurso` en Ministerio: sin ayudante, solo varones (`VM_MINISTERIO_DISCURSO`)
 
 ---
 
@@ -268,17 +304,41 @@ El PIN se agrega al doc de congregación y se configura desde `admin.html`.
 6. Botón "Importar de WOL" en crear semana + reimportar
 7. Extrae títulos, duraciones y números de canciones
 
-### Fase 3 — Import historial Excel (próxima)
+### Fase 3 — Import historial Excel (pendiente)
 8. Script Python `tools/sync_vm_historial.py` que lea `Copia de Reunión Vida y Ministerio Cristiano.xlsx`
    y suba ~1 año de reuniones a `congregaciones/{congreId}/vidaministerio/`
    - Detectar columnas: fecha lunes, canciones, presidente, cada parte + asignado
    - Crear documentos con la misma estructura que crea el módulo manualmente
    - Idempotente: no sobreescribir si ya existe el doc para esa fecha
 
-### Fase 4 — Auto-generación
-9. Algoritmo round-robin para VM (igual que Asignaciones)
-10. Vista Generar automático con rango de fechas
-11. Gestión de roles VM en lista de publicadores
+### Fase 4 — Auto-asignación VM (próxima)
+
+**Roles VM** — se agregan a `publicadores.roles[]` (mismos docs que Asignaciones):
+`VM_PRESIDENTE`, `VM_ORACION`, `VM_TESOROS`, `VM_JOYAS`, `VM_LECTURA`,
+`VM_MINISTERIO_CONVERSACION`, `VM_MINISTERIO_REVISITA`, `VM_MINISTERIO_ESCENIFICACION`,
+`VM_MINISTERIO_DISCURSO`, `VM_VIDA_CRISTIANA`, `VM_ESTUDIO_CONDUCTOR`
+
+**Pasos de implementación:**
+
+9. **Guardar `tipo` al importar WOL** — `tipoMinisterioDesdeWOL(titulo)` en el parser → campo `tipo` en cada parte de `ministerio[]`
+10. **Gestión de hermanos VM** — nueva vista en el módulo (botón en cover/encargado):
+    - Lista publicadores con filtro por rol VM
+    - Toggle por rol VM (igual UI que Asignaciones)
+    - Muestra solo roles VM, mismos pubId
+11. **Vista "Generar automático"** — igual que Asignaciones:
+    - Picker rango de fechas (desde / hasta)
+    - Checkbox "Tener en cuenta historial previo"
+    - Checkbox "Reemplazar semanas existentes"
+    - Botón Generar → crea/actualiza docs en `vidaministerio/`
+    - Por cada semana: importa WOL automáticamente si no existe, luego asigna publicadores
+12. **Algoritmo round-robin** — ver sección "Algoritmo de auto-asignación" arriba
+    - Si la semana tiene una `semanasEspeciales` de tipo `asamblea` → saltar
+    - Si es `superintendente` → `tesoros.lecturaBiblica` asignar igual, pero `vidaCristiana[last]` = discurso del superintendente (sin asignar pubId)
+
+**Sala auxiliar (si aplica):**
+- `tesoros.lecturaBiblica` tiene `ayudanteAux` además de `ayudante`
+- Partes de ministerio tipo demo tienen `ayudanteAux`
+- En auto-asignación: el `ayudante` del salón principal es siguiente en la lista, `ayudanteAux` es el siguiente después de ese
 
 ### Fase 5 — Polish
 12. Estado de completitud por semana (✓ / ⚠ / vacía) — ya parcialmente hecho en lista

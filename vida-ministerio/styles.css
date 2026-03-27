@@ -74,19 +74,34 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
 .view-title { font-size: 18px; font-weight: 700; color: #eee; flex: 1; }
 .view-sub   { font-size: 12px; color: #888; margin-top: 1px; }
 
-/* ── Semanas list ── */
+/* ── Semanas list — grid ── */
+#semanas-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+  gap: 10px;
+}
 .semana-card {
   background: #2a2a2a; border: 1px solid #333; border-radius: 12px;
-  padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
-  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 6px;
   transition: border-color 0.15s, background 0.15s;
+  position: relative;
 }
 .semana-card:hover { border-color: rgba(239,159,39,0.4); background: #2e2a22; }
 .semana-card:active { transform: scale(0.99); }
 .semana-card.semana-actual { border-color: rgba(239,159,39,0.35); }
-.semana-card-info { flex: 1; min-width: 0; }
-.semana-fecha { font-size: 15px; font-weight: 600; color: #eee; margin-bottom: 3px; }
-.semana-arrow { color: #555; font-size: 1.3rem; }
+.semana-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+.semana-fecha { font-size: 14px; font-weight: 700; color: #eee; line-height: 1.2; }
+.semana-card-badges { display: flex; flex-wrap: wrap; gap: 4px; min-height: 0; }
+.semana-card-meta { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.semana-mini-row { font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.semana-mini-row.has-data { color: #999; }
+.btn-del-semana {
+  background: none; border: none; color: #444; cursor: pointer;
+  font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0;
+  transition: color 0.15s;
+}
+.btn-del-semana:hover { color: #e05; }
 
 .badge-actual {
   display: inline-block; background: rgba(239,159,39,0.2); color: #EF9F27;
@@ -228,6 +243,34 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
   transition: background 0.15s, border-color 0.15s;
 }
 .btn-wol:hover { background: rgba(239,159,39,0.08); border-color: rgba(239,159,39,0.6); }
+.btn-danger-outline {
+  width: 100%; background: transparent; border: 1px solid rgba(220,60,60,0.3);
+  border-radius: 10px; color: #e05050; font-size: 13px; font-weight: 600;
+  padding: 10px; cursor: pointer; margin-top: 8px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-danger-outline:hover { background: rgba(220,60,60,0.08); border-color: rgba(220,60,60,0.6); }
+
+/* ── Export a Sheets ── */
+.vm-export-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.vm-export-mes-input {
+  background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px;
+  color: #eee; padding: 7px 10px; font-size: 13px; flex: 1; min-width: 0;
+}
+.vm-export-mes-input:focus { outline: none; border-color: rgba(239,159,39,0.5); }
+.btn-sheets-vm {
+  background: #1e4f2e; border: 1px solid #2a7040; border-radius: 8px;
+  color: #5DCAA5; font-size: 12px; font-weight: 600; padding: 7px 12px;
+  cursor: pointer; white-space: nowrap; display: flex; align-items: center;
+  transition: background 0.15s;
+}
+.btn-sheets-vm:hover { background: #245c37; }
+.btn-sheets-vm:disabled { opacity: 0.5; cursor: default; }
+#vm-export-status {
+  font-size: 12px; color: #888; margin-top: 6px; min-height: 16px; text-align: center;
+}
 
 /* ── Programa público (read-only) ── */
 .pub-seccion { margin-bottom: 14px; }
