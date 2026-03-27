@@ -197,12 +197,10 @@
 ═══════════════════════════════════════════ */
 .cp-search-wrap {
   padding: 0 14px 10px;
-}
-.cp-search-field {
-  position: relative;
+  display: flex; align-items: center; gap: 8px;
 }
 .cp-search-input {
-  width: 100%; padding: 9px 12px 9px 34px;
+  flex: 1; padding: 9px 12px;
   background: #1e1e1e; border: 0.5px solid #444; border-radius: 10px;
   color: #eee; font-size: 14px; outline: none;
   transition: border-color 0.15s;
@@ -210,10 +208,8 @@
 }
 .cp-search-input:focus { border-color: #666; }
 .cp-search-icon {
-  position: absolute; left: 10px; top: 0; bottom: 0;
-  color: #555; pointer-events: none;
+  color: #555; flex-shrink: 0;
   display: flex; align-items: center;
-  width: 16px;
 }
 .cp-list {
   max-height: 280px; overflow-y: auto;
@@ -272,12 +268,10 @@
 ═══════════════════════════════════════════ */
 .tp-search-wrap {
   padding: 0 14px 10px;
-}
-.tp-search-field {
-  position: relative;
+  display: flex; align-items: center; gap: 8px;
 }
 .tp-search-input {
-  width: 100%; padding: 9px 12px 9px 34px;
+  flex: 1; padding: 9px 12px;
   background: #1e1e1e; border: 0.5px solid #444; border-radius: 10px;
   color: #eee; font-size: 14px; outline: none;
   transition: border-color 0.15s;
@@ -285,10 +279,8 @@
 }
 .tp-search-input:focus { border-color: #666; }
 .tp-search-icon {
-  position: absolute; left: 10px; top: 0; bottom: 0;
-  color: #555; pointer-events: none;
+  color: #555; flex-shrink: 0;
   display: flex; align-items: center;
-  width: 16px;
 }
 .tp-list {
   max-height: min(55vh, 420px); overflow-y: auto;
@@ -334,7 +326,7 @@
 .tp-expand-btn.expanded { color: #aaa; border-color: #444; }
 .tp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
   gap: 5px; padding: 2px 4px 6px;
 }
 .tp-grid-item {
@@ -346,7 +338,7 @@
 }
 .tp-grid-item:hover { background: #3a3a3a; transform: scale(1.04); }
 .tp-grid-item:active { transform: scale(0.93); }
-.tp-gi-num { font-size: 15px; font-weight: 700; line-height: 1; }
+.tp-gi-num { font-size: 18px; font-weight: 700; line-height: 1; }
 .tp-gi-days { font-size: 9px; font-weight: 500; opacity: 0.75; line-height: 1; }
 .tp-grid-item.en-progreso::after {
   content: ''; position: absolute; top: 4px; right: 4px;
@@ -829,15 +821,13 @@ window.uiConductorPicker = function({ conductores = [], value = '', label = 'Ele
             </button>
           </div>
           <div class="cp-search-wrap">
-            <div class="cp-search-field">
-              <span class="cp-search-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-                  <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-              <input class="cp-search-input" type="text" placeholder="Buscar..." value="${query}" autocomplete="off">
-            </div>
+            <span class="cp-search-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <input class="cp-search-input" type="text" placeholder="Buscar..." value="${query}" autocomplete="off">
           </div>
           <div class="cp-list">
             <button class="cp-sin-asignar" data-clear>
@@ -1016,15 +1006,13 @@ window.uiTerritorioPicker = function({
             </button>
           </div>
           <div class="tp-search-wrap">
-            <div class="tp-search-field">
-              <span class="tp-search-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-                  <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-              <input class="tp-search-input" type="text" placeholder="Buscar por número..." value="${query}" autocomplete="off" inputmode="numeric">
-            </div>
+            <span class="tp-search-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <input class="tp-search-input" type="text" placeholder="Buscar por número..." value="${query}" autocomplete="off" inputmode="numeric">
           </div>
           <div class="tp-list">`;
 
