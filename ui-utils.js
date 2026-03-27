@@ -1307,6 +1307,47 @@ window.fmtDateLocal = function(val) {
   margin-bottom: 4px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
+/* ── Ícono con borde neon animado ── */
+.cs-module-icon-anim {
+  position: relative;
+  width: 86px; height: 86px;
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  --module-color: #7F77DD;
+  --module-color-dim: rgba(127,119,221,0.3);
+  box-shadow: 0 0 36px var(--module-color-dim), 0 0 14px var(--module-color-dim), 0 4px 20px rgba(0,0,0,0.5);
+}
+.cs-module-icon-anim::before {
+  content: '';
+  position: absolute;
+  aspect-ratio: 1;
+  width: 220%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 50%,
+    rgba(255,255,255,0.15) 60%,
+    var(--module-color) 68%,
+    white 73%,
+    var(--module-color) 78%,
+    var(--module-color-dim) 87%,
+    transparent 100%
+  );
+  animation: cs-icon-spin 3s linear infinite;
+  z-index: 0;
+}
+@keyframes cs-icon-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+.cs-module-icon-anim .cs-module-icon-wrap {
+  position: relative; z-index: 1;
+  margin-bottom: 0; box-shadow: none; border: none !important;
+}
 .cs-module-title {
   font-size: 48px; font-weight: 700; color: #efefef;
   letter-spacing: -0.5px; line-height: 1; text-align: center;
