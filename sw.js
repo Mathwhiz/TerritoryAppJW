@@ -1,4 +1,4 @@
-const CACHE = 'appjw-v2';
+const CACHE = 'ziv-v1';
 
 // Archivos estáticos que se pre-cachean al instalar
 const SHELL = [

@@ -529,7 +529,7 @@ window.CS_LOGO_SVG = `<svg class="cs-logo-svg" width="80" height="80" viewBox="0
 /* Helper para insertar el logo donde haya .cs-logo-placeholder */
 window.insertLogos = function() {
   document.querySelectorAll('.cs-logo-placeholder').forEach(el => {
-    el.innerHTML = '<img src="/icon-192.png" width="120" height="120" style="border-radius:26px;display:block;" alt="AppJW">';
+    el.innerHTML = '<img src="/icon-192.png" width="120" height="120" style="border-radius:26px;display:block;" alt="Ziv">';
   });
 };
 document.addEventListener('DOMContentLoaded', insertLogos);
