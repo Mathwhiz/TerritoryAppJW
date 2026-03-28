@@ -300,27 +300,26 @@
       @keyframes icon-spin-rev { to { transform: translate(-50%,-50%) rotate(-360deg); } }
 
       /* ──────────────────────────────────────────
-         A — Rayo (igual al actual en producción)
-         Un cometa fino con punta blanca, 5s
+         A — Cometa puro (sin blanco)
+         Fade-in suave → pico de color → cola
       ────────────────────────────────────────── */
       .sa::before {
         background: conic-gradient(from 0deg,
-          transparent 0%, transparent 55%,
-          rgba(255,255,255,0.07) 62%, var(--c) 68%, white 72%, var(--c) 76%,
-          var(--cd) 85%, transparent 100%);
+          transparent 0%, transparent 52%,
+          var(--cd) 60%, var(--c) 70%, var(--cd) 80%, transparent 92%, transparent 100%);
         animation: icon-spin 5s linear infinite;
         transform: translate(-50%,-50%) rotate(0deg);
       }
 
       /* ──────────────────────────────────────────
-         B — Doble cometa
-         Dos rayos simétricos a 180°, más rápido
+         B — Doble cometa (sin blanco)
+         Dos manchas de color a 180°
       ────────────────────────────────────────── */
       .sb::before {
         background: conic-gradient(from 0deg,
           transparent 0%,
-          transparent 18%, rgba(255,255,255,0.05) 23%, var(--c) 26%, white 28%, var(--c) 31%, transparent 37%,
-          transparent 68%, rgba(255,255,255,0.05) 73%, var(--c) 76%, white 78%, var(--c) 81%, transparent 87%,
+          transparent 16%, var(--cd) 22%, var(--c) 28%, var(--cd) 34%, transparent 40%,
+          transparent 66%, var(--cd) 72%, var(--c) 78%, var(--cd) 84%, transparent 90%,
           transparent 100%);
         animation: icon-spin 3s linear infinite;
         transform: translate(-50%,-50%) rotate(0deg);
@@ -328,8 +327,7 @@
 
       /* ──────────────────────────────────────────
          C — Arco suave
-         Un cuarto de círculo que se desvanece,
-         sin punta blanca — más orgánico
+         Cuarto de círculo que se desvanece
       ────────────────────────────────────────── */
       .sc::before {
         background: conic-gradient(from 0deg,
@@ -340,13 +338,13 @@
       }
 
       /* ──────────────────────────────────────────
-         D — Línea de precisión
-         Trazo muy fino y veloz, minimalista
+         D — Línea de precisión (sin blanco)
+         Trazo muy fino y veloz
       ────────────────────────────────────────── */
       .sd::before {
         background: conic-gradient(from 0deg,
-          transparent 0%, transparent 90%,
-          var(--cd) 92%, var(--c) 94%, white 95.5%, var(--c) 97%, transparent 100%);
+          transparent 0%, transparent 88%,
+          var(--cd) 91%, var(--c) 94%, var(--cd) 97%, transparent 100%);
         animation: icon-spin 1.8s linear infinite;
         transform: translate(-50%,-50%) rotate(0deg);
       }
@@ -372,7 +370,7 @@
       .sf::before {
         background: conic-gradient(from 0deg,
           transparent 0%, transparent 70%,
-          var(--cd) 76%, var(--c) 80%, white 82%, var(--c) 84%, transparent 90%, transparent 100%);
+          var(--cd) 76%, var(--c) 81%, var(--cd) 86%, transparent 92%, transparent 100%);
         animation: icon-spin 4s linear infinite;
         transform: translate(-50%,-50%) rotate(0deg);
       }
@@ -393,7 +391,7 @@
 
     <!-- A -->
     <div class="var-row">
-      <div class="var-name">A — Rayo (actual)</div>
+      <div class="var-name">A — Cometa puro</div>
       <div class="var-icons">
         <div class="spin-icon sa si-terr">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
