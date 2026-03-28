@@ -451,10 +451,28 @@
 .cs-nav-icon {
   width: 46px; height: 46px; border-radius: 13px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  position: relative; overflow: hidden;
 }
-.cs-nav-icon-terr  { background: rgba(151,196,89,0.15);  border: 1px solid rgba(151,196,89,0.25); }
-.cs-nav-icon-asign { background: rgba(55,138,221,0.15);  border: 1px solid rgba(55,138,221,0.25); }
-.cs-nav-icon-vm    { background: rgba(239,159,39,0.15);  border: 1px solid rgba(239,159,39,0.25); }
+.cs-nav-icon::before {
+  content: '';
+  position: absolute; aspect-ratio: 1; width: 220%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%, transparent 55%,
+    rgba(255,255,255,0.06) 62%,
+    var(--nav-c, #7F77DD) 68%, white 72%, var(--nav-c, #7F77DD) 76%,
+    var(--nav-c-dim, rgba(127,119,221,0.2)) 85%, transparent 100%
+  );
+  animation: cs-nav-spin 5s linear infinite;
+  z-index: 0;
+}
+.cs-nav-icon svg { position: relative; z-index: 1; }
+@keyframes cs-nav-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.cs-nav-icon-terr  { --nav-c: #97C459; --nav-c-dim: rgba(151,196,89,0.2); background: rgba(151,196,89,0.13); border: 1px solid rgba(151,196,89,0.22); }
+.cs-nav-icon-asign { --nav-c: #378ADD; --nav-c-dim: rgba(55,138,221,0.2);  background: rgba(55,138,221,0.13);  border: 1px solid rgba(55,138,221,0.22); }
+.cs-nav-icon-vm    { --nav-c: #EF9F27; --nav-c-dim: rgba(239,159,39,0.2);  background: rgba(239,159,39,0.13);  border: 1px solid rgba(239,159,39,0.22); }
 
 .cs-nav-card-terr:hover  { border-color: rgba(151,196,89,0.55);  background: #1e2810; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(151,196,89,0.55),  0 4px 20px rgba(151,196,89,0.12); }
 .cs-nav-card-asign:hover { border-color: rgba(55,138,221,0.55);  background: #101e28; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(55,138,221,0.55),  0 4px 20px rgba(55,138,221,0.12); }

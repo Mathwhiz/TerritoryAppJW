@@ -225,7 +225,7 @@ function renderPrograma(s) {
   html += `<div class="pub-seccion">
     <div class="pub-seccion-hdr">1. Tesoros de la Palabra de Dios</div>
     ${row(s.tesoros?.discurso?.titulo || 'Discurso', s.tesoros?.discurso?.pubId)}
-    ${row(s.tesoros?.joyas?.titulo || 'Joyas Espirituales', s.tesoros?.joyas?.pubId)}
+    ${row(s.tesoros?.joyas?.titulo || 'Perlas escondidas', s.tesoros?.joyas?.pubId)}
     ${lectRow}
   </div>`;
 

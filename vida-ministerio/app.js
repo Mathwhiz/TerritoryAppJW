@@ -10,7 +10,7 @@ const ROLES_VM = [
   { id: 'VM_PRESIDENTE',        label: 'Presidente' },
   { id: 'VM_ORACION',           label: 'Oración' },
   { id: 'VM_TESOROS',           label: 'Discurso Tesoros' },
-  { id: 'VM_JOYAS',             label: 'Joyas Espirituales' },
+  { id: 'VM_JOYAS',             label: 'Perlas escondidas' },
   { id: 'VM_LECTURA',           label: 'Lectura Bíblica' },
   { id: 'VM_MINISTERIO',        label: 'Ministerio' },
   { id: 'VM_VIDA_CRISTIANA',    label: 'Vida Cristiana' },
@@ -797,7 +797,7 @@ function renderSemanaPublico(s) {
   html += `<div class="pub-seccion">
     <div class="pub-seccion-hdr">1. Tesoros de la Palabra de Dios</div>
     ${row(s.tesoros?.discurso?.titulo || 'Discurso', s.tesoros?.discurso?.pubId)}
-    ${row(s.tesoros?.joyas?.titulo || 'Joyas Espirituales', s.tesoros?.joyas?.pubId)}
+    ${row(s.tesoros?.joyas?.titulo || 'Perlas escondidas', s.tesoros?.joyas?.pubId)}
     ${lectRow}
   </div>`;
 
@@ -973,7 +973,7 @@ function renderSemanaEdit() {
       <span class="seccion-hdr-num">1</span> Tesoros de la Palabra de Dios
     </div>
     ${renderParteItem('tesoros.discurso', 'Discurso', s.tesoros?.discurso)}
-    ${renderParteItem('tesoros.joyas', 'Joyas Espirituales', s.tesoros?.joyas)}
+    ${renderParteItem('tesoros.joyas', 'Perlas escondidas', s.tesoros?.joyas)}
     ${renderParteItemConAyudante('tesoros.lecturaBiblica', 'Lectura Bíblica', s.tesoros?.lecturaBiblica)}
   </div>`;
 
@@ -1215,7 +1215,7 @@ function parseWOL(html) {
     },
     tesoros: {
       discurso:       { titulo: tesorosParts[0]?.titulo || '',                  duracion: tesorosParts[0]?.duracion || 10, pubId: null },
-      joyas:          { titulo: tesorosParts[1]?.titulo || 'Joyas Espirituales', duracion: tesorosParts[1]?.duracion || 10, pubId: null },
+      joyas:          { titulo: tesorosParts[1]?.titulo || 'Perlas escondidas', duracion: tesorosParts[1]?.duracion || 10, pubId: null },
       lecturaBiblica: { titulo: tesorosParts[2]?.titulo || '',                  duracion: tesorosParts[2]?.duracion || 4,  pubId: null, ayudante: null },
     },
     ministerio,
@@ -1362,7 +1362,7 @@ window.crearSemana = async function() {
     oracionCierre:     null,
     tesoros: {
       discurso:       { titulo: '', duracion: 10, pubId: null },
-      joyas:          { titulo: 'Joyas Espirituales', duracion: 10, pubId: null },
+      joyas:          { titulo: 'Perlas escondidas', duracion: 10, pubId: null },
       lecturaBiblica: { titulo: '', duracion: 4, pubId: null, ayudante: null },
     },
     ministerio:    Array.from({ length: nMin }, () => ({
@@ -1473,7 +1473,7 @@ function formatSemanaParaSheets(s) {
 
   rows.push(['— TESOROS DE LA PALABRA DE DIOS —', '', '', '']);
   add('1. Discurso',       s.tesoros?.discurso?.titulo,       n(s.tesoros?.discurso?.pubId));
-  add('2. Joyas Espirituales', s.tesoros?.joyas?.titulo,      n(s.tesoros?.joyas?.pubId));
+  add('2. Perlas escondidas', s.tesoros?.joyas?.titulo,      n(s.tesoros?.joyas?.pubId));
   const lb = s.tesoros?.lecturaBiblica;
   add('3. Lectura Bíblica', lb?.titulo, n(lb?.pubId), n(lb?.ayudante));
   rows.push(['', '', '', '']);

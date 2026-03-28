@@ -1136,7 +1136,7 @@ function renderLista(lista) {
     return;
   }
   c.innerHTML = lista.map(h => `
-    <div class="hermano-row">
+    <div class="hermano-row" onclick="abrirEditarHermano('${h.id}')">
       <div class="hermano-info">
         <div class="hermano-nombre">${h.nombre}</div>
         <div class="hermano-roles">${(h.roles || []).map(r => {
@@ -1145,8 +1145,7 @@ function renderLista(lista) {
         }).join('')}</div>
       </div>
       <div class="hermano-actions">
-        <button class="btn-edit-hermano" onclick="abrirEditarHermano('${h.id}')">✏️</button>
-        <button class="btn-del-hermano" onclick="confirmarEliminar('${h.id}', '${h.nombre.replace(/'/g,"\\'")}')">✕</button>
+        <button class="btn-del-hermano" onclick="event.stopPropagation();confirmarEliminar('${h.id}', '${h.nombre.replace(/'/g,"\\'")}')">✕</button>
       </div>
     </div>`).join('');
 }

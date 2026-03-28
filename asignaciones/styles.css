@@ -356,29 +356,28 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
 
 /* ── Gestionar hermanos ── */
 .hermano-row {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #2a2a2a; border: 0.5px solid #333; border-radius: 10px;
-  padding: 10px 14px; margin-bottom: 8px; gap: 10px;
+  display: flex; align-items: center; gap: 10px;
+  background: #232628; border: 1px solid #2e3033; border-radius: 12px;
+  padding: 10px 14px; margin-bottom: 8px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
+.hermano-row:hover { border-color: rgba(127,119,221,0.4); background: #201e28; }
 .hermano-info { flex: 1; min-width: 0; }
-.hermano-nombre { font-size: 14px; font-weight: 500; color: #eee; margin-bottom: 4px; }
+.hermano-nombre { font-size: 14px; font-weight: 600; color: #eee; margin-bottom: 4px; }
 .hermano-roles { display: flex; flex-wrap: wrap; gap: 4px; }
 .rol-chip {
-  font-size: 11px; padding: 2px 7px; border-radius: 12px;
-  background: rgba(127,119,221,0.15); color: #9990ee;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+  padding: 2px 7px; border-radius: 5px;
+  background: rgba(127,119,221,0.15); color: #9b93ee;
   border: 0.5px solid rgba(127,119,221,0.3);
 }
 .hermano-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.btn-edit-hermano {
-  padding: 6px 8px; border-radius: 8px; border: 0.5px solid #444;
-  background: #2a2a2a; cursor: pointer; font-size: 14px;
-}
-.btn-edit-hermano:hover { background: #333; }
 .btn-del-hermano {
-  padding: 6px 8px; border-radius: 8px; border: 0.5px solid #A32D2D;
-  background: #2e1a1a; color: #F09595; cursor: pointer; font-size: 12px;
+  background: none; border: none; color: #444; cursor: pointer;
+  font-size: 15px; padding: 4px 6px; border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
 }
-.btn-del-hermano:hover { background: #3a2020; }
+.btn-del-hermano:hover { color: #F09595; background: rgba(160,45,45,0.15); }
 
 /* Modal hermano */
 .modal-hermano-card {

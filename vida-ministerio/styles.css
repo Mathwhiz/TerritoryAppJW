@@ -324,6 +324,18 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
   vertical-align: middle; margin-left: 6px;
 }
 
+/* ── Search box (shared) ── */
+.search-box {
+  display: flex; align-items: center; gap: 10px;
+  background: #232628; border: 1px solid #2e3033; border-radius: 10px;
+  padding: 10px 14px;
+}
+.search-box input {
+  background: none; border: none; color: #eee; font-size: 14px;
+  flex: 1; outline: none;
+}
+.search-box input::placeholder { color: #555; }
+
 /* ── Vista Hermanos VM ── */
 .vm-hermano-row {
   display: flex; align-items: center; gap: 10px;

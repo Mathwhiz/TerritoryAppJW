@@ -296,7 +296,7 @@ La lista renderizada por `renderHermanosVM()` muestra chips de rol por publicado
 
   tesoros: {
     discurso:       { titulo: "...", duracion: 10, pubId: null },
-    joyas:          { titulo: "Joyas Espirituales", duracion: 10, pubId: null },
+    joyas:          { titulo: "Perlas escondidas", duracion: 10, pubId: null },
     lecturaBiblica: { titulo: "Lea Hechos 7:1-16 (N min.)", duracion: 4, pubId: null, ayudante: null,
                       salaAux: { pubId: null, ayudante: null } }  // si tieneAuxiliar
   },
