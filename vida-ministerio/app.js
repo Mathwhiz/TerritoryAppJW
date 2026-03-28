@@ -67,6 +67,10 @@ const VM_TIPO_COLORS = {
 const fmtDate = fmtDateLocal;
 
 function fmtDisplay(iso) {
+  // Si ya está en formato DD/MM/YYYY (legacy), devolverlo tal cual
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(iso)) return iso;
+  // Si no es YYYY-MM-DD válido, usar el lunes de hoy
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) iso = lunesDeHoy();
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
