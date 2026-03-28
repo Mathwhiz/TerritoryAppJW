@@ -233,13 +233,57 @@ const ROL_LISTA_MAP = {
 Módulo para el **presidente de la reunión VM**: importar programa de WOL, asignar partes,
 gestionar publicadores por rol VM, sala auxiliar.
 
-**Estado al 2026-03-27:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI+generador),
-PIN VM, navegación, vista mensual, editar títulos, duración visible, export/compartir y visor público — todos ✅.
+**Estado al 2026-03-28:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI+generador),
+PIN VM, navegación, vista mensual, editar títulos, duración visible, export/compartir, visor público,
+menú Encargado centrado, filtros en vista Hermanos — todos ✅.
 **Pendiente:** auto-asignación (Fase 4).
 
 ### Visor público (`programa.html`)
 Página standalone sin PIN. URL: `vida-ministerio/programa.html?congre=sur&semana=2026-04-07`.
 Sin `semana` muestra la semana actual. Navegación ← →, botón compartir copia URL al portapapeles.
+
+`pubFecha` se normaliza siempre a `YYYY-MM-DD` via `parseFechaIso()` antes de cualquier operación
+de fecha — evita el bug donde fechas en formato legacy `DD/MM/YYYY` rompían la navegación.
+
+### `parseFechaIso(f)` — utilidad interna en `app.js`
+
+Normaliza cualquier formato de fecha a `YYYY-MM-DD`. Si no puede parsear, retorna `lunesDeHoy()`.
+
+```js
+function parseFechaIso(f) {
+  if (!f) return lunesDeHoy();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(f)) return f;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(f)) {
+    const [dd, mm, yyyy] = f.split('/');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return lunesDeHoy();
+}
+```
+
+Usar siempre antes de aritmética de fechas o antes de guardar `pubFecha`.
+`fmtDisplay(iso)` también llama `parseFechaIso` internamente como defensa.
+
+### Encargado VM — menú post-PIN
+
+Layout centrado full-height (igual a Asignaciones): título + subtítulo congregación, luego columna
+de botones con **`min-width:320px` inline** (no en clase CSS — evita problemas de caché).
+
+- Botón "Programa" → `goToTabsSemanas()` (tabs: Semanas / Generar Semanas)
+- Botón "Hermanos" → `goToHermanos()` (lista con filtros de rol y búsqueda)
+- Botón "Cerrar sesión" → `cerrarSesionVM()` (resetea `modoEncargado`, vuelve a cover)
+
+**Importante:** el layout del enc-menu usa `style` inline en el HTML, **no clases CSS**,
+porque los cambios de clase no siempre se reflejan si el CSS está cacheado en el browser.
+
+### Vista Hermanos VM
+
+Filtros en la parte superior:
+1. **Select de rol** (`#vm-hermanos-rol`) — dropdown con los 11 roles VM
+2. **Input de búsqueda** (`#vm-hermanos-search`) — filtra por nombre
+
+Ambos llaman `filtrarHermanosVM()`. `goToHermanos()` los resetea al entrar (vacía el texto, select a "Todos").
+La lista renderizada por `renderHermanosVM()` muestra chips de rol por publicador.
 
 ### Firestore — doc semana
 
