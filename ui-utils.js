@@ -1351,30 +1351,41 @@ window.fmtDateLocal = function(val) {
   --module-color-dim: rgba(127,119,221,0.3);
   box-shadow: 0 0 36px var(--module-color-dim), 0 0 14px var(--module-color-dim), 0 4px 20px rgba(0,0,0,0.5);
 }
-.cs-module-icon-anim::before {
+.cs-module-icon-anim::before,
+.cs-module-icon-anim::after {
   content: '';
   position: absolute;
   aspect-ratio: 1;
   width: 220%;
   top: 50%; left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg);
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    transparent 50%,
-    rgba(255,255,255,0.15) 60%,
-    var(--module-color) 68%,
-    white 73%,
-    var(--module-color) 78%,
-    var(--module-color-dim) 87%,
-    transparent 100%
-  );
-  animation: cs-icon-spin 3s linear infinite;
   z-index: 0;
 }
-@keyframes cs-icon-spin {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+.cs-module-icon-anim::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%, transparent 70%,
+    var(--module-color-dim) 76%,
+    var(--module-color) 81%,
+    var(--module-color-dim) 86%,
+    transparent 92%, transparent 100%
+  );
+  animation: cs-icon-spin 4s linear infinite;
+  transform: translate(-50%, -50%) rotate(0deg);
 }
+.cs-module-icon-anim::after {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%, transparent 70%,
+    var(--module-color-dim) 76%,
+    var(--module-color) 80%,
+    var(--module-color-dim) 85%,
+    transparent 91%, transparent 100%
+  );
+  animation: cs-icon-spin-rev 6s linear infinite;
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+@keyframes cs-icon-spin     { to { transform: translate(-50%, -50%) rotate(360deg);  } }
+@keyframes cs-icon-spin-rev { to { transform: translate(-50%, -50%) rotate(-360deg); } }
 .cs-module-icon-anim .cs-module-icon-wrap {
   position: relative; z-index: 1;
   margin-bottom: 0; box-shadow: none; border: none !important;
