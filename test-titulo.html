@@ -253,5 +253,246 @@
     </div>
   </div>
 
+
+  <!-- ════ ÍCONOS GIRATORIOS — VARIANTES ════ -->
+  <div class="demo">
+    <div class="demo-label">Variantes de íconos giratorios</div>
+
+    <style>
+      /* ── Layout filas de variante ── */
+      .var-row {
+        width: 100%;
+        display: flex; flex-direction: column; gap: 10px;
+      }
+      .var-name {
+        font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: #444;
+      }
+      .var-icons {
+        display: flex; gap: 14px; align-items: center;
+      }
+      .var-sep {
+        width: 100%; height: 1px;
+        background: linear-gradient(90deg, transparent, #2e3033 30%, #2e3033 70%, transparent);
+        margin: 4px 0;
+      }
+
+      /* ── Base del ícono giratorio ── */
+      .spin-icon {
+        width: 52px; height: 52px; border-radius: 14px;
+        position: relative; overflow: hidden;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .spin-icon svg { position: relative; z-index: 1; }
+      .spin-icon::before {
+        content: '';
+        position: absolute; aspect-ratio: 1; width: 220%;
+        top: 50%; left: 50%;
+        z-index: 0;
+      }
+      /* colores por módulo */
+      .si-terr { --c: #97C459; --cd: rgba(151,196,89,0.25); background: rgba(151,196,89,0.13); border: 1px solid rgba(151,196,89,0.22); }
+      .si-asig { --c: #378ADD; --cd: rgba(55,138,221,0.25);  background: rgba(55,138,221,0.13);  border: 1px solid rgba(55,138,221,0.22); }
+      .si-vm   { --c: #EF9F27; --cd: rgba(239,159,39,0.25);  background: rgba(239,159,39,0.13);  border: 1px solid rgba(239,159,39,0.22); }
+
+      @keyframes icon-spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+      @keyframes icon-spin-rev { to { transform: translate(-50%,-50%) rotate(-360deg); } }
+
+      /* ──────────────────────────────────────────
+         A — Rayo (igual al actual en producción)
+         Un cometa fino con punta blanca, 5s
+      ────────────────────────────────────────── */
+      .sa::before {
+        background: conic-gradient(from 0deg,
+          transparent 0%, transparent 55%,
+          rgba(255,255,255,0.07) 62%, var(--c) 68%, white 72%, var(--c) 76%,
+          var(--cd) 85%, transparent 100%);
+        animation: icon-spin 5s linear infinite;
+        transform: translate(-50%,-50%) rotate(0deg);
+      }
+
+      /* ──────────────────────────────────────────
+         B — Doble cometa
+         Dos rayos simétricos a 180°, más rápido
+      ────────────────────────────────────────── */
+      .sb::before {
+        background: conic-gradient(from 0deg,
+          transparent 0%,
+          transparent 18%, rgba(255,255,255,0.05) 23%, var(--c) 26%, white 28%, var(--c) 31%, transparent 37%,
+          transparent 68%, rgba(255,255,255,0.05) 73%, var(--c) 76%, white 78%, var(--c) 81%, transparent 87%,
+          transparent 100%);
+        animation: icon-spin 3s linear infinite;
+        transform: translate(-50%,-50%) rotate(0deg);
+      }
+
+      /* ──────────────────────────────────────────
+         C — Arco suave
+         Un cuarto de círculo que se desvanece,
+         sin punta blanca — más orgánico
+      ────────────────────────────────────────── */
+      .sc::before {
+        background: conic-gradient(from 0deg,
+          transparent 0%, var(--cd) 8%, var(--c) 22%, var(--c) 30%,
+          var(--cd) 44%, transparent 58%, transparent 100%);
+        animation: icon-spin 4s linear infinite;
+        transform: translate(-50%,-50%) rotate(0deg);
+      }
+
+      /* ──────────────────────────────────────────
+         D — Línea de precisión
+         Trazo muy fino y veloz, minimalista
+      ────────────────────────────────────────── */
+      .sd::before {
+        background: conic-gradient(from 0deg,
+          transparent 0%, transparent 90%,
+          var(--cd) 92%, var(--c) 94%, white 95.5%, var(--c) 97%, transparent 100%);
+        animation: icon-spin 1.8s linear infinite;
+        transform: translate(-50%,-50%) rotate(0deg);
+      }
+
+      /* ──────────────────────────────────────────
+         E — Arco grueso lento
+         Un bloque sólido de color girando despacio,
+         efecto de "rueda de color"
+      ────────────────────────────────────────── */
+      .se::before {
+        background: conic-gradient(from 0deg,
+          var(--c) 0%, var(--c) 6%, var(--cd) 14%, transparent 28%, transparent 100%);
+        animation: icon-spin 7s linear infinite;
+        transform: translate(-50%,-50%) rotate(0deg);
+      }
+
+      /* ──────────────────────────────────────────
+         F — Dual counter-spin
+         Dos capas: ::before y ::after giran en
+         sentidos opuestos — efecto entrelazado
+      ────────────────────────────────────────── */
+      .sf { position: relative; }
+      .sf::before {
+        background: conic-gradient(from 0deg,
+          transparent 0%, transparent 70%,
+          var(--cd) 76%, var(--c) 80%, white 82%, var(--c) 84%, transparent 90%, transparent 100%);
+        animation: icon-spin 4s linear infinite;
+        transform: translate(-50%,-50%) rotate(0deg);
+      }
+      .sf::after {
+        content: '';
+        position: absolute; aspect-ratio: 1; width: 220%;
+        top: 50%; left: 50%;
+        z-index: 0;
+        background: conic-gradient(from 0deg,
+          transparent 0%, transparent 70%,
+          var(--cd) 76%, var(--c) 80%, transparent 86%, transparent 100%);
+        animation: icon-spin-rev 6s linear infinite;
+        transform: translate(-50%,-50%) rotate(0deg);
+      }
+    </style>
+
+    <!-- SVGs reutilizables en línea -->
+
+    <!-- A -->
+    <div class="var-row">
+      <div class="var-name">A — Rayo (actual)</div>
+      <div class="var-icons">
+        <div class="spin-icon sa si-terr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="spin-icon sa si-asig">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="spin-icon sa si-vm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="var-sep"></div>
+
+    <!-- B -->
+    <div class="var-row">
+      <div class="var-name">B — Doble cometa (3s)</div>
+      <div class="var-icons">
+        <div class="spin-icon sb si-terr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="spin-icon sb si-asig">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="spin-icon sb si-vm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="var-sep"></div>
+
+    <!-- C -->
+    <div class="var-row">
+      <div class="var-name">C — Arco suave (4s)</div>
+      <div class="var-icons">
+        <div class="spin-icon sc si-terr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="spin-icon sc si-asig">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="spin-icon sc si-vm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="var-sep"></div>
+
+    <!-- D -->
+    <div class="var-row">
+      <div class="var-name">D — Línea de precisión (1.8s)</div>
+      <div class="var-icons">
+        <div class="spin-icon sd si-terr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="spin-icon sd si-asig">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="spin-icon sd si-vm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="var-sep"></div>
+
+    <!-- E -->
+    <div class="var-row">
+      <div class="var-name">E — Arco grueso lento (7s)</div>
+      <div class="var-icons">
+        <div class="spin-icon se si-terr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="spin-icon se si-asig">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="spin-icon se si-vm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="var-sep"></div>
+
+    <!-- F -->
+    <div class="var-row">
+      <div class="var-name">F — Dual counter-spin</div>
+      <div class="var-icons">
+        <div class="spin-icon sf si-terr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7" stroke="#97C459" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="spin-icon sf si-asig">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="spin-icon sf si-vm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </body>
 </html>
