@@ -296,6 +296,11 @@ window.goToMenuEnc = function() {
   showView('view-menu-enc');
 };
 
+window.cerrarSesionVM = function() {
+  modoEncargado = false;
+  goToCover();
+};
+
 window.goToSemanas = async function() {
   document.getElementById('semanas-congre-sub').textContent = congreNombre || '—';
   const btnCfg = document.getElementById('btn-config-vm');
