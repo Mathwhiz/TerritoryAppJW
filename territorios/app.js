@@ -27,7 +27,7 @@ function gruposCol()  { return collection(db, 'congregaciones', CONGRE_ID, 'grup
 // ─────────────────────────────────────────
 //  CONDUCTORES
 // ─────────────────────────────────────────
-const CONDUCTORES_BY_GROUP = { 1: [], 2: [], 3: [], 4: [], C: [] };
+const CONDUCTORES_BY_GROUP = {};
 
 let _conductoresListos = false;
 let _conductoresResolvers = [];
@@ -53,14 +53,18 @@ async function cargarConfigCongre() {
 async function cargarConductores() {
   try {
     const snap = await getDocs(pubCol());
-    [1,2,3,4,'C'].forEach(g => { CONDUCTORES_BY_GROUP[g] = []; });
-    const MAP = {
-      'CONDUCTOR_GRUPO_1': 1,
-      'CONDUCTOR_GRUPO_2': 2,
-      'CONDUCTOR_GRUPO_3': 3,
-      'CONDUCTOR_GRUPO_4': 4,
-      'CONDUCTOR_CONGREGACION': 'C',
-    };
+    // Inicializar con todos los grupos cargados
+    GRUPOS.forEach(g => { CONDUCTORES_BY_GROUP[g.id] = []; });
+    if (!CONDUCTORES_BY_GROUP['C']) CONDUCTORES_BY_GROUP['C'] = [];
+    // Mapear roles a grupo: CONDUCTOR_GRUPO_1 → '1', CONDUCTOR_CONGREGACION → 'C'
+    const MAP = {};
+    GRUPOS.forEach(g => {
+      if (g.id === 'C') {
+        MAP['CONDUCTOR_CONGREGACION'] = 'C';
+      } else {
+        MAP[`CONDUCTOR_GRUPO_${g.id}`] = g.id;
+      }
+    });
     snap.forEach(d => {
       const h = d.data();
       (h.roles || []).forEach(rol => {
@@ -122,12 +126,20 @@ let salidaCounter = 0;
 let semanaOffset  = 0;
 
 // ─────────────────────────────────────────
-//   COLORES
+//   COLORES (dinámico — se construye en cargarPins)
 // ─────────────────────────────────────────
-const GCOLORS = { 1:'#378ADD', 2:'#EF9F27', 3:'#97C459', 4:'#D85A30', C:'#7F77DD' };
-const GBGS    = { 1:'rgba(55,138,221,0.18)', 2:'rgba(239,159,39,0.18)', 3:'rgba(151,196,89,0.18)', 4:'rgba(216,90,48,0.18)', C:'rgba(127,119,221,0.18)' };
-const GROUP_COLORS = { 1:'#378ADD', 2:'#EF9F27', 3:'#97C459', 4:'#D85A30', 'C':'#7F77DD' };
-const GROUP_BG     = { 1:'rgba(55,138,221,0.15)', 2:'rgba(239,159,39,0.15)', 3:'rgba(151,196,89,0.15)', 4:'rgba(216,90,48,0.15)', C:'rgba(127,119,221,0.15)' };
+let GRUPOS       = [];   // [{ id, label, color }] — cargado desde Firestore
+let GCOLORS      = {};
+let GBGS         = {};
+let GROUP_COLORS = {};
+let GROUP_BG     = {};
+
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
 
 const DIA_COLORS = {
   'Lunes':    '#85B7EB',
@@ -296,38 +308,9 @@ async function fetchConfig(grupo) {
 // ─────────────────────────────────────────
 //   COVER / NAVEGACIÓN
 // ─────────────────────────────────────────
-(function() {
-  const grupoGuardado = sessionStorage.getItem('selectedGrupo');
-  if (grupoGuardado) {
-    sessionStorage.removeItem('selectedGrupo');
-    window.addEventListener('DOMContentLoaded', () => {
-      selectedGrupo = isNaN(grupoGuardado) ? grupoGuardado : parseInt(grupoGuardado);
-      document.querySelectorAll('.grupo-btn').forEach(btn => {
-        if (String(btn.dataset.grupo) === String(grupoGuardado)) {
-          selectGrupo(btn, isNaN(grupoGuardado) ? grupoGuardado : parseInt(grupoGuardado));
-        }
-      });
-      goToModo();
-      cargarConductores();
-      cargarConfigCongre();
-    });
-  }
-})();
 
 const WEEK = getWeekDates();
 
-function applyGrupoColors() {
-  document.querySelectorAll('.grupo-btn').forEach(btn => {
-    const g = btn.dataset.grupo;
-    const c = GCOLORS[g] || '#888';
-    const bg = GBGS[g] || 'rgba(100,100,100,0.18)';
-    btn.style.borderColor = c;
-    btn.style.color = c;
-    btn.onmouseenter = () => { if (!btn.classList.contains('selected')) btn.style.background = bg; };
-    btn.onmouseleave = () => { if (!btn.classList.contains('selected')) btn.style.background = '#2a2a2a'; };
-  });
-}
-applyGrupoColors();
 
 function selectGrupo(el, n) {
   document.querySelectorAll('.grupo-btn').forEach(b => {
@@ -355,7 +338,8 @@ function goToModo() {
   hide('view-cover'); hide('view-config'); hide('view-preview');
   hide('view-registrar'); hide('view-info'); hide('view-historial');
   const label = document.getElementById('modo-grupo-label');
-  label.textContent = selectedGrupo === 'C' ? 'Congregación' : selectedGrupo;
+  const grupoObj = GRUPOS.find(g => String(g.id) === String(selectedGrupo));
+  label.textContent = grupoObj ? grupoObj.label : selectedGrupo;
   label.style.color = GROUP_COLORS[selectedGrupo] || '#97C459';
 
   const cardColors = [
@@ -418,19 +402,101 @@ async function cargarPins() {
   try {
     const snap = await getDocs(gruposCol());
     PINS = {};
+    GRUPOS = [];
     snap.forEach(d => {
-      const { id, pin } = d.data();
+      const data = d.data();
+      const { id, pin, label, color } = data;
       if (id && pin) PINS[id] = pin;
+      if (id) GRUPOS.push({ id: String(id), label: label || (id === 'C' ? 'Congregación' : `Grupo ${id}`), color: color || '#888' });
     });
     if (Object.keys(PINS).length === 0) {
       await uiAlert('No se encontraron grupos configurados en la base de datos.', 'Error de configuración');
       PINS = null;
+      return;
     }
+    // Ordenar: numéricos primero (por número), luego C
+    GRUPOS.sort((a, b) => {
+      const aNum = parseInt(a.id), bNum = parseInt(b.id);
+      if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+      if (!isNaN(aNum)) return -1;
+      if (!isNaN(bNum)) return 1;
+      return 0;
+    });
+    // Construir mapas de color
+    GRUPOS.forEach(g => {
+      GCOLORS[g.id]      = g.color;
+      GBGS[g.id]         = hexToRgba(g.color, 0.18);
+      GROUP_COLORS[g.id] = g.color;
+      GROUP_BG[g.id]     = hexToRgba(g.color, 0.15);
+    });
+    renderGrupoButtons();
   } catch(e) {
     await uiAlert('Error al cargar la configuración de grupos: ' + e.message, 'Error');
     PINS = null;
   }
 }
+
+function renderGrupoButtons() {
+  const wrap = document.getElementById('grupos-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  const numericos = GRUPOS.filter(g => !isNaN(parseInt(g.id)));
+  const congre    = GRUPOS.filter(g => isNaN(parseInt(g.id)));
+
+  // Numéricos: 2 por fila
+  for (let i = 0; i < numericos.length; i += 2) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;';
+    [numericos[i], numericos[i+1]].forEach(g => {
+      if (!g) return;
+      const btn = document.createElement('button');
+      btn.className = 'grupo-btn';
+      btn.dataset.grupo = g.id;
+      btn.style.flex = '1';
+      btn.textContent = g.label;
+      btn.onclick = () => selectGrupo(btn, g.id);
+      _applyGrupoColorToBtn(btn, g.id);
+      row.appendChild(btn);
+    });
+    wrap.appendChild(row);
+  }
+
+  // Congregación (y cualquier otro no-numérico): ancho completo
+  congre.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'grupo-btn';
+    btn.dataset.grupo = g.id;
+    btn.style.cssText = 'width:100%;font-size:15px;';
+    btn.textContent = g.label;
+    btn.onclick = () => selectGrupo(btn, g.id);
+    _applyGrupoColorToBtn(btn, g.id);
+    wrap.appendChild(btn);
+  });
+
+  // Restaurar selección guardada en sessionStorage
+  const grupoGuardado = sessionStorage.getItem('selectedGrupo');
+  if (grupoGuardado) {
+    sessionStorage.removeItem('selectedGrupo');
+    const btn = wrap.querySelector(`[data-grupo="${grupoGuardado}"]`);
+    if (btn) {
+      selectGrupo(btn, grupoGuardado);
+      goToModo();
+      cargarConductores();
+      cargarConfigCongre();
+    }
+  }
+}
+
+function _applyGrupoColorToBtn(btn, id) {
+  const c  = GCOLORS[id]  || '#888';
+  const bg = GBGS[id]     || 'rgba(100,100,100,0.18)';
+  btn.style.borderColor = c;
+  btn.style.color = c;
+  btn.onmouseenter = () => { if (!btn.classList.contains('selected')) btn.style.background = bg; };
+  btn.onmouseleave = () => { if (!btn.classList.contains('selected')) btn.style.background = '#2a2a2a'; };
+}
+
 cargarPins();
 
 function openPin() {
@@ -438,7 +504,8 @@ function openPin() {
   pinBuffer = '';
   updatePinDots();
   document.getElementById('pin-error').textContent = '';
-  const label = pinGrupo === 'C' ? 'Congregación' : 'Grupo ' + pinGrupo;
+  const pinGrupoObj = GRUPOS.find(g => String(g.id) === String(pinGrupo));
+  const label = pinGrupoObj ? pinGrupoObj.label : 'Grupo ' + pinGrupo;
   document.getElementById('pin-title').textContent = label;
   const color = GCOLORS[pinGrupo] || '#97C459';
   document.getElementById('pin-title').style.color = color;

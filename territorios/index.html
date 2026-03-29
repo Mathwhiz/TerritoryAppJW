@@ -64,17 +64,7 @@
       <div class="cs-module-sub" id="congre-sub" style="color:#97C459;">—</div>
       <div class="cs-module-label">¿Con qué grupo trabajás?</div>
 
-      <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
-        <div style="display:flex;gap:8px;">
-          <button class="grupo-btn" data-grupo="1" onclick="selectGrupo(this,1)" style="flex:1;">1</button>
-          <button class="grupo-btn" data-grupo="2" onclick="selectGrupo(this,2)" style="flex:1;">2</button>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="grupo-btn" data-grupo="3" onclick="selectGrupo(this,3)" style="flex:1;">3</button>
-          <button class="grupo-btn" data-grupo="4" onclick="selectGrupo(this,4)" style="flex:1;">4</button>
-        </div>
-        <button class="grupo-btn" data-grupo="C" onclick="selectGrupo(this,'C')" style="width:100%;font-size:15px;">Congregación</button>
-      </div>
+      <div id="grupos-wrap" style="display:flex;flex-direction:column;gap:8px;width:100%;"></div>
       <button class="btn-start" id="btn-start" onclick="openPin()" style="width:100%;">Empezar →</button>
 
       <a href="../index.html" class="cs-back-btn">← Volver al módulo</a>

@@ -166,7 +166,7 @@ def main():
     for tid, t in sorted(targets.items()):
         doc_ref = terr_col.document(str(tid))
         existing = doc_ref.get()
-        if not existing.exists():
+        if not existing.exists:
             print(f'⚠️  Territorio {tid} no existe en Firestore para congre "{args.congre}" — se omite')
             continue
 
