@@ -485,10 +485,12 @@
 @keyframes cs-nav-spin-rev { to { transform: translate(-50%, -50%) rotate(-360deg); } }
 .cs-nav-icon-terr  { --nav-c: #97C459; --nav-c-dim: rgba(151,196,89,0.2); background: rgba(151,196,89,0.13); border: 1px solid rgba(151,196,89,0.22); }
 .cs-nav-icon-asign { --nav-c: #378ADD; --nav-c-dim: rgba(55,138,221,0.2);  background: rgba(55,138,221,0.13);  border: 1px solid rgba(55,138,221,0.22); }
+.cs-nav-icon-herm  { --nav-c: #D85A30; --nav-c-dim: rgba(216,90,48,0.2);   background: rgba(216,90,48,0.13);   border: 1px solid rgba(216,90,48,0.22); }
 .cs-nav-icon-vm    { --nav-c: #EF9F27; --nav-c-dim: rgba(239,159,39,0.2);  background: rgba(239,159,39,0.13);  border: 1px solid rgba(239,159,39,0.22); }
 
 .cs-nav-card-terr:hover  { border-color: rgba(151,196,89,0.55);  background: #1e2810; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(151,196,89,0.55),  0 4px 20px rgba(151,196,89,0.12); }
 .cs-nav-card-asign:hover { border-color: rgba(55,138,221,0.55);  background: #101e28; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(55,138,221,0.55),  0 4px 20px rgba(55,138,221,0.12); }
+.cs-nav-card-herm:hover  { border-color: rgba(216,90,48,0.55);   background: #2a1711; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(216,90,48,0.55),   0 4px 20px rgba(216,90,48,0.12); }
 .cs-nav-card-vm:hover    { border-color: rgba(239,159,39,0.55);  background: #272010; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(239,159,39,0.55),  0 4px 20px rgba(239,159,39,0.12); }
 
 .cs-nav-title { font-size: 21px; font-weight: 600; color: #e8e8e8; margin-bottom: 3px; }

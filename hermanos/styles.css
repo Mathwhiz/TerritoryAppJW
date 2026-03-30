@@ -29,7 +29,7 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
 .cs-module-icon-anim {
   position: relative; width: 88px; height: 88px; margin-bottom: 12px;
   display: flex; align-items: center; justify-content: center;
-  --module-color: #1D9E75; --module-color-dim: rgba(29,158,117,0.35);
+  --module-color: #D85A30; --module-color-dim: rgba(216,90,48,0.35);
 }
 .cs-module-icon-anim::before, .cs-module-icon-anim::after {
   content: ''; position: absolute; inset: 0; border-radius: 24px;
@@ -46,39 +46,42 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
 .cs-module-icon-wrap {
   position: relative; z-index: 1; width: 72px; height: 72px;
   border-radius: 20px; display: flex; align-items: center; justify-content: center;
-  background: rgba(29,158,117,0.18);
+  background: rgba(216,90,48,0.18);
 }
-
-.cover-title { font-size: 32px; font-weight: 700; color: #e8e8e8; letter-spacing: -0.5px; margin-bottom: 4px; }
-.cover-sub   { font-size: 15px; color: #1D9E75; font-weight: 500; margin-bottom: 28px; }
 
 /* ── PIN ── */
-.pin-section { width: 100%; max-width: 280px; }
-.pin-label   { font-size: 13px; color: #888; text-align: center; margin-bottom: 14px; }
-
+.pin-modal {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(0,0,0,0.78);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.pin-card {
+  width: 100%; max-width: 330px; background: #252525;
+  border: 1px solid #3a3a3a; border-radius: 18px; padding: 22px 18px 14px;
+}
+.pin-title { font-size: 26px; font-weight: 500; color: #D85A30; margin-bottom: 6px; }
+.pin-sub   { font-size: 14px; color: #888; margin-bottom: 22px; }
 .pin-dots {
-  display: flex; justify-content: center; gap: 14px; margin-bottom: 20px;
+  display: flex; gap: 12px; justify-content: center; margin-bottom: 22px;
 }
 .pin-dot {
-  width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid #555; background: transparent;
-  transition: background 0.12s, border-color 0.12s;
+  width: 16px; height: 16px; border-radius: 50%; border: 2px solid #555; background: transparent;
+  transition: all 0.1s;
 }
-
 .pin-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  max-width: 240px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;
 }
 .pin-btn {
-  background: #252629; border: 1px solid #333; border-radius: 14px;
-  color: #eee; font-size: 22px; font-weight: 500;
-  padding: 14px 0; cursor: pointer; transition: background 0.1s, border-color 0.1s;
+  padding: 16px; font-size: 22px; border-radius: 12px; border: 0.5px solid #444;
+  background: #2a2a2a; color: #eee; cursor: pointer; transition: background 0.1s; font-family: inherit;
 }
-.pin-btn:hover  { background: #2d2f32; border-color: #444; }
-.pin-btn:active { background: rgba(29,158,117,0.15); border-color: #1D9E75; }
+.pin-btn:hover { background: #333; }
+.pin-btn:active { background: rgba(216,90,48,0.2); }
 .pin-del { font-size: 16px; }
-
-.pin-error { font-size: 13px; color: #F09595; text-align: center; min-height: 18px; margin-top: 12px; }
+.pin-error { font-size: 13px; color: #F09595; min-height: 20px; margin-bottom: 8px; text-align: center; }
+.pin-cancel { background: none; border: none; color: #555; font-size: 13px; cursor: pointer; padding: 4px 8px; font-family: inherit; display: block; margin: 0 auto; }
+.pin-cancel:hover { color: #888; }
 
 .cs-back-btn {
   display: block; text-align: center; margin-top: 24px;
@@ -118,12 +121,12 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
 .rol-filter option { background: #232628; }
 
 .btn-nuevo {
-  background: #1D9E75; color: #fff; border: none; border-radius: 10px;
+  background: #D85A30; color: #fff; border: none; border-radius: 10px;
   padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer;
   white-space: nowrap; transition: background 0.15s;
   font-family: inherit;
 }
-.btn-nuevo:hover { background: #18876a; }
+.btn-nuevo:hover { background: #bf4f2a; }
 
 /* ── Hermano row ── */
 .hermano-row {
@@ -132,7 +135,7 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
   padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
-.hermano-row:hover { border-color: rgba(29,158,117,0.4); background: #1e2622; }
+.hermano-row:hover { border-color: rgba(216,90,48,0.4); background: #2a1b16; }
 .hermano-info { flex: 1; min-width: 0; }
 .hermano-nombre { font-size: 15px; font-weight: 600; color: #ddd; margin-bottom: 5px; }
 .hermano-chips  { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -177,7 +180,7 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
   font-size: 15px; outline: none; font-family: inherit;
   margin-bottom: 18px; transition: border-color 0.15s;
 }
-.modal-nombre-input:focus { border-color: #1D9E75; }
+.modal-nombre-input:focus { border-color: #D85A30; }
 
 .roles-section-titulo {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -198,18 +201,18 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
   user-select: none;
 }
 .rol-checkbox:hover { border-color: #444; background: #2a2c2f; }
-.rol-checkbox input[type=checkbox] { width: 15px; height: 15px; accent-color: #1D9E75; cursor: pointer; flex-shrink: 0; }
+.rol-checkbox input[type=checkbox] { width: 15px; height: 15px; accent-color: #D85A30; cursor: pointer; flex-shrink: 0; }
 .rol-checkbox.span2 { grid-column: span 2; }
 
 .modal-status { font-size: 12px; min-height: 16px; text-align: center; margin: 8px 0; color: #888; }
 .modal-btns { display: flex; gap: 8px; margin-top: 4px; }
 
 .btn-primary {
-  flex: 2; background: #1D9E75; color: #fff; border: none; border-radius: 10px;
+  flex: 2; background: #D85A30; color: #fff; border: none; border-radius: 10px;
   padding: 12px 0; font-size: 15px; font-weight: 600; cursor: pointer;
   font-family: inherit; transition: background 0.15s;
 }
-.btn-primary:hover { background: #18876a; }
+.btn-primary:hover { background: #bf4f2a; }
 .btn-secondary {
   flex: 1; background: none; border: 1px solid #444; color: #aaa;
   border-radius: 10px; padding: 12px 0; font-size: 15px; cursor: pointer;
@@ -219,7 +222,7 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
 
 /* ── Misc ── */
 .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem; gap: 14px; }
-.spinner { width: 30px; height: 30px; border: 3px solid #333; border-top-color: #1D9E75; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.spinner { width: 30px; height: 30px; border: 3px solid #333; border-top-color: #D85A30; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-txt { font-size: 14px; color: #888; }
 .error-wrap { background: #2e1a1a; border: 1px solid #A32D2D; border-radius: 10px; padding: 1rem; font-size: 13px; color: #F09595; }

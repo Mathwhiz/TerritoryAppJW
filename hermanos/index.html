@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ziv">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.0">
+  <link rel="stylesheet" href="styles.css?v=1.1">
 </head>
 <body>
 
@@ -24,50 +24,69 @@
 
 <div class="app">
 
-  <!-- ── COVER: PIN ── -->
+  <!-- ── COVER ── -->
   <div id="view-cover" class="view active">
-    <div class="cover">
+    <div class="cover cs-module-cover">
 
-      <div class="cs-module-icon-anim">
-        <div class="cs-module-icon-wrap">
+      <div class="cs-module-icon-anim" style="--module-color:#D85A30;--module-color-dim:rgba(216,90,48,0.35);">
+        <div class="cs-module-icon-wrap" style="background:rgba(216,90,48,0.15);">
           <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
-            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#1D9E75" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="9" cy="7" r="4" stroke="#1D9E75" stroke-width="1.6"/>
-            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#1D9E75" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#D85A30" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="9" cy="7" r="4" stroke="#D85A30" stroke-width="1.6"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#D85A30" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </div>
       </div>
 
-      <div class="cover-title">Hermanos</div>
-      <div class="cover-sub js-congre">—</div>
+      <div class="cs-module-title">Hermanos</div>
+      <div class="cs-module-sub js-congre" style="color:#D85A30;">—</div>
+      <div class="cs-module-label">¿Qué querés hacer?</div>
 
-      <div class="pin-section">
-        <div class="pin-label">Ingresá el PIN de encargado</div>
-        <div class="pin-dots">
-          <div class="pin-dot" id="pd0"></div>
-          <div class="pin-dot" id="pd1"></div>
-          <div class="pin-dot" id="pd2"></div>
-          <div class="pin-dot" id="pd3"></div>
+      <button class="cs-module-card" style="--card-hover-border:rgba(216,90,48,0.55);--card-hover-bg:#2a1711;--card-hover-shadow:0 6px 24px rgba(0,0,0,0.35),0 0 0 1px rgba(216,90,48,0.55),0 4px 20px rgba(216,90,48,0.12);" onclick="goToPin()">
+        <div class="cs-module-card-icon" style="background:rgba(216,90,48,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="11" width="18" height="11" rx="2" stroke="#D85A30" stroke-width="1.8"/>
+            <path d="M7 11V7a5 5 0 0110 0v4" stroke="#D85A30" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
         </div>
-        <div class="pin-grid">
-          <button class="pin-btn" onclick="pinPress('1')">1</button>
-          <button class="pin-btn" onclick="pinPress('2')">2</button>
-          <button class="pin-btn" onclick="pinPress('3')">3</button>
-          <button class="pin-btn" onclick="pinPress('4')">4</button>
-          <button class="pin-btn" onclick="pinPress('5')">5</button>
-          <button class="pin-btn" onclick="pinPress('6')">6</button>
-          <button class="pin-btn" onclick="pinPress('7')">7</button>
-          <button class="pin-btn" onclick="pinPress('8')">8</button>
-          <button class="pin-btn" onclick="pinPress('9')">9</button>
-          <button class="pin-btn" style="visibility:hidden;"></button>
-          <button class="pin-btn" onclick="pinPress('0')">0</button>
-          <button class="pin-btn pin-del" onclick="pinDelete()">⌫</button>
+        <div>
+          <div class="cs-module-card-title">Encargado</div>
+          <div class="cs-module-card-sub">Gestionar publicadores y roles</div>
         </div>
-        <div class="pin-error" id="pin-error"></div>
-      </div>
+      </button>
 
       <a href="../index.html" class="cs-back-btn">← Volver al módulo</a>
 
+    </div>
+  </div>
+
+  <!-- ── PIN MODAL ── -->
+  <div id="pin-modal-hermanos" class="pin-modal" style="display:none;" onclick="if(event.target===this)pinCancel()">
+    <div class="pin-card">
+      <div class="pin-title">Encargado</div>
+      <div class="pin-sub">Ingresá el PIN</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-grid">
+        <button class="pin-btn" onclick="pinPress('1')">1</button>
+        <button class="pin-btn" onclick="pinPress('2')">2</button>
+        <button class="pin-btn" onclick="pinPress('3')">3</button>
+        <button class="pin-btn" onclick="pinPress('4')">4</button>
+        <button class="pin-btn" onclick="pinPress('5')">5</button>
+        <button class="pin-btn" onclick="pinPress('6')">6</button>
+        <button class="pin-btn" onclick="pinPress('7')">7</button>
+        <button class="pin-btn" onclick="pinPress('8')">8</button>
+        <button class="pin-btn" onclick="pinPress('9')">9</button>
+        <button class="pin-btn" style="visibility:hidden;"></button>
+        <button class="pin-btn" onclick="pinPress('0')">0</button>
+        <button class="pin-btn pin-del" onclick="pinDelete()">⌫</button>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <button class="pin-cancel" onclick="pinCancel()">Cancelar</button>
     </div>
   </div>
 
@@ -187,7 +206,7 @@
 </div><!-- /.app -->
 
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="../ui-utils.js?v=1.3"></script>
+<script src="../ui-utils.js?v=1.4"></script>
 <script type="module" src="app.js?v=1.0"></script>
 </body>
 </html>

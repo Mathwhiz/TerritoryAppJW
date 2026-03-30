@@ -99,8 +99,8 @@ function updatePinDots() {
   for (let i = 0; i < 4; i++) {
     const dot = document.getElementById('pd' + i);
     if (!dot) continue;
-    dot.style.borderColor = i < pinBuffer.length ? '#1D9E75' : '#555';
-    dot.style.background  = i < pinBuffer.length ? '#1D9E75' : 'transparent';
+    dot.style.borderColor = i < pinBuffer.length ? '#D85A30' : '#555';
+    dot.style.background  = i < pinBuffer.length ? '#D85A30' : 'transparent';
   }
   document.getElementById('pin-error').textContent = '';
 }
@@ -117,6 +117,18 @@ window.pinDelete = function() {
   updatePinDots();
 };
 
+window.goToPin = function() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-modal-hermanos').style.display = 'flex';
+};
+
+window.pinCancel = function() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-modal-hermanos').style.display = 'none';
+};
+
 function checkPin() {
   if (pinEncargado === null) {
     document.getElementById('pin-error').textContent = 'Cargando configuración…';
@@ -124,6 +136,7 @@ function checkPin() {
   }
   if (pinBuffer === pinEncargado) {
     pinBuffer = ''; updatePinDots();
+    document.getElementById('pin-modal-hermanos').style.display = 'none';
     cargarYMostrar();
   } else {
     document.getElementById('pin-error').textContent = 'PIN incorrecto';
@@ -132,6 +145,7 @@ function checkPin() {
 }
 
 window.goToCover = function() {
+  pinCancel();
   showView('view-cover');
 };
 
