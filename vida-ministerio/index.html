@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ziv">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=2.6">
+  <link rel="stylesheet" href="styles.css?v=2.7">
 </head>
 <body>
 
@@ -209,7 +209,32 @@
 
       <!-- Tab: Generar Semanas -->
       <div class="vm-tab-panel" data-tab="generar">
-        <div class="empty-state" style="padding:3rem 1rem;">Próximamente: generación automática de asignaciones.</div>
+        <div class="field">
+          <label>Fecha (se ajusta al lunes de esa semana)</label>
+          <input type="date" id="nueva-fecha">
+        </div>
+        <label class="check-row" style="display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" id="nueva-reemplazar" style="width:18px;height:18px;accent-color:#EF9F27;cursor:pointer;">
+          <span style="font-size:14px;color:#ccc;">Reemplazar semanas existentes</span>
+        </label>
+        <div class="field">
+          <label>¿Cuántas semanas generar?</label>
+          <select id="nueva-n-semanas">
+            <option value="1" selected>1 semana</option>
+            <option value="2">2 semanas</option>
+            <option value="3">3 semanas</option>
+            <option value="4">4 semanas</option>
+            <option value="5">5 semanas</option>
+            <option value="6">6 semanas</option>
+            <option value="7">7 semanas</option>
+            <option value="8">8 semanas</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn-secondary" onclick="switchVmTab('semanas')">Cancelar</button>
+          <button class="btn-primary" onclick="crearSemana()" style="flex:2">Generar →</button>
+        </div>
+        <div style="height:2rem;"></div>
       </div>
 
       <div style="height:2rem;"></div>
@@ -291,49 +316,6 @@
     </div>
   </div>
 
-  <!-- ── NUEVA SEMANA ── -->
-  <div id="view-nueva" class="view">
-    <div style="padding-top:4px;">
-      <div class="view-header">
-        <button class="btn-back" onclick="goToSemanas()">‹</button>
-        <div>
-          <div class="view-title">Nueva semana</div>
-          <div class="view-sub">Ingresá los datos básicos</div>
-        </div>
-      </div>
-      <div class="field">
-        <label>Fecha (se ajusta al lunes de esa semana)</label>
-        <input type="date" id="nueva-fecha">
-      </div>
-      <label class="check-row" style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
-        <input type="checkbox" id="nueva-importar-wol" checked style="width:18px;height:18px;accent-color:#EF9F27;cursor:pointer;">
-        <span style="font-size:14px;color:#ccc;">Importar programa de WOL automáticamente</span>
-      </label>
-      <div class="field">
-        <label>Partes en "Seamos Mejores Maestros"</label>
-        <select id="nueva-n-ministerio">
-          <option value="1">1 parte</option>
-          <option value="2" selected>2 partes</option>
-          <option value="3">3 partes</option>
-          <option value="4">4 partes</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Partes extra en "Nuestra Vida Cristiana"</label>
-        <select id="nueva-n-vida">
-          <option value="0">Solo estudio bíblico</option>
-          <option value="1" selected>1 parte + estudio</option>
-          <option value="2">2 partes + estudio</option>
-          <option value="3">3 partes + estudio</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn-secondary" onclick="goToSemanas()">Cancelar</button>
-        <button class="btn-primary" onclick="crearSemana()" style="flex:2">Crear semana →</button>
-      </div>
-      <div style="height:2rem;"></div>
-    </div>
-  </div>
 
   <!-- ── CONFIGURACIÓN (encargado) ── -->
   <div id="view-config" class="view">
@@ -363,6 +345,6 @@
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="../ui-utils.js?v=1.2"></script>
-<script type="module" src="app.js?v=1.5"></script>
+<script type="module" src="app.js?v=1.6"></script>
 </body>
 </html>

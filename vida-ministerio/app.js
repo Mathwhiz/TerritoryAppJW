@@ -522,11 +522,20 @@ window.confirmarEliminarHermanoVM = async function(pubId, nombre) {
 };
 
 window.goToNueva = function() {
-  const lunes = lunesDeHoy();
+  // Fecha sugerida: semana siguiente a la última cargada, o semana actual si no hay ninguna
+  let fecha;
+  if (semanasLista.length > 0) {
+    const ultima = semanasLista[0].fecha; // orden desc → [0] es la más reciente
+    const d = new Date(ultima + 'T12:00:00');
+    d.setDate(d.getDate() + 7);
+    fecha = fmtDate(d);
+  } else {
+    fecha = lunesDeHoy();
+  }
   const fechaEl = document.getElementById('nueva-fecha');
-  fechaEl.value = lunes;
+  fechaEl.value = fecha;
   fechaEl.dispatchEvent(new Event('change', { bubbles: true }));
-  showView('view-nueva');
+  switchVmTab('generar');
 };
 
 // ─────────────────────────────────────────
@@ -1320,90 +1329,101 @@ window.crearSemana = async function() {
   const fechaInput = document.getElementById('nueva-fecha').value;
   if (!fechaInput) { uiToast('Seleccioná una fecha', 'error'); return; }
 
-  const fecha = lunesDeDate(fechaInput);
-  const nMin  = parseInt(document.getElementById('nueva-n-ministerio').value) || 2;
-  const nVC   = parseInt(document.getElementById('nueva-n-vida').value) || 1;
+  const fechaBase  = lunesDeDate(fechaInput);
+  const nSemanas   = parseInt(document.getElementById('nueva-n-semanas').value) || 1;
+  const reemplazar = document.getElementById('nueva-reemplazar').checked;
 
-  // Verificar si ya existe
-  uiLoading.show('Verificando…');
-  try {
-    const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
-    uiLoading.hide();
-    if (snap.exists()) {
-      const ok = await uiConfirm({
-        title: 'Semana existente',
-        msg: `Ya hay un programa para la semana del ${fmtDisplay(fecha)}. ¿Querés abrirlo?`,
-        confirmText: 'Abrir',
-        cancelText: 'Cancelar',
-        type: 'info',
-      });
-      if (ok) {
-        semanaData = snap.data();
-        document.getElementById('semana-titulo-display').textContent = 'Semana del ' + fmtDisplay(semanaData.fecha);
-        renderSemanaEdit();
-        showView('view-semana');
-      }
-      return;
+  let primeraFecha = null;
+
+  for (let i = 0; i < nSemanas; i++) {
+    const d = new Date(fechaBase + 'T12:00:00');
+    d.setDate(d.getDate() + i * 7);
+    const fecha = fmtDate(d);
+
+    uiLoading.show(nSemanas > 1 ? `Generando semana ${i + 1} de ${nSemanas}…` : 'Verificando…');
+
+    // Verificar si ya existe
+    let yaExiste = false;
+    try {
+      const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
+      yaExiste = snap.exists();
+    } catch(e) {
+      uiLoading.hide();
+      uiToast(`Error verificando ${fmtDisplay(fecha)}: ${e.message}`, 'error');
+      continue;
     }
-  } catch(e) {
-    uiLoading.hide();
-    await uiAlert('Error: ' + e.message);
-    return;
-  }
 
-  // Estructura base (se pisa con datos de WOL si se importa)
-  semanaData = {
-    fecha,
-    cancionApertura:   null,
-    cancionIntermedia: null,
-    cancionCierre:     null,
-    presidente:        null,
-    oracionApertura:   null,
-    oracionCierre:     null,
-    tesoros: {
-      discurso:       { titulo: '', duracion: 10, pubId: null },
-      joyas:          { titulo: 'Perlas escondidas', duracion: 10, pubId: null },
-      lecturaBiblica: { titulo: '', duracion: 4, pubId: null, ayudante: null },
-    },
-    ministerio:    Array.from({ length: nMin }, () => ({
-      titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null,
-      ...(tieneAuxiliar ? { salaAux: { pubId: null, ayudante: null } } : {}),
-    })),
-    vidaCristiana: Array.from({ length: nVC }, () =>
-      ({ titulo: '', tipo: 'parte', duracion: null, pubId: null })
-    ),
-    estudioBiblico: { titulo: '', duracion: 30, conductor: null, lector: null },
-  };
+    if (yaExiste && !reemplazar) continue; // saltar sin preguntar
 
-  const importarWOL = document.getElementById('nueva-importar-wol')?.checked;
-  if (importarWOL) {
-    uiLoading.show('Importando programa de WOL…');
+    // Estructura base — fallback nMin=3, nVC=1 si WOL falla
+    semanaData = {
+      fecha,
+      cancionApertura:   null,
+      cancionIntermedia: null,
+      cancionCierre:     null,
+      presidente:        null,
+      oracionApertura:   null,
+      oracionCierre:     null,
+      tesoros: {
+        discurso:       { titulo: '', duracion: 10, pubId: null },
+        joyas:          { titulo: 'Perlas escondidas', duracion: 10, pubId: null },
+        lecturaBiblica: { titulo: '', duracion: 4, pubId: null, ayudante: null },
+      },
+      ministerio:    Array.from({ length: 3 }, () => ({
+        titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null,
+        ...(tieneAuxiliar ? { salaAux: { pubId: null, ayudante: null } } : {}),
+      })),
+      vidaCristiana: [{ titulo: '', tipo: 'parte', duracion: null, pubId: null }],
+      estudioBiblico: { titulo: '', duracion: 30, conductor: null, lector: null },
+    };
+
+    // Siempre intentar importar de WOL
+    uiLoading.show(nSemanas > 1 ? `Importando WOL semana ${i + 1}…` : 'Importando programa de WOL…');
     try {
       const html = await fetchWOL(fecha);
       const importado = parseWOL(html);
       if (importado) {
         aplicarWOLaSemana(importado);
-        uiToast('Programa importado de WOL', 'success');
       } else {
-        uiToast('No se pudo parsear WOL — podés cargar los títulos manualmente', 'error');
+        uiToast(`${fmtDisplay(fecha)}: no se pudo parsear WOL — se creó con estructura base`, 'error');
       }
     } catch(e) {
-      // No bloquear si falla — simplemente abre el editor vacío
-      uiToast(`WOL no disponible (${e.message}) — podés cargar manualmente`, 'error');
+      uiToast(`${fmtDisplay(fecha)}: WOL no disponible — se creó con estructura base`, 'error');
     }
-    uiLoading.hide();
+
+    // Guardar en Firestore
+    try {
+      await setDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha), semanaData);
+    } catch(e) {
+      uiLoading.hide();
+      uiToast(`Error guardando ${fmtDisplay(fecha)}: ${e.message}`, 'error');
+      continue;
+    }
+
+    // Actualizar semanasLista
+    const idxExistente = semanasLista.findIndex(s => s.fecha === fecha);
+    if (idxExistente >= 0) semanasLista[idxExistente] = semanaData;
+    else semanasLista.push(semanaData);
+
+    if (!primeraFecha) primeraFecha = fecha;
   }
 
-  document.getElementById('semana-titulo-display').textContent = 'Semana del ' + fmtDisplay(fecha);
+  semanasLista.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  uiLoading.hide();
+
+  if (!primeraFecha) {
+    uiToast('No se generó ninguna semana (todas ya existían)', 'error');
+    return;
+  }
+
+  // Navegar a la primera semana generada
+  semanaData = semanasLista.find(s => s.fecha === primeraFecha);
+  document.getElementById('semana-titulo-display').textContent = 'Semana del ' + fmtDisplay(primeraFecha);
   renderSemanaEdit();
   showView('view-semana');
-
-  // Agregar a semanasLista si no estaba (semana recién creada) y actualizar nav buttons
-  if (!semanasLista.find(s => s.fecha === semanaData.fecha)) {
-    semanasLista.push(semanaData);
-    semanasLista.sort((a, b) => b.fecha.localeCompare(a.fecha));
-  }
   updateNavBtnsSemana();
+
+  uiToast(nSemanas === 1 ? 'Semana creada' : `${nSemanas} semanas generadas`, 'success');
 };
 
 // ─────────────────────────────────────────
