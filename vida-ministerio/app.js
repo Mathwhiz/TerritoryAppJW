@@ -651,7 +651,7 @@ function calcCompletitud(s) {
   (s.ministerio || []).forEach(p => check(p.pubId));
   (s.vidaCristiana || []).forEach(p => check(p.pubId));
   check(s.estudioBiblico?.conductor);
-  check(s.estudioBiblico?.lector);
+  // lector del estudio lo asigna el módulo de Asignaciones, no cuenta aquí
 
   if (filled === 0) return { clase: 'vacia', texto: 'Sin asignaciones' };
   if (filled === total) return { clase: 'completa', texto: `Completa ✓` };
