@@ -7,18 +7,28 @@ import {
 //   CONSTANTES
 // ─────────────────────────────────────────
 const ROLES_VM = [
-  { id: 'VM_PRESIDENTE',        label: 'Presidente' },
-  { id: 'VM_ORACION',           label: 'Oración' },
-  { id: 'VM_TESOROS',           label: 'Discurso Tesoros' },
-  { id: 'VM_JOYAS',             label: 'Perlas escondidas' },
-  { id: 'VM_LECTURA',           label: 'Lectura Bíblica' },
-  { id: 'VM_MINISTERIO',        label: 'Ministerio' },
-  { id: 'VM_VIDA_CRISTIANA',    label: 'Vida Cristiana' },
-  { id: 'VM_ESTUDIO_CONDUCTOR', label: 'Conductor Estudio' },
-  { id: 'VM_ESTUDIO_LECTOR',    label: 'Lector Estudio' },
+  { id: 'VM_PRESIDENTE',                label: 'Presidente' },
+  { id: 'VM_ORACION',                   label: 'Oración' },
+  { id: 'VM_TESOROS',                   label: 'Discurso Tesoros' },
+  { id: 'VM_JOYAS',                     label: 'Perlas escondidas' },
+  { id: 'VM_LECTURA',                   label: 'Lectura Bíblica' },
+  { id: 'VM_MINISTERIO_CONVERSACION',   label: 'Min. Conversación' },
+  { id: 'VM_MINISTERIO_REVISITA',       label: 'Min. Revisita' },
+  { id: 'VM_MINISTERIO_ESCENIFICACION', label: 'Min. Escenificación' },
+  { id: 'VM_MINISTERIO_DISCURSO',       label: 'Min. Discurso' },
+  { id: 'VM_VIDA_CRISTIANA',            label: 'Vida Cristiana' },
+  { id: 'VM_ESTUDIO_CONDUCTOR',         label: 'Conductor Estudio' },
 ];
 
-// Qué rol VM se requiere para cada tipo de slot
+// Tipo de parte ministerio → rol VM requerido
+const TIPO_MIN_ROL = {
+  'conversacion':   'VM_MINISTERIO_CONVERSACION',
+  'revisita':       'VM_MINISTERIO_REVISITA',
+  'escenificacion': 'VM_MINISTERIO_ESCENIFICACION',
+  'discurso':       'VM_MINISTERIO_DISCURSO',
+};
+
+// Qué rol VM se requiere para cada tipo de slot (slots estáticos)
 const SLOT_ROL = {
   'presidente':              'VM_PRESIDENTE',
   'oracionApertura':         'VM_ORACION',
@@ -27,11 +37,10 @@ const SLOT_ROL = {
   'tesoros.joyas':           'VM_JOYAS',
   'tesoros.lecturaBiblica':  'VM_LECTURA',
   'tesoros.lecturaBiblica.ayudante': 'VM_LECTURA',
-  'ministerio':              'VM_MINISTERIO',   // para cualquier índice
-  'ministerio.ayudante':     'VM_MINISTERIO',
   'vidaCristiana':           'VM_VIDA_CRISTIANA',
   'estudio.conductor':       'VM_ESTUDIO_CONDUCTOR',
-  'estudio.lector':          'VM_ESTUDIO_LECTOR',
+  // ministerio: dinámico por tipo (ver getRolParaSlot)
+  // estudio.lector: lo gestiona el módulo Asignaciones
 };
 
 // ─────────────────────────────────────────
@@ -218,8 +227,9 @@ function setSlotPubId(key, pubId) {
 function getRolParaSlot(key) {
   const parts = key.split('.');
   if (parts[0] === 'ministerio') {
-    if (parts[2] === 'salaAux') return SLOT_ROL[parts[3] === 'ayudante' ? 'ministerio.ayudante' : 'ministerio'];
-    return SLOT_ROL[parts[2] === 'ayudante' ? 'ministerio.ayudante' : 'ministerio'];
+    const idx = parseInt(parts[1]);
+    const tipo = semanaData?.ministerio?.[idx]?.tipo || 'conversacion';
+    return TIPO_MIN_ROL[tipo] || 'VM_MINISTERIO_CONVERSACION';
   }
   if (parts[0] === 'vidaCristiana') return SLOT_ROL['vidaCristiana'];
   return SLOT_ROL[key] || null;
@@ -691,15 +701,16 @@ function renderSemanaCard(s, lunes) {
   const esActual = s.fecha === lunes;
   const esSuper  = esp?.tipo === 'superintendente';
 
-  // Conmemoración: card simplificada
-  if (esp?.tipo === 'conmemoracion') {
+  // Conmemoración / Asamblea: card simplificada
+  if (esp?.tipo === 'conmemoracion' || esp?.tipo === 'asamblea') {
+    const labelEsp = esp.tipo === 'asamblea' ? 'Asamblea' : 'Conmemoración';
     return `
     <div class="semana-card semana-card-conmem${esActual ? ' semana-actual' : ''}" onclick="goToSemana('${s.fecha}')">
       <div class="semana-card-top">
         <div class="semana-fecha">${fmtDisplayReunion(s.fecha, false)}</div>
         <button class="btn-del-semana" onclick="event.stopPropagation(); eliminarSemana('${s.fecha}')" title="Eliminar semana">×</button>
       </div>
-      <div class="semana-conmem-label">Conmemoración</div>
+      <div class="semana-conmem-label">${labelEsp}</div>
     </div>`;
   }
 
