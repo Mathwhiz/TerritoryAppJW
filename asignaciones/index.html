@@ -198,15 +198,6 @@
           <div class="cs-module-card-sub">Tabla para compartir por WhatsApp</div>
         </div>
       </button>
-      <button class="cs-module-card" style="--card-hover-border:rgba(29,158,117,0.5);--card-hover-bg:rgba(29,158,117,0.08);" onclick="goToGestionar()">
-        <div class="cs-module-card-icon" style="background:rgba(29,158,117,0.15);">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="#1D9E75" stroke-width="1.8"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </div>
-        <div>
-          <div class="cs-module-card-title">Gestionar hermanos</div>
-          <div class="cs-module-card-sub">Agregar, editar y ver roles</div>
-        </div>
-      </button>
       <button id="btn-ver-planilla" class="btn-secondary" onclick="abrirPlanilla()" style="width:100%;max-width:320px;display:none;">
         📊 Ver planilla
       </button>
@@ -329,84 +320,6 @@
     </div>
   </div>
 
-  <!-- ── GESTIONAR HERMANOS ── -->
-  <div id="view-gestionar" class="view" style="display:none;">
-    <p class="section-title">Hermanos</p>
-    <p class="section-sub">Lista completa · tocá para editar</p>
-    <div style="display:flex;gap:8px;margin-bottom:8px;">
-      <div class="search-box" style="flex:1;margin-bottom:0;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#888" stroke-width="1.8"/><path d="m21 21-4.35-4.35" stroke="#888" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input type="text" id="gestionar-search" placeholder="Buscar hermano..." oninput="filtrarLista()" autocomplete="off">
-      </div>
-      <button class="btn-primary" onclick="abrirNuevoHermano()" style="padding:10px 14px;white-space:nowrap;">+ Nuevo</button>
-    </div>
-    <select id="gestionar-rol" onchange="filtrarLista()" style="width:100%;margin-bottom:12px;font-size:13px;padding:7px 10px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#aaa;appearance:none;-webkit-appearance:none;">
-      <option value="">— Todos los roles —</option>
-      <option value="LECTOR">Lector</option>
-      <option value="SONIDO">Sonido</option>
-      <option value="PLATAFORMA">Plataforma</option>
-      <option value="MICROFONISTAS">Micrófonos</option>
-      <option value="ACOMODADOR_AUDITORIO">Acod. Auditorio</option>
-      <option value="ACOMODADOR_ENTRADA">Acod. Entrada</option>
-      <option value="PRESIDENTE">Presidente</option>
-      <option value="REVISTAS">Revistas</option>
-      <option value="PUBLICACIONES">Publicaciones</option>
-      <option value="CONDUCTOR_GRUPO_1">Conductor Grupo 1</option>
-      <option value="CONDUCTOR_GRUPO_2">Conductor Grupo 2</option>
-      <option value="CONDUCTOR_GRUPO_3">Conductor Grupo 3</option>
-      <option value="CONDUCTOR_GRUPO_4">Conductor Grupo 4</option>
-      <option value="CONDUCTOR_CONGREGACION">Conductor Congregación</option>
-    </select>
-    <div id="gestionar-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando...</div></div>
-    <div id="gestionar-content" style="display:none;">
-      <div id="gestionar-lista"></div>
-    </div>
-    <button class="btn-secondary" style="width:100%;margin-top:12px;" onclick="showView('view-encargado')">← Volver</button>
-  </div>
-
-  <!-- ── MODAL HERMANO ── -->
-  <div id="modal-hermano" class="pin-modal" style="display:none;" onclick="if(event.target===this)cerrarModalHermano()">
-    <div class="modal-hermano-card">
-      <div class="modal-hermano-titulo" id="modal-hermano-titulo">Hermano</div>
-      <div style="margin-bottom:12px;">
-        <label class="edit-rol-label">Nombre</label>
-        <input type="text" id="modal-hermano-nombre" placeholder="Ej: Flores Daniel" style="width:100%;font-size:14px;padding:8px 10px;border:0.5px solid #555;border-radius:8px;background:#1e1e1e;color:#eee;">
-      </div>
-
-      <!-- Roles de reunión -->
-      <div class="modal-hermano-roles-titulo">Roles de reunión</div>
-      <div class="modal-roles-grid" style="margin-bottom:14px;">
-        <label class="rol-checkbox"><input type="checkbox" id="cb-LECTOR"><span>Lector</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-SONIDO"><span>Sonido</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-PLATAFORMA"><span>Plataforma</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-MICROFONISTAS"><span>Micrófonos</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-ACOMODADOR_AUDITORIO"><span>Acod. Auditorio</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-ACOMODADOR_ENTRADA"><span>Acod. Entrada</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-PRESIDENTE"><span>Presidente</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-REVISTAS"><span>Revistas</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-PUBLICACIONES"><span>Publicaciones</span></label>
-      </div>
-
-      <!-- Roles de conductor (solo para territorios) -->
-      <div class="modal-hermano-roles-titulo" style="margin-bottom:6px;">
-        Conductores
-        <span style="font-size:11px;color:#555;font-weight:400;margin-left:6px;">— para territorios</span>
-      </div>
-      <div class="modal-roles-grid">
-        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_1"><span>Conductor Grupo 1</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_2"><span>Conductor Grupo 2</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_3"><span>Conductor Grupo 3</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="cb-CONDUCTOR_GRUPO_4"><span>Conductor Grupo 4</span></label>
-        <label class="rol-checkbox" style="grid-column: span 2;"><input type="checkbox" id="cb-CONDUCTOR_CONGREGACION"><span>Conductor Congregación</span></label>
-      </div>
-
-      <div class="save-status" id="modal-hermano-status"></div>
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="btn-secondary" onclick="cerrarModalHermano()" style="flex:1;">Cancelar</button>
-        <button class="btn-guardar" onclick="guardarHermano()" style="flex:2;">Guardar</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ── MODAL PREVIEW AUTOMÁTICO ── -->
   <div id="auto-preview-modal" class="preview-modal" style="display:none;" onclick="if(event.target===this)cerrarPreviewModal()">

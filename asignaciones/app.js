@@ -144,7 +144,7 @@ function show(id) { const el = document.getElementById(id); if (el) el.style.dis
 function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 
-const VISTAS_ENCARGADO = ["view-editar","view-automatico","view-imagen","view-gestionar"];
+const VISTAS_ENCARGADO = ["view-editar","view-automatico","view-imagen"];
 
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
@@ -1105,133 +1105,6 @@ function guardarImagen() {
   });
 }
 
-/* ─── Gestionar hermanos ─── */
-let hermanoEditando = null;
-
-async function goToGestionar() {
-  showView('view-gestionar');
-  show('gestionar-loading'); hide('gestionar-content');
-  setText('gestionar-search', '');
-  const selRol = document.getElementById('gestionar-rol');
-  if (selRol) selRol.value = '';
-  try {
-    await getHermanos(); // recarga listaHermanos
-    listaHermanos.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
-    hide('gestionar-loading');
-    renderLista(listaHermanos);
-    show('gestionar-content');
-  } catch(err) {
-    hide('gestionar-loading');
-    const c = document.getElementById('gestionar-lista');
-    if (c) c.innerHTML = `<div class="error-wrap">Error: ${err.message}</div>`;
-    show('gestionar-content');
-  }
-}
-
-function renderLista(lista) {
-  const c = document.getElementById('gestionar-lista');
-  if (!c) return;
-  if (lista.length === 0) {
-    c.innerHTML = '<div class="empty-state">No hay hermanos cargados</div>';
-    return;
-  }
-  c.innerHTML = lista.map(h => `
-    <div class="hermano-row" onclick="abrirEditarHermano('${h.id}')">
-      <div class="hermano-info">
-        <div class="hermano-nombre">${h.nombre}</div>
-        <div class="hermano-roles">${(h.roles || []).map(r => {
-          const found = ROLES_OPCIONES.find(o => o.key === r);
-          return `<span class="rol-chip">${found ? found.label : r}</span>`;
-        }).join('')}</div>
-      </div>
-      <div class="hermano-actions">
-        <button class="btn-del-hermano" onclick="event.stopPropagation();confirmarEliminar('${h.id}', '${h.nombre.replace(/'/g,"\\'")}')">✕</button>
-      </div>
-    </div>`).join('');
-}
-
-function filtrarLista() {
-  const q   = norm(document.getElementById('gestionar-search')?.value || '');
-  const rol = document.getElementById('gestionar-rol')?.value || '';
-  const filtrada = listaHermanos.filter(h =>
-    norm(h.nombre).includes(q) &&
-    (!rol || (h.roles || []).includes(rol))
-  );
-  renderLista(filtrada);
-}
-
-function abrirNuevoHermano() {
-  hermanoEditando = null;
-  document.getElementById('modal-hermano-titulo').textContent = 'Nuevo hermano';
-  document.getElementById('modal-hermano-nombre').value = '';
-  ROLES_OPCIONES.forEach(o => {
-    const cb = document.getElementById('cb-' + o.key);
-    if (cb) cb.checked = false;
-  });
-  setText('modal-hermano-status', '');
-  show('modal-hermano');
-}
-
-function abrirEditarHermano(docId) {
-  const h = listaHermanos.find(x => x.id === docId);
-  if (!h) return;
-  hermanoEditando = docId;
-  document.getElementById('modal-hermano-titulo').textContent = 'Editar hermano';
-  document.getElementById('modal-hermano-nombre').value = h.nombre;
-  ROLES_OPCIONES.forEach(o => {
-    const cb = document.getElementById('cb-' + o.key);
-    if (cb) cb.checked = (h.roles || []).includes(o.key);
-  });
-  setText('modal-hermano-status', '');
-  show('modal-hermano');
-}
-
-function cerrarModalHermano() { hide('modal-hermano'); hermanoEditando = null; }
-
-async function guardarHermano() {
-  const nombre = document.getElementById('modal-hermano-nombre')?.value.trim();
-  if (!nombre) { setText('modal-hermano-status', 'Escribí un nombre'); return; }
-  const roles = ROLES_OPCIONES.filter(o => document.getElementById('cb-' + o.key)?.checked).map(o => o.key);
-  const status = document.getElementById('modal-hermano-status');
-  if (status) { status.style.color = '#888'; status.textContent = 'Guardando...'; }
-  try {
-    if (hermanoEditando) {
-      await updateDoc(doc(pubCol(), hermanoEditando), { nombre, roles });
-      const idx = listaHermanos.findIndex(h => h.id === hermanoEditando);
-      if (idx >= 0) listaHermanos[idx] = { ...listaHermanos[idx], nombre, roles };
-    } else {
-      const ref = await addDoc(pubCol(), { nombre, roles, activo: true });
-      listaHermanos.push({ id: ref.id, nombre, roles, activo: true });
-      listaHermanos.sort((a,b) => norm(a.nombre).localeCompare(norm(b.nombre)));
-    }
-    hermanos = {};  // invalidar cache
-    hide('modal-hermano');
-    hermanoEditando = null;
-    renderLista(listaHermanos);
-    if (status) { status.style.color = '#5DCAA5'; status.textContent = '✓ Guardado'; }
-  } catch(err) {
-    if (status) { status.style.color = '#F09595'; status.textContent = 'Error: ' + err.message; }
-  }
-}
-
-async function confirmarEliminar(docId, nombre) {
-  const ok = await uiConfirm({
-    title: `¿Eliminar a ${nombre}?`,
-    msg: 'Se quitará de la lista de hermanos. Esta acción no se puede deshacer.',
-    confirmText: 'Eliminar',
-    cancelText: 'Cancelar',
-    type: 'danger'
-  });
-  if (!ok) return;
-  try {
-    await deleteDoc(doc(pubCol(), docId));
-    listaHermanos = listaHermanos.filter(h => h.id !== docId);
-    hermanos = {};
-    renderLista(listaHermanos);
-  } catch(err) {
-    await uiAlert('Error al eliminar: ' + err.message, 'Error');
-  }
-}
 
 // ─────────────────────────────────────────
 //   SEMANAS ESPECIALES
