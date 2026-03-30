@@ -987,12 +987,14 @@ function renderSemanaEdit() {
   </div>`;
 
   // ── Ministerio
-  const minPartes = (s.ministerio || []).map((p, i) =>
-    renderParteItemConAyudante(
-      `ministerio.${i}`, `Parte ${i + 1}`, p,
-      { onRemove: `quitarParte('ministerio',${i})` }
-    )
-  ).join('');
+  // tipo === 'discurso' → 1 participante (sin ayudante)
+  const minPartes = (s.ministerio || []).map((p, i) => {
+    const key  = `ministerio.${i}`;
+    const opts = { onRemove: `quitarParte('ministerio',${i})` };
+    return p.tipo === 'discurso'
+      ? renderParteItem(key, `Parte ${i + 1}`, p, opts)
+      : renderParteItemConAyudante(key, `Parte ${i + 1}`, p, opts);
+  }).join('');
   const btnAddMin = s.ministerio?.length < 4
     ? `<button class="btn-agregar-parte" onclick="agregarParte('ministerio')">+ Agregar parte</button>` : '';
   html += `<div class="seccion-bloque">
@@ -1091,7 +1093,7 @@ window.agregarParte = function(seccion) {
   if (seccion === 'ministerio') {
     if ((semanaData.ministerio?.length || 0) >= 4) { uiToast('Máximo 4 partes en esta sección', 'error'); return; }
     semanaData.ministerio = semanaData.ministerio || [];
-    semanaData.ministerio.push({ titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null });
+    semanaData.ministerio.push({ titulo: '', tipo: 'conversacion', duracion: null, pubId: null, ayudante: null });
   } else if (seccion === 'vidaCristiana') {
     if ((semanaData.vidaCristiana?.length || 0) >= 3) { uiToast('Máximo 3 partes en esta sección', 'error'); return; }
     semanaData.vidaCristiana = semanaData.vidaCristiana || [];
@@ -1153,6 +1155,18 @@ function limpiaTitulo(text) {
   return text.replace(/^\d+\.\s*/, '').trim();
 }
 
+// Detecta el tipo de parte de "Seamos mejores maestros" desde el título
+// tipo === 'discurso' → solo 1 participante (sin ayudante)
+// los demás → estudiante principal + ayudante
+function tipoMinisterioDesdeWOL(titulo) {
+  const t = titulo.toLowerCase();
+  if (t.includes('conversación') || t.includes('conversacion')) return 'conversacion';
+  if (t.includes('revisita'))                                    return 'revisita';
+  if (t.includes('escenificación') || t.includes('escenificacion')) return 'escenificacion';
+  if (t.includes('discurso'))                                    return 'discurso';
+  return 'conversacion'; // fallback — la mayoría son conversaciones
+}
+
 function parseWOL(html) {
   const doc     = new DOMParser().parseFromString(html, 'text/html');
   const root    = doc.querySelector('article#article') || doc;
@@ -1180,11 +1194,15 @@ function parseWOL(html) {
     }
   });
 
-  // Canciones: extraer números de los h3 con "Canción N"
-  const songNum = h => h.textContent.match(/Canción\s+(\d+)/)?.[1] || '';
-  const openH3  = allH3.find(h => /Canción.+oración|oración.+Canción/i.test(h.textContent));
-  const midSongH3  = allH3.find(h => /^Canción\s+\d+$/.test(h.textContent.trim()));
-  const closeH3 = [...allH3].reverse().find(h => /Canción.+oración|oración.+Canción|conclusión/i.test(h.textContent));
+  // Canciones: WOL puede usar "Cántico" o "Canción" según la versión
+  const songRe  = /[CcÁá](?:á|a)ntico|Canci[oó]n/i;
+  const songNum = h => h.textContent.match(/\d+/)?.[0] || '';
+  // Apertura: h3 con canción Y oración juntas (antes de las partes numeradas)
+  const openH3     = allH3.find(h => songRe.test(h.textContent) && /oraci[oó]n/i.test(h.textContent));
+  // Intermedia: h3 con solo número de canción (sin "oración"), entre Tesoros y Vida Cristiana
+  const midSongH3  = allH3.find(h => songRe.test(h.textContent) && !/oraci[oó]n/i.test(h.textContent));
+  // Cierre: último h3 con canción (con o sin oración)
+  const closeH3    = [...allH3].reverse().find(h => songRe.test(h.textContent));
   const midSongPos = midSongH3 ? allH3.indexOf(midSongH3) : -1;
 
   // Tesoros: siempre las primeras 3 partes numeradas
@@ -1206,10 +1224,16 @@ function parseWOL(html) {
   const vidaSinEstudio = vidaParts.slice(0, -1);
 
   const ministerio = ministrioParts.length
-    ? ministrioParts.map(p => ({ titulo: p.titulo, tipo: 'demostracion', duracion: p.duracion, pubId: null, ayudante: null }))
+    ? ministrioParts.map(p => {
+        const tipo = tipoMinisterioDesdeWOL(p.titulo);
+        return tipo === 'discurso'
+          ? { titulo: p.titulo, tipo, duracion: p.duracion, pubId: null }
+          : { titulo: p.titulo, tipo, duracion: p.duracion, pubId: null, ayudante: null };
+      })
     : [
-        { titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null },
-        { titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null },
+        { titulo: '', tipo: 'conversacion', duracion: null, pubId: null, ayudante: null },
+        { titulo: '', tipo: 'conversacion', duracion: null, pubId: null, ayudante: null },
+        { titulo: '', tipo: 'conversacion', duracion: null, pubId: null, ayudante: null },
       ];
 
   const vidaCristiana = vidaSinEstudio.length
@@ -1370,7 +1394,7 @@ window.crearSemana = async function() {
         lecturaBiblica: { titulo: '', duracion: 4, pubId: null, ayudante: null },
       },
       ministerio:    Array.from({ length: 3 }, () => ({
-        titulo: '', tipo: 'demostracion', duracion: null, pubId: null, ayudante: null,
+        titulo: '', tipo: 'conversacion', duracion: null, pubId: null, ayudante: null,
         ...(tieneAuxiliar ? { salaAux: { pubId: null, ayudante: null } } : {}),
       })),
       vidaCristiana: [{ titulo: '', tipo: 'parte', duracion: null, pubId: null }],
