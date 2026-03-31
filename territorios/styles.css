@@ -47,6 +47,7 @@ body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e1e; c
 .dia-viernes { color: #C0DD97; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 select, input[type=text], input[type=date], input[type=time] { width: 100%; font-size: 13px; padding: 6px 8px; border: 0.5px solid #555; border-radius: 8px; background: #1e1e1e; color: #eee; }
+textarea { width: 100%; font-size: 13px; padding: 8px 10px; border: 0.5px solid #555; border-radius: 8px; background: #1e1e1e; color: #eee; font-family: inherit; resize: vertical; box-sizing: border-box; }
 select option { background: #2a2a2a; color: #eee; }
 label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 
@@ -68,8 +69,8 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .grupo-color-3 { color: #97C459; }
 .grupo-color-4 { color: #D85A30; }
 .grupo-color-C { color: #7F77DD; }
-.modo-card { width: 100%; max-width: 320px; background: #2a2a2a; border: 1.5px solid #444; border-radius: 14px; padding: 1.25rem 1.5rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 16px; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
-.modo-card:hover { transform: scale(1.02); }
+.modo-card { width: 100%; max-width: 320px; background: #2a2a2a; border: 1.5px solid #444; border-radius: 14px; padding: 1.25rem 1.5rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 16px; transition: border-color 0.15s, background 0.15s, transform 0.1s, box-shadow 0.18s; }
+.modo-card:hover { transform: scale(1.02); background: var(--modo-hover-bg, #31363a); border-color: var(--modo-hover-border, #777); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 .modo-card:active { transform: scale(0.98); }
 .modo-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .modo-icon-plan { background: rgba(55,138,221,0.15); }
@@ -115,6 +116,18 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .hist-row-hora { font-size: 12px; color: #aaa; min-width: 40px; text-align: right; }
 .hist-row-tel { color: #5DCAA5; }
 
+/* ── Chat / notas compartidas ── */
+.chat-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.chat-tab { flex: 1; padding: 9px 10px; border-radius: 10px; border: 0.5px solid #555; background: #1e1e1e; color: #aaa; cursor: pointer; font-size: 13px; }
+.chat-tab.active { background: #0d2420; border-color: #1D9E75; color: #5DCAA5; }
+.chat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-height: 45vh; overflow-y: auto; padding-right: 2px; }
+.chat-item { background: #2a2a2a; border: 0.5px solid #444; border-radius: 10px; padding: 9px 11px; }
+.chat-item-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.chat-item-author { font-size: 12px; font-weight: 600; color: #97C459; }
+.chat-item-date { font-size: 11px; color: #888; white-space: nowrap; }
+.chat-item-text { font-size: 13px; color: #ddd; white-space: pre-wrap; line-height: 1.35; }
+.chat-composer { background: #2a2a2a; border: 0.5px solid #444; border-radius: 12px; padding: 10px; }
+
 /* ── Planificador flexible ── */
 .plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-right: 196px; }
 .plan-titulo { font-size: 20px; font-weight: 500; color: #eee; }
@@ -143,7 +156,7 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .grupo-label { font-size: 20px; font-weight: 500; color: #ccc; margin-bottom: 16px; }
 .grupo-grid { display: flex; gap: 10px; margin-bottom: 36px; flex-wrap: wrap; justify-content: center; width: 100%; }
 .grupo-btn { width: 64px; height: 64px; border-radius: 14px; border: 1.5px solid #444; background: #2a2a2a; font-size: 22px; font-weight: 500; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s; }
-.grupo-btn:hover { transform: scale(1.08); }
+.grupo-btn:hover { transform: scale(1.08); background: var(--grupo-hover-bg, #2f2f2f); }
 .grupo-btn:active { transform: scale(0.96); }
 .grupo-btn.selected { border-width: 2px; }
 .btn-start { padding: 14px 48px; font-size: 16px; font-weight: 500; background: #3B6D11; color: #fff; border: none; border-radius: 12px; cursor: pointer; opacity: 0.3; pointer-events: none; letter-spacing: 0.02em; }
@@ -253,6 +266,38 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .btn-mapa-float.visible { display: flex; }
 .btn-home.hidden-in-plan { display: none !important; }
 
+body.light-mode .modo-card {
+  background: var(--bg-card);
+  border-color: var(--border-primary);
+}
+body.light-mode .modo-card:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #faf6ff 100%);
+  border-color: #cfc0ef;
+  box-shadow: 0 10px 24px rgba(122,110,190,0.18), 0 0 0 1px rgba(127,119,221,0.28);
+}
+body.light-mode .modo-card-title { color: #2d2d2d !important; }
+body.light-mode .modo-card-sub   { color: #67626f; }
+
+body.light-mode .btn-home {
+  background: #faf8ff;
+  border-color: rgba(127,119,221,0.3);
+  color: #665ac9;
+}
+body.light-mode .btn-home:hover {
+  background: #f1edff;
+  border-color: rgba(127,119,221,0.55);
+  color: #4f45a8;
+}
+body.light-mode .btn-mapa-float {
+  background: #f5f2ff;
+  border-color: rgba(127,119,221,0.38);
+  color: #6a60cc;
+}
+body.light-mode .btn-mapa-float:hover {
+  background: #ece7ff;
+  color: #4e44af;
+}
+
 /* ── Encabezado tabla final por grupo ── */
 .preview-header-wrap { margin-bottom: 16px; }
 .preview-tag { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
@@ -278,9 +323,6 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .offline-banner.visible {
   display: block;
 }
-
-
-
 
 
 

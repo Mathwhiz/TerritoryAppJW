@@ -140,6 +140,22 @@ import { db } from '../firebase.js';
 
 ## Módulo de Territorios
 
+### Chat / Notas compartidas (✅ implementado)
+
+Se agregó un canal interno de comunicación dentro de **Territorios**:
+- Acceso desde un nuevo botón **"Chat / Notas"** en la selección de modo
+- Dos canales compartidos:
+  - **Grupo** (notas visibles por todos los del grupo logueado)
+  - **Congregación** (notas visibles por todos los grupos)
+- Permite dejar recordatorios, observaciones de territorios y notas breves
+- El nombre del autor es opcional y se recuerda localmente en el navegador
+
+**Estructura Firestore**
+- `congregaciones/{congreId}/chatNotas/grupo_{grupoId}/mensajes`
+- `congregaciones/{congreId}/chatNotas/congregacion/mensajes`
+
+Cada mensaje guarda: `autor`, `texto`, `createdAt`, `canal`, `grupo`.
+
 ### Grupos (vienen de Firestore en runtime)
 
 | Grupo | Color | PIN (default) |
@@ -174,6 +190,14 @@ Modos via URL params:
 - `?modo=picker&grupo=3&salidaid=2` — selector; devuelve resultado al padre via `postMessage`
 
 Sub-polígonos usan sufijos letra (92a, 92b) que mapean al mismo territorio base.
+
+### Tema claro / oscuro (estado actual)
+
+- **Modo oscuro** sigue siendo el default.
+- Se mejoró el **modo claro** con un fondo más orgánico (incluye acento violeta suave + textura de ruido).
+- Se unificó el hover de cards de módulos para que respete el estilo de la selección de congregación.
+- Botones flotantes de **Instalar** y **Admin** ahora tienen variante de modo claro.
+- En **Territorios**, se mejoró contraste visual en modo claro para cards de modo, botón Home y botón Mapa.
 
 ### Formato de territorio en Firestore
 

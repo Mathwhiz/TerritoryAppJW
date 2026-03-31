@@ -103,6 +103,15 @@
           <div class="modo-card-sub">Territorios y configuración</div>
         </div>
       </button>
+      <button class="modo-card" onclick="goToChatNotas()">
+        <div class="modo-icon" style="background:rgba(93,202,165,0.15);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 10h8M8 14h5M6 19l-2 2V5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6z" stroke="#5DCAA5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="modo-card-title" style="color:#ccc;">Chat / Notas</div>
+          <div class="modo-card-sub">Mensajes compartidos del grupo y congregación</div>
+        </div>
+      </button>
       <button class="modo-card" onclick="goToHistorial()" style="max-width:320px;width:100%;">
         <div class="modo-icon" style="background:rgba(250,199,117,0.15);">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="#FAC775" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -123,6 +132,45 @@
       </button>
       <button class="btn-secondary" onclick="cerrarSesion()" style="width:100%;max-width:320px;border-color:#A32D2D;color:#F09595;">Cerrar sesión</button>
     </div>
+  </div>
+
+  <!-- ── CHAT / NOTAS COMPARTIDAS ── -->
+  <div id="view-chat-notas" class="view" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <p class="section-title" id="chat-notas-titulo" style="font-size:34px;margin-bottom:0;">Chat / Notas</p>
+      <button class="btn-secondary" style="font-size:12px;padding:6px 10px;" onclick="refreshChatNotas()">Actualizar</button>
+    </div>
+    <p class="section-sub" style="margin-bottom:12px;">Dejá recordatorios y novedades para que todos los del canal lo vean.</p>
+
+    <div class="chat-tabs">
+      <button id="chat-tab-grupo" class="chat-tab active" onclick="switchChatScope('grupo')">Grupo</button>
+      <button id="chat-tab-congregacion" class="chat-tab" onclick="switchChatScope('congregacion')">Congregación</button>
+    </div>
+
+    <div id="chat-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando notas...</div></div>
+    <div id="chat-error" style="display:none;"></div>
+    <div id="chat-empty" class="reg-empty" style="display:none;">Todavía no hay notas en este canal.</div>
+    <div id="chat-list" class="chat-list" style="display:none;"></div>
+
+    <div class="chat-composer">
+      <div class="form-row" style="margin-bottom:8px;">
+        <div>
+          <label for="chat-autor">Tu nombre (opcional)</label>
+          <input id="chat-autor" type="text" maxlength="60" placeholder="Ej: Juan Pérez">
+        </div>
+        <div>
+          <label id="chat-canal-label">Canal</label>
+          <input id="chat-canal" type="text" disabled>
+        </div>
+      </div>
+      <div>
+        <label for="chat-mensaje">Nota / mensaje</label>
+        <textarea id="chat-mensaje" rows="3" placeholder="Ej: Familia interesada en Terr. 45. Volver jueves 19:00."></textarea>
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="sendChatNota(this)">Publicar nota</button>
+    </div>
+
+    <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="goToModo()">← Volver</button>
   </div>
 
   <!-- ── REGISTRAR TERRITORIOS ── -->

@@ -31,6 +31,8 @@
       background-image:
         radial-gradient(ellipse at 60% 20%, rgba(46,134,193,0.06) 0%, transparent 60%),
         radial-gradient(ellipse at 20% 80%, rgba(79,195,195,0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 82% 18%, rgba(127,119,221,0.09) 0%, transparent 56%),
+        radial-gradient(ellipse at 8% 24%, rgba(155,143,255,0.06) 0%, transparent 48%),
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
     }
 
@@ -196,6 +198,17 @@
     }
     .btn-admin:hover { background: #252535; border-color: rgba(127,119,221,0.6); color: #a09af0; }
     .btn-admin.hidden { opacity: 0; pointer-events: none; }
+    body.light-mode .btn-admin {
+      background: #f4f0ff;
+      border-color: rgba(127,119,221,0.35);
+      color: #6d62cf;
+      box-shadow: 0 4px 18px rgba(127,119,221,0.14);
+    }
+    body.light-mode .btn-admin:hover {
+      background: #ede7ff;
+      border-color: rgba(127,119,221,0.55);
+      color: #5f54c5;
+    }
 
     /* ── Botón instalar PWA ── */
     .btn-instalar {
@@ -217,6 +230,17 @@
     .btn-instalar:hover { background: #1c2420; border-color: rgba(29,158,117,0.6); color: #25c491; }
     .btn-instalar.oculto { display: none; }
     body.en-menu .btn-instalar { display: none !important; }
+    body.light-mode .btn-instalar {
+      background: #eaf8f3;
+      border-color: rgba(29,158,117,0.35);
+      color: #168563;
+      box-shadow: 0 4px 18px rgba(29,158,117,0.12);
+    }
+    body.light-mode .btn-instalar:hover {
+      background: #e0f3ec;
+      border-color: rgba(29,158,117,0.55);
+      color: #127055;
+    }
 
   </style>
 </head>
