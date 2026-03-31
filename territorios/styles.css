@@ -47,6 +47,7 @@ body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e1e; c
 .dia-viernes { color: #C0DD97; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 select, input[type=text], input[type=date], input[type=time] { width: 100%; font-size: 13px; padding: 6px 8px; border: 0.5px solid #555; border-radius: 8px; background: #1e1e1e; color: #eee; }
+textarea { width: 100%; font-size: 13px; padding: 8px 10px; border: 0.5px solid #555; border-radius: 8px; background: #1e1e1e; color: #eee; font-family: inherit; resize: vertical; box-sizing: border-box; }
 select option { background: #2a2a2a; color: #eee; }
 label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 
@@ -114,6 +115,18 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
 .hist-row-cond { font-size: 12px; color: #888; flex: 1; }
 .hist-row-hora { font-size: 12px; color: #aaa; min-width: 40px; text-align: right; }
 .hist-row-tel { color: #5DCAA5; }
+
+/* ── Chat / notas compartidas ── */
+.chat-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.chat-tab { flex: 1; padding: 9px 10px; border-radius: 10px; border: 0.5px solid #555; background: #1e1e1e; color: #aaa; cursor: pointer; font-size: 13px; }
+.chat-tab.active { background: #0d2420; border-color: #1D9E75; color: #5DCAA5; }
+.chat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-height: 45vh; overflow-y: auto; padding-right: 2px; }
+.chat-item { background: #2a2a2a; border: 0.5px solid #444; border-radius: 10px; padding: 9px 11px; }
+.chat-item-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.chat-item-author { font-size: 12px; font-weight: 600; color: #97C459; }
+.chat-item-date { font-size: 11px; color: #888; white-space: nowrap; }
+.chat-item-text { font-size: 13px; color: #ddd; white-space: pre-wrap; line-height: 1.35; }
+.chat-composer { background: #2a2a2a; border: 0.5px solid #444; border-radius: 12px; padding: 10px; }
 
 /* ── Planificador flexible ── */
 .plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-right: 196px; }
@@ -278,7 +291,6 @@ table.preview tr.tel-row td:first-child { border-left: 3px solid #1D9E75; }
 .offline-banner.visible {
   display: block;
 }
-
 
 
 

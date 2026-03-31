@@ -124,6 +124,7 @@ let historialRows = [];
 let salidas       = [];
 let salidaCounter = 0;
 let semanaOffset  = 0;
+let chatScope     = 'grupo';
 
 // ─────────────────────────────────────────
 //   COLORES (dinámico — se construye en cargarPins)
@@ -160,7 +161,7 @@ function show(id) {
   const homeBtn = document.getElementById('btn-home');
   const mapaBtn = document.getElementById('btn-mapa-float');
   if (homeBtn) {
-    const showHome = ['view-config','view-preview','view-registrar','view-info','view-historial'].includes(id);
+    const showHome = ['view-config','view-preview','view-registrar','view-info','view-historial','view-chat-notas'].includes(id);
     if (showHome) homeBtn.classList.add('visible');
     homeBtn.classList.remove('hidden-in-plan');
   }
@@ -326,7 +327,7 @@ function selectGrupo(el, n) {
 function goToCover() {
   selected = [];
   hide('view-config'); hide('view-preview');
-  hide('view-modo');   hide('view-registrar'); hide('view-info');
+  hide('view-modo');   hide('view-registrar'); hide('view-info'); hide('view-chat-notas');
   show('view-cover');
   document.getElementById('step-bar').style.display = 'none';
 }
@@ -336,7 +337,7 @@ function goToModo() {
   document.getElementById('btn-home').classList.remove('visible');
   document.getElementById('btn-mapa-float')?.classList.remove('visible');
   hide('view-cover'); hide('view-config'); hide('view-preview');
-  hide('view-registrar'); hide('view-info'); hide('view-historial');
+  hide('view-registrar'); hide('view-info'); hide('view-historial'); hide('view-chat-notas');
   const label = document.getElementById('modo-grupo-label');
   const grupoObj = GRUPOS.find(g => String(g.id) === String(selectedGrupo));
   label.textContent = grupoObj ? grupoObj.label : selectedGrupo;
@@ -1580,6 +1581,105 @@ async function deleteHistorialDoc(docId, btn) {
 }
 
 // ─────────────────────────────────────────
+//   CHAT / NOTAS COMPARTIDAS
+// ─────────────────────────────────────────
+function notasColByScope(scope) {
+  const channelId = scope === 'congregacion' ? 'congregacion' : `grupo_${selectedGrupo}`;
+  return collection(db, 'congregaciones', CONGRE_ID, 'chatNotas', channelId, 'mensajes');
+}
+
+function getScopeLabel(scope) {
+  if (scope === 'congregacion') return 'Congregación';
+  const g = GRUPOS.find(x => String(x.id) === String(selectedGrupo));
+  return g?.label || `Grupo ${selectedGrupo}`;
+}
+
+async function goToChatNotas() {
+  hide('view-modo'); show('view-chat-notas');
+  chatScope = 'grupo';
+  const titulo = document.getElementById('chat-notas-titulo');
+  titulo.textContent = 'Chat / Notas';
+  titulo.style.color = GCOLORS[selectedGrupo] || '#97C459';
+  document.getElementById('chat-autor').value = sessionStorage.getItem('chatAutor') || '';
+  switchChatScope('grupo');
+}
+
+function switchChatScope(scope) {
+  chatScope = scope === 'congregacion' ? 'congregacion' : 'grupo';
+  document.getElementById('chat-tab-grupo').classList.toggle('active', chatScope === 'grupo');
+  document.getElementById('chat-tab-congregacion').classList.toggle('active', chatScope === 'congregacion');
+  document.getElementById('chat-canal').value = getScopeLabel(chatScope);
+  refreshChatNotas();
+}
+
+async function refreshChatNotas() {
+  show('chat-loading'); hide('chat-list'); hide('chat-error'); hide('chat-empty');
+  try {
+    const snap = await getDocs(query(notasColByScope(chatScope), orderBy('createdAt', 'desc'), limit(80)));
+    hide('chat-loading');
+    const docs = snap.docs.map(d => d.data());
+    const list = document.getElementById('chat-list');
+    if (!docs.length) {
+      show('chat-empty');
+      list.innerHTML = '';
+      return;
+    }
+    list.innerHTML = docs.map(n => `
+      <div class="chat-item">
+        <div class="chat-item-head">
+          <span class="chat-item-author">${n.autor || 'Anónimo'}</span>
+          <span class="chat-item-date">${fmtDateLocal(n.createdAt)}</span>
+        </div>
+        <div class="chat-item-text">${escapeHtml(n.texto || '')}</div>
+      </div>
+    `).join('');
+    show('chat-list');
+  } catch(err) {
+    hide('chat-loading');
+    const el = document.getElementById('chat-error');
+    el.innerHTML = `<div class="error-wrap">No se pudieron cargar las notas: ${err.message}</div>`;
+    show('chat-error');
+  }
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+async function sendChatNota(btnEl) {
+  const autor = document.getElementById('chat-autor').value.trim();
+  const texto = document.getElementById('chat-mensaje').value.trim();
+  if (!texto) {
+    await uiAlert('Escribí una nota antes de publicar.', 'Mensaje vacío');
+    return;
+  }
+  const boton = btnEl || null;
+  if (boton) boton.disabled = true;
+  try {
+    await addDoc(notasColByScope(chatScope), {
+      autor: autor || null,
+      texto,
+      createdAt: Timestamp.now(),
+      canal: chatScope,
+      grupo: chatScope === 'grupo' ? String(selectedGrupo) : 'C',
+    });
+    sessionStorage.setItem('chatAutor', autor);
+    document.getElementById('chat-mensaje').value = '';
+    await refreshChatNotas();
+    uiToast('Nota publicada', 'success');
+  } catch (err) {
+    await uiAlert(`No se pudo publicar la nota: ${err.message}`, 'Error');
+  } finally {
+    if (boton) boton.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────
 //   MAPA POPUP
 // ─────────────────────────────────────────
 function openMapaPopup(modo) {
@@ -1615,6 +1715,7 @@ window.goToStep1 = goToStep1;
 window.goToRegistrar = goToRegistrar;
 window.goToInfoGrupo = goToInfoGrupo;
 window.goToHistorial = goToHistorial;
+window.goToChatNotas = goToChatNotas;
 window.goToMapa = goToMapa;
 window.cerrarSesion = cerrarSesion;
 window.guardarRegistros = guardarRegistros;
@@ -1640,6 +1741,9 @@ window.cancelEdit = cancelEdit;
 window.saveEdit = saveEdit;
 window.deleteEntry = deleteEntry; 
 window.deleteHistorialDoc = deleteHistorialDoc;
+window.switchChatScope = switchChatScope;
+window.refreshChatNotas = refreshChatNotas;
+window.sendChatNota = sendChatNota;
 window.openMapaPicker      = openMapaPicker;
 window.openEncuentroPicker = openEncuentroPicker;
 window.saveNota            = saveNota;
