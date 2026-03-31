@@ -52,36 +52,42 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
 /* ── PIN ── */
 .pin-modal {
   position: fixed; inset: 0; z-index: 150;
-  background: rgba(0,0,0,0.78);
+  background: rgba(0,0,0,0.75);
   display: flex; align-items: center; justify-content: center;
   padding: 1rem;
 }
 .pin-card {
-  width: 100%; max-width: 330px; background: #252525;
-  border: 1px solid #3a3a3a; border-radius: 18px; padding: 22px 18px 14px;
+  width: 100%; max-width: 300px; background: #2a2a2a;
+  border: 2px solid #555; border-radius: 22px; padding: 2rem 1.5rem;
+  text-align: center;
 }
-.pin-title { font-size: 26px; font-weight: 500; color: #D85A30; margin-bottom: 6px; }
-.pin-sub   { font-size: 14px; color: #888; margin-bottom: 22px; }
+.pin-title { font-size: 24px; font-weight: 500; color: #D85A30; margin-bottom: 4px; }
+.pin-sub   { font-size: 13px; color: #888; margin-bottom: 24px; }
 .pin-dots {
-  display: flex; gap: 12px; justify-content: center; margin-bottom: 22px;
+  display: flex; gap: 16px; justify-content: center; margin-bottom: 28px;
 }
 .pin-dot {
-  width: 16px; height: 16px; border-radius: 50%; border: 2px solid #555; background: transparent;
-  transition: all 0.1s;
+  width: 18px; height: 18px; border-radius: 50%; border: 2px solid #555; background: transparent;
+  transition: all 0.15s;
 }
+.pin-dot.filled { transform: scale(1.1); }
 .pin-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;
 }
 .pin-btn {
-  padding: 16px; font-size: 22px; border-radius: 12px; border: 0.5px solid #444;
-  background: #2a2a2a; color: #eee; cursor: pointer; transition: background 0.1s; font-family: inherit;
+  padding: 18px; font-size: 24px; font-weight: 500; border-radius: 14px; border: 0.5px solid #444;
+  background: #1e1e1e; color: #eee; cursor: pointer; transition: background 0.1s, transform 0.1s; font-family: inherit;
 }
 .pin-btn:hover { background: #333; }
-.pin-btn:active { background: rgba(216,90,48,0.2); }
-.pin-del { font-size: 16px; }
-.pin-error { font-size: 13px; color: #F09595; min-height: 20px; margin-bottom: 8px; text-align: center; }
-.pin-cancel { background: none; border: none; color: #555; font-size: 13px; cursor: pointer; padding: 4px 8px; font-family: inherit; display: block; margin: 0 auto; }
-.pin-cancel:hover { color: #888; }
+.pin-btn:active { transform: scale(0.92); background: #444; }
+.pin-del { font-size: 18px; color: #F09595; border-color: #A32D2D; background: #2e1a1a; }
+.pin-del:hover { background: #3a2020; }
+.pin-error { font-size: 13px; color: #F09595; min-height: 20px; margin-top: 4px; text-align: center; }
+.pin-cancel {
+  font-size: 13px; color: #888; background: none; border: none;
+  cursor: pointer; margin-top: 10px; text-decoration: underline; font-family: inherit;
+}
+.pin-cancel:hover { color: #aaa; }
 
 .cs-back-btn {
   display: block; text-align: center; margin-top: 24px;

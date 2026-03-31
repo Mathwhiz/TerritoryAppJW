@@ -99,8 +99,10 @@ function updatePinDots() {
   for (let i = 0; i < 4; i++) {
     const dot = document.getElementById('pd' + i);
     if (!dot) continue;
-    dot.style.borderColor = i < pinBuffer.length ? '#D85A30' : '#555';
-    dot.style.background  = i < pinBuffer.length ? '#D85A30' : 'transparent';
+    const filled = i < pinBuffer.length;
+    dot.style.borderColor = filled ? '#D85A30' : '#555';
+    dot.style.background  = filled ? '#D85A30' : 'transparent';
+    dot.classList.toggle('filled', filled);
   }
   document.getElementById('pin-error').textContent = '';
 }
