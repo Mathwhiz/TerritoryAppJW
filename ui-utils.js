@@ -134,8 +134,8 @@ window.uiToggleTheme = function() {
 // SOLO en el index.html raíz (página de congregaciones)
 function shouldShowThemeToggle() {
   const path = window.location.pathname;
-  // Mostrar solo en /index.html o / (raíz)
-  return path === '/' || path === '/index.html' || path.endsWith('/index.html');
+  // Mostrar solo en /index.html o / (raíz), NO en subcarpetas como /territorios/index.html
+  return path === '/' || path === '/index.html';
 }
 
 function insertThemeToggle() {
@@ -575,7 +575,13 @@ else document.addEventListener('DOMContentLoaded', insertThemeToggle);
    PANTALLA INICIAL (index.html)
 ═══════════════════════════════════════════ */
 .cs-home-body {
-  background: #1a1c1f;
+  background: var(--bg-primary) !important;
+  background-image:
+    radial-gradient(ellipse at 60% 20%, rgba(46,134,193,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(79,195,195,0.04) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+body.light-mode.cs-home-body {
   background-image:
     radial-gradient(ellipse at 60% 20%, rgba(46,134,193,0.06) 0%, transparent 60%),
     radial-gradient(ellipse at 20% 80%, rgba(79,195,195,0.04) 0%, transparent 50%),
