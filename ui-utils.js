@@ -131,7 +131,15 @@ window.uiToggleTheme = function() {
 };
 
 // Insertar botón toggle cuando el DOM esté listo
+// SOLO en el index.html raíz (página de congregaciones)
+function shouldShowThemeToggle() {
+  const path = window.location.pathname;
+  // Mostrar solo en /index.html o / (raíz)
+  return path === '/' || path === '/index.html' || path.endsWith('/index.html');
+}
+
 function insertThemeToggle() {
+  if (!shouldShowThemeToggle()) return;
   if (document.getElementById('btn-theme')) return;
   const btn = document.createElement('button');
   btn.className = 'theme-toggle';
