@@ -80,6 +80,8 @@ body.light-mode {
   background-image:
     radial-gradient(ellipse at 60% 20%, rgba(46,134,193,0.06) 0%, transparent 60%),
     radial-gradient(ellipse at 20% 80%, rgba(79,195,195,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 82% 18%, rgba(127,119,221,0.09) 0%, transparent 56%),
+    radial-gradient(ellipse at 8% 24%, rgba(155,143,255,0.06) 0%, transparent 48%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
@@ -644,6 +646,11 @@ else document.addEventListener('DOMContentLoaded', insertThemeToggle);
 .cs-nav-card-asign:hover { border-color: rgba(55,138,221,0.55);  background: #101e28; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(55,138,221,0.55),  0 4px 20px rgba(55,138,221,0.12); }
 .cs-nav-card-herm:hover  { border-color: rgba(216,90,48,0.55);   background: #2a1711; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(216,90,48,0.55),   0 4px 20px rgba(216,90,48,0.12); }
 .cs-nav-card-vm:hover    { border-color: rgba(239,159,39,0.55);  background: #272010; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(239,159,39,0.55),  0 4px 20px rgba(239,159,39,0.12); }
+
+body.light-mode .cs-nav-card-terr:hover  { border-color: rgba(151,196,89,0.55); background: #f1f8e8; box-shadow: 0 8px 26px rgba(93,130,53,0.18), 0 0 0 1px rgba(151,196,89,0.5); }
+body.light-mode .cs-nav-card-asign:hover { border-color: rgba(55,138,221,0.52); background: #ebf5ff; box-shadow: 0 8px 26px rgba(43,114,191,0.16), 0 0 0 1px rgba(55,138,221,0.5); }
+body.light-mode .cs-nav-card-herm:hover  { border-color: rgba(216,90,48,0.52);  background: #fff0ea; box-shadow: 0 8px 26px rgba(174,76,41,0.16), 0 0 0 1px rgba(216,90,48,0.5); }
+body.light-mode .cs-nav-card-vm:hover    { border-color: rgba(239,159,39,0.52); background: #fff7e8; box-shadow: 0 8px 26px rgba(195,131,34,0.16), 0 0 0 1px rgba(239,159,39,0.5); }
 
 .cs-nav-title { font-size: 21px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
 .cs-nav-sub   { font-size: 14px; color: var(--text-muted); }
@@ -1483,6 +1490,9 @@ _uiObserver.observe(document.body, { childList: true, subtree: true });
   --module-color-dim: rgba(127,119,221,0.3);
   box-shadow: 0 0 36px var(--module-color-dim), 0 0 14px var(--module-color-dim), 0 4px 20px rgba(0,0,0,0.5);
 }
+body.light-mode .cs-module-icon-anim {
+  box-shadow: 0 0 24px var(--module-color-dim), 0 0 8px var(--module-color-dim), 0 4px 18px rgba(122,110,190,0.2);
+}
 .cs-module-icon-anim::before,
 .cs-module-icon-anim::after {
   content: '';
@@ -1538,10 +1548,10 @@ _uiObserver.observe(document.body, { childList: true, subtree: true });
   box-shadow: var(--shadow-card); outline: none;
 }
 .cs-module-card:hover {
-  border-color: var(--border-light);
-  background: var(--bg-hover);
+  border-color: var(--card-hover-border, var(--border-light));
+  background: var(--card-hover-bg, var(--bg-hover));
   transform: translateY(-1px);
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--card-hover-shadow, var(--shadow-hover));
 }
 .cs-module-card:active { transform: scale(0.98); box-shadow: none; }
 .cs-module-card-icon {
