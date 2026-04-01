@@ -1219,8 +1219,211 @@ function aplicarWOLaSemana(importado) {
   }
 }
 
-window.autocompletarHermanos = function() {
-  uiToast('Próximamente: auto-asignación', 'success');
+// ─────────────────────────────────────────
+//   AUTO-ASIGNACIÓN VM (Fase 4)
+// ─────────────────────────────────────────
+
+// Retorna array ordenado de slots para una semana:
+// [{ key, rolRequerido, esAyudante, esSalaAux }, ...]
+function construirSlotsOrdenados(semana) {
+  const slots = [];
+
+  slots.push({ key: 'presidente',      rolRequerido: 'VM_PRESIDENTE' });
+  slots.push({ key: 'oracionApertura', rolRequerido: 'VM_ORACION' });
+  slots.push({ key: 'oracionCierre',   rolRequerido: 'VM_ORACION' });
+  slots.push({ key: 'tesoros.discurso',       rolRequerido: 'VM_TESOROS' });
+  slots.push({ key: 'tesoros.joyas',          rolRequerido: 'VM_JOYAS' });
+  slots.push({ key: 'tesoros.lecturaBiblica', rolRequerido: 'VM_LECTURA' });
+  if (tieneAuxiliar) {
+    slots.push({ key: 'tesoros.lecturaBiblica.ayudante', rolRequerido: 'VM_LECTURA', esAyudante: true });
+  }
+
+  const ministerio = semana.ministerio || [];
+  ministerio.forEach((parte, i) => {
+    const rol = TIPO_MIN_ROL[parte.tipo] || 'VM_MINISTERIO_CONVERSACION';
+    slots.push({ key: `ministerio.${i}`, rolRequerido: rol });
+    if (parte.tipo !== 'discurso') {
+      slots.push({ key: `ministerio.${i}.ayudante`, rolRequerido: rol, esAyudante: true });
+      if (tieneAuxiliar) {
+        slots.push({ key: `ministerio.${i}.salaAux`,         rolRequerido: rol, esSalaAux: true });
+        slots.push({ key: `ministerio.${i}.salaAux.ayudante`, rolRequerido: rol, esSalaAux: true, esAyudante: true });
+      }
+    }
+  });
+
+  const vc = semana.vidaCristiana || [];
+  vc.forEach((_, i) => {
+    slots.push({ key: `vidaCristiana.${i}`, rolRequerido: 'VM_VIDA_CRISTIANA' });
+  });
+
+  slots.push({ key: 'estudio.conductor', rolRequerido: 'VM_ESTUDIO_CONDUCTOR' });
+
+  return slots;
+}
+
+// Lee/escribe pubId directamente sobre un objeto semana arbitrario (no el global semanaData)
+function getSlotPubIdFromSemana(semana, key) {
+  const parts = key.split('.');
+  switch (parts[0]) {
+    case 'presidente':      return semana.presidente;
+    case 'oracionApertura': return semana.oracionApertura;
+    case 'oracionCierre':   return semana.oracionCierre;
+    case 'tesoros':
+      if (parts[2] === 'ayudante') return semana.tesoros?.[parts[1]]?.ayudante;
+      return semana.tesoros?.[parts[1]]?.pubId;
+    case 'ministerio': {
+      const idx = parseInt(parts[1]);
+      if (parts[2] === 'salaAux') {
+        return parts[3] === 'ayudante'
+          ? semana.ministerio?.[idx]?.salaAux?.ayudante
+          : semana.ministerio?.[idx]?.salaAux?.pubId;
+      }
+      if (parts[2] === 'ayudante') return semana.ministerio?.[idx]?.ayudante;
+      return semana.ministerio?.[idx]?.pubId;
+    }
+    case 'vidaCristiana':
+      return semana.vidaCristiana?.[parseInt(parts[1])]?.pubId;
+    case 'estudio':
+      return parts[1] === 'conductor'
+        ? semana.estudioBiblico?.conductor
+        : semana.estudioBiblico?.lector;
+    default: return null;
+  }
+}
+
+function setSlotPubIdOnSemana(semana, key, pubId) {
+  const parts = key.split('.');
+  switch (parts[0]) {
+    case 'presidente':      semana.presidente = pubId; break;
+    case 'oracionApertura': semana.oracionApertura = pubId; break;
+    case 'oracionCierre':   semana.oracionCierre   = pubId; break;
+    case 'tesoros':
+      if (!semana.tesoros?.[parts[1]]) break;
+      if (parts[2] === 'ayudante') semana.tesoros[parts[1]].ayudante = pubId;
+      else semana.tesoros[parts[1]].pubId = pubId;
+      break;
+    case 'ministerio': {
+      const idx = parseInt(parts[1]);
+      if (!semana.ministerio?.[idx]) break;
+      if (parts[2] === 'salaAux') {
+        if (!semana.ministerio[idx].salaAux) semana.ministerio[idx].salaAux = {};
+        if (parts[3] === 'ayudante') semana.ministerio[idx].salaAux.ayudante = pubId;
+        else semana.ministerio[idx].salaAux.pubId = pubId;
+      } else if (parts[2] === 'ayudante') {
+        semana.ministerio[idx].ayudante = pubId;
+      } else {
+        semana.ministerio[idx].pubId = pubId;
+      }
+      break;
+    }
+    case 'vidaCristiana': {
+      const idx = parseInt(parts[1]);
+      if (!semana.vidaCristiana?.[idx]) break;
+      semana.vidaCristiana[idx].pubId = pubId;
+      break;
+    }
+    case 'estudio':
+      if (!semana.estudioBiblico) semana.estudioBiblico = {};
+      if (parts[1] === 'conductor') semana.estudioBiblico.conductor = pubId;
+      else semana.estudioBiblico.lector = pubId;
+      break;
+  }
+}
+
+// Calcula índice inicial por rol leyendo el historial de semanasLista (en memoria).
+// Recorre de más antigua a más reciente y registra el último pubId asignado por rol.
+function calcularIndicesVM() {
+  const indices = {};
+  ROLES_VM.forEach(r => { indices[r.id] = 0; });
+
+  // Copia ordenada asc (semanasLista está desc)
+  const ordenadas = [...semanasLista].sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  const ultimoPub = {}; // { rolId → pubId }
+
+  for (const semana of ordenadas) {
+    const slots = construirSlotsOrdenados(semana);
+    for (const slot of slots) {
+      const pubId = getSlotPubIdFromSemana(semana, slot.key);
+      if (pubId) ultimoPub[slot.rolRequerido] = pubId;
+    }
+  }
+
+  // Convertir último pubId → siguiente índice en la lista de ese rol
+  for (const rolId of Object.keys(ultimoPub)) {
+    const lista = pubsConRol(rolId);
+    const idx = lista.findIndex(p => p.id === ultimoPub[rolId]);
+    if (idx >= 0 && lista.length > 0) {
+      indices[rolId] = (idx + 1) % lista.length;
+    }
+  }
+
+  return indices;
+}
+
+// Asigna publicadores en todos los slots de una semana usando round-robin.
+// Modifica `semana` in-place. `indices` se actualiza in-place (para generación masiva).
+function autoAsignarSemana(semana, indices) {
+  const slots = construirSlotsOrdenados(semana);
+  const enEstaSemana = new Set();
+
+  for (const slot of slots) {
+    const lista = pubsConRol(slot.rolRequerido);
+    if (lista.length === 0) continue;
+
+    let i = indices[slot.rolRequerido] || 0;
+    let asignado = null;
+    const maxIntentos = lista.length + 1;
+
+    for (let intentos = 0; intentos < maxIntentos; intentos++) {
+      const candidato = lista[i % lista.length];
+      if (candidato && !enEstaSemana.has(candidato.id)) {
+        asignado = candidato.id;
+        i++;
+        break;
+      }
+      i++;
+    }
+
+    if (asignado) {
+      setSlotPubIdOnSemana(semana, slot.key, asignado);
+      enEstaSemana.add(asignado);
+    }
+
+    indices[slot.rolRequerido] = i % (lista.length || 1);
+  }
+}
+
+// Devuelve true si la semana debe saltarse al auto-asignar según tipoEspecial
+function debeSkipAutoAsignar(fecha) {
+  const esp = vmEspeciales[fecha];
+  if (!esp) return false;
+  if (esp.tipo === 'asamblea') return true;
+  if (esp.tipo === 'conmemoracion') {
+    // Solo saltear si el evento es entre semana (no hay reunión VM)
+    if (!esp.fechaEvento) return true;
+    const d = new Date(esp.fechaEvento + 'T12:00:00');
+    const dow = d.getDay(); // 0=dom, 6=sab
+    return dow !== 0 && dow !== 6; // entre semana → saltear
+  }
+  return false; // superintendente → asignar normalmente
+}
+
+window.autocompletarHermanos = async function() {
+  if (!semanaData) return;
+  const ok = await uiConfirm({
+    title: 'Auto-asignar hermanos',
+    msg: 'Se van a auto-asignar hermanos en todos los slots de esta semana. Los slots ya asignados se sobreescribirán.',
+    confirmText: 'Auto-asignar',
+    cancelText: 'Cancelar',
+    type: 'purple',
+  });
+  if (!ok) return;
+
+  const indices = calcularIndicesVM();
+  autoAsignarSemana(semanaData, indices);
+  renderSemanaEdit();
+  uiToast('Hermanos auto-asignados', 'success');
 };
 
 window.reimportarDeWOL = async function() {
@@ -1255,9 +1458,11 @@ window.crearSemana = async function() {
   const fechaInput = document.getElementById('nueva-fecha').value;
   if (!fechaInput) { uiToast('Seleccioná una fecha', 'error'); return; }
 
-  const fechaBase  = lunesDeDate(fechaInput);
-  const nSemanas   = parseInt(document.getElementById('nueva-n-semanas').value) || 1;
-  const reemplazar = document.getElementById('nueva-reemplazar').checked;
+  const fechaBase     = lunesDeDate(fechaInput);
+  const nSemanas      = parseInt(document.getElementById('nueva-n-semanas').value) || 1;
+  const reemplazar    = document.getElementById('nueva-reemplazar').checked;
+  const autoAsignar   = document.getElementById('nueva-auto-asignar').checked;
+  const indicesAA     = autoAsignar ? calcularIndicesVM() : null;
 
   let primeraFecha = null;
 
@@ -1315,6 +1520,11 @@ window.crearSemana = async function() {
       }
     } catch(e) {
       uiToast(`${fmtDisplay(fecha)}: WOL no disponible — se creó con estructura base`, 'error');
+    }
+
+    // Auto-asignar hermanos si está activo
+    if (autoAsignar && indicesAA && !debeSkipAutoAsignar(fecha)) {
+      autoAsignarSemana(semanaData, indicesAA);
     }
 
     // Guardar en Firestore

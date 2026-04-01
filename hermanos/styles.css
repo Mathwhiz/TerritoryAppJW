@@ -347,3 +347,39 @@ body { font-family: system-ui, sans-serif; background: #1a1c1f; color: #eee; min
 .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
 .chat-edit-modal { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .chat-edit-card { background: #252729; border: 0.5px solid #555; border-radius: 16px; padding: 18px; width: 100%; max-width: 360px; }
+
+/* ── Duplicados ── */
+.btn-dupes {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: #252729; border: 1px solid #444; color: #EF9F27;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.btn-dupes:hover { background: #2a1f10; border-color: rgba(239,159,39,0.4); }
+
+.dup-group {
+  background: #1e2023; border: 1px solid #2e3033; border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.dup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dup-nombre { font-size: 15px; font-weight: 700; color: #EF9F27; }
+.dup-count  { font-size: 11px; color: #888; background: #252729; border-radius: 8px; padding: 2px 8px; }
+.dup-entries { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.dup-entry {
+  background: #252729; border: 0.5px solid #333; border-radius: 10px; padding: 8px 10px;
+}
+.dup-entry-nombre { font-size: 11px; color: #666; margin-bottom: 4px; }
+.dup-preview {
+  background: #1a1c1f; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px;
+}
+.dup-preview-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+.btn-fusionar {
+  width: 100%; background: rgba(239,159,39,0.1); border: 1px solid rgba(239,159,39,0.35);
+  color: #EF9F27; border-radius: 10px; padding: 10px; font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: background 0.15s;
+  font-family: inherit;
+}
+.btn-fusionar:hover { background: rgba(239,159,39,0.2); }

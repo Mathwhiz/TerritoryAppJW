@@ -326,7 +326,7 @@ gestionar publicadores por rol VM, sala auxiliar.
 **Estado al 2026-03-31:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI+generador),
 PIN VM, navegación, vista mensual, editar títulos, duración visible, export/compartir, visor público,
 menú Encargado centrado, filtros en vista Hermanos — todos ✅.
-**Pendiente:** auto-asignación (Fase 4).
+**Fase 4 auto-asignación:** ✅ implementada.
 
 ### Visor público (`programa.html`)
 Página standalone sin PIN. URL: `vida-ministerio/programa.html?congre=sur&semana=2026-04-07`.
@@ -447,25 +447,63 @@ function tipoMinisterioDesdeWOL(titulo) {
 | `"superintendente"` | Reunión pasa de miércoles a martes. Estudio reemplazado por discurso del sup. Finde sin lector. |
 | `"asamblea"` | No hay ninguna reunión esa semana. No generar nada. |
 
-### Fase 4 — Auto-asignación VM (pendiente)
+### Fase 4 — Auto-asignación VM (✅ implementada)
 
-Round-robin por rol con índice persistente, igual que Asignaciones:
+**Dónde está el código:** bloque `// AUTO-ASIGNACIÓN VM (Fase 4)` en `vida-ministerio/app.js`,
+justo antes de `window.autocompletarHermanos`.
 
-```js
-// Por semana:
-const enEstaSemana = new Set();
-for (const slot of slotsOrdenados) {
-  const lista = publicadoresConRol(slot.rolRequerido);
-  let i = indices[slot.rolRequerido];
-  while (enEstaSemana.has(lista[i % lista.length]?.id)) i++;
-  slot.pubId = lista[i % lista.length]?.id;
-  enEstaSemana.add(slot.pubId);
-  indices[slot.rolRequerido] = (i + 1) % lista.length;
-}
-```
+#### Funciones (todas en `app.js`)
 
-Reglas especiales: `VM_ORACION` apertura ≠ cierre · Presidente ≠ oración · Conductor ≠ lector ·
-`tipo === 'discurso'` en Ministerio sin ayudante · Sala auxiliar: asignar pares para ambas salas.
+| Función | Qué hace |
+|---------|----------|
+| `construirSlotsOrdenados(semana)` | Retorna `[{key, rolRequerido, esAyudante?, esSalaAux?}]` en orden canónico para una semana dada |
+| `getSlotPubIdFromSemana(semana, key)` | Lee un pubId de un objeto semana arbitrario (mismo switch que `getSlotPubId` pero sin usar el global) |
+| `setSlotPubIdOnSemana(semana, key, pubId)` | Escribe un pubId en un objeto semana arbitrario (mismo switch que `setSlotPubId` pero sin usar el global) |
+| `calcularIndicesVM()` | Lee `semanasLista` (cache en memoria, asc) y calcula el índice inicial por rol según el último pubId asignado en el historial |
+| `autoAsignarSemana(semana, indices)` | Loop principal. Modifica `semana` in-place, `indices` se actualiza in-place para generación masiva |
+| `debeSkipAutoAsignar(fecha)` | Retorna `true` si la semana debe saltarse: `asamblea` siempre, `conmemoracion` solo si es entre semana |
+
+#### Orden de slots en `construirSlotsOrdenados`
+
+1. `presidente` → `VM_PRESIDENTE`
+2. `oracionApertura` → `VM_ORACION`
+3. `oracionCierre` → `VM_ORACION`
+4. `tesoros.discurso` → `VM_TESOROS`
+5. `tesoros.joyas` → `VM_JOYAS`
+6. `tesoros.lecturaBiblica` → `VM_LECTURA`
+7. (si `tieneAuxiliar`) `tesoros.lecturaBiblica.ayudante`
+8. Por cada `ministerio[i]`: pubId + ayudante (si tipo ≠ discurso) + salaAux pair (si `tieneAuxiliar`)
+9. Por cada `vidaCristiana[i]`: pubId → `VM_VIDA_CRISTIANA`
+10. `estudio.conductor` → `VM_ESTUDIO_CONDUCTOR`
+
+#### Reglas manejadas por `enEstaSemana Set`
+
+- `VM_ORACION` apertura ≠ cierre (mismo rol, el segundo saltea al primero automáticamente)
+- Presidente ≠ oración (presidente se asigna primero; ya está en el Set cuando llegan las oraciones)
+- Sala auxiliar ≠ sala principal (el pubId de salaAux va después del principal)
+
+#### Invariante anti-loop
+
+El `while` del diseño original se reemplazó por `for (intentos < lista.length + 1)` — si todos
+están en `enEstaSemana`, deja el slot en `null` y avanza el índice. Evita loop infinito con listas de 1 persona.
+
+#### Índices: sin persistencia separada
+
+Los índices **no se guardan en Firestore**. Se recalculan siempre desde `semanasLista` (historial en memoria).
+Esto es correcto: en generación masiva, `indicesAA` se calcula una vez antes del loop y se pasa
+mutable a cada llamada de `autoAsignarSemana`, acumulando el avance semana a semana.
+
+#### Entrada al usuario
+
+- **Botón "✦ Auto"** en `view-semana` → `autocompletarHermanos()` → pide confirmación (`uiConfirm purple`), luego `calcularIndicesVM()` + `autoAsignarSemana(semanaData, ...)` + `renderSemanaEdit()`. **No guarda automáticamente** — el encargado revisa y presiona "Guardar".
+- **Checkbox `#nueva-auto-asignar`** en tab "Generar Semanas" → al generar N semanas, si está activo y la semana no debe saltarse, llama `autoAsignarSemana(semanaData, indicesAA)` antes del `setDoc`.
+
+#### Para modificar en el futuro
+
+- **Cambiar orden de prioridad de slots:** editar el orden en `construirSlotsOrdenados`.
+- **Agregar regla de exclusión** (ej: una persona no puede ser presidente Y conductor en la misma semana): sumar la restricción dentro del `for (intentos...)` en `autoAsignarSemana` — el `enEstaSemana` Set ya maneja el caso más común.
+- **Opción "no sobreescribir slots ya asignados":** en `autoAsignarSemana`, antes de asignar, chequear `getSlotPubIdFromSemana(semana, slot.key)` y saltear si no es null.
+- **Persistir índices entre sesiones:** guardar `indicesAA` en `congregaciones/{id}` campo `vmIndicesRondas` y leerlo al init. Actualmente se recalcula desde historial (más robusto).
 
 ---
 

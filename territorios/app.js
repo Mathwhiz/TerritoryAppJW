@@ -1419,8 +1419,10 @@ async function deleteEntry(docId) {
     type: 'danger'
   });
   if (!ok) return;
-  await deleteDoc(doc(db, 'congregaciones', CONGRE_ID, 'territorios', String(modalTerr), 'historial', docId));
-  await openModal(modalTerr);
+  const n = modalTerr;
+  await deleteDoc(doc(db, 'congregaciones', CONGRE_ID, 'territorios', String(n), 'historial', docId));
+  await openModal(n);
+  await refreshTerrEntrada(n);
 }
 
 function startAddEntry() {
@@ -1472,13 +1474,31 @@ async function saveEdit() {
     await addDoc(histCol(modalTerr), data);
   }
   cancelEdit();
-  await openModal(modalTerr);
+  const n = modalTerr;
+  await openModal(n);
+  await refreshTerrEntrada(n);
 }
 
 function closeModal() {
   document.getElementById('estado-modal').style.display = 'none';
   modalTerr  = null;
   editingRow = null;
+}
+
+async function refreshTerrEntrada(n) {
+  if (!territoriosData[n]) return;
+  const histSnap = await getDocs(
+    query(histCol(n), orderBy('fechaInicio', 'desc'), limit(1))
+  );
+  let lastFin = null, lastIni = null, enProgreso = false;
+  if (!histSnap.empty) {
+    const h = histSnap.docs[0].data();
+    lastIni    = h.fechaInicio || null;
+    lastFin    = h.fechaFin   || null;
+    enProgreso = !h.fechaFin;
+  }
+  territoriosData[n] = { ...territoriosData[n], lastFin, lastIni, enProgreso };
+  renderInfoGrid();
 }
 
 async function saveNota() {

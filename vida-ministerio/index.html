@@ -201,6 +201,10 @@
           <input type="checkbox" id="nueva-reemplazar" style="width:18px;height:18px;accent-color:#EF9F27;cursor:pointer;">
           <span style="font-size:14px;color:#ccc;">Reemplazar semanas existentes</span>
         </label>
+        <label class="check-row" style="display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" id="nueva-auto-asignar" style="width:18px;height:18px;accent-color:#7F77DD;cursor:pointer;">
+          <span style="font-size:14px;color:#ccc;">Auto-asignar hermanos</span>
+        </label>
         <div class="field">
           <label>¿Cuántas semanas generar?</label>
           <select id="nueva-n-semanas">
@@ -241,7 +245,7 @@
       <div class="vm-action-bar" id="vm-action-bar">
         <button class="btn-wol" onclick="reimportarDeWOL()">↓ WOL</button>
         <button class="btn-primary" onclick="guardarSemana()">Guardar</button>
-        <button class="btn-autocomplete" onclick="autocompletarHermanos()" disabled title="Próximamente">✦ Auto</button>
+        <button class="btn-autocomplete" onclick="autocompletarHermanos()">✦ Auto</button>
         <button class="btn-danger-outline btn-sm" onclick="eliminarSemana(semanaData?.fecha)">Eliminar</button>
       </div>
       <div id="semana-content"></div>

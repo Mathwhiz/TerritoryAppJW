@@ -131,28 +131,6 @@ window.pinDelete = function() {
   updatePinDots();
 };
 
-let _pinTarget = 'hermanos'; // 'hermanos' | 'especiales'
-
-window.goToPin = function() {
-  _pinTarget = 'hermanos';
-  pinBuffer = '';
-  updatePinDots();
-  document.getElementById('pin-modal-hermanos').style.display = 'flex';
-};
-
-window.goToPinEspeciales = function() {
-  _pinTarget = 'especiales';
-  pinBuffer = '';
-  updatePinDots();
-  document.getElementById('pin-modal-hermanos').style.display = 'flex';
-};
-
-window.pinCancel = function() {
-  pinBuffer = '';
-  updatePinDots();
-  document.getElementById('pin-modal-hermanos').style.display = 'none';
-};
-
 function checkPin() {
   if (pinEncargado === null) {
     document.getElementById('pin-error').textContent = 'Cargando configuración…';
@@ -160,9 +138,7 @@ function checkPin() {
   }
   if (pinBuffer === pinEncargado) {
     pinBuffer = ''; updatePinDots();
-    document.getElementById('pin-modal-hermanos').style.display = 'none';
-    if (_pinTarget === 'especiales') window.goToEspeciales();
-    else cargarYMostrar();
+    showView('view-menu');
   } else {
     document.getElementById('pin-error').textContent = 'PIN incorrecto';
     pinBuffer = ''; updatePinDots();
@@ -170,8 +146,13 @@ function checkPin() {
 }
 
 window.goToCover = function() {
-  pinCancel();
+  pinBuffer = '';
+  updatePinDots();
   showView('view-cover');
+};
+
+window.goToHermanos = function() {
+  cargarYMostrar();
 };
 
 // ─────────────────────────────────────────
@@ -456,6 +437,107 @@ function addMiIdAdmin(id) {
   const arr = getMisIdsAdmin(); arr.push(id);
   sessionStorage.setItem('chatMisIdsAdmin', JSON.stringify(arr));
 }
+
+// ─────────────────────────────────────────
+//   DUPLICADOS
+// ─────────────────────────────────────────
+window.abrirDuplicados = async function() {
+  showView('view-duplicados');
+  const el = document.getElementById('dupes-list');
+  const loading = document.getElementById('dupes-loading');
+  el.innerHTML = '';
+  loading.style.display = '';
+  try {
+    const snap = await getDocs(pubCol());
+    publicadores = snap.docs.map(d => ({ id: d.id, ...d.data(), roles: d.data().roles || [] }));
+    publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+  } catch(e) {
+    loading.style.display = 'none';
+    el.innerHTML = `<div class="error-wrap">Error: ${e.message}</div>`;
+    return;
+  }
+  loading.style.display = 'none';
+  renderDuplicados();
+};
+
+function renderDuplicados() {
+  const el = document.getElementById('dupes-list');
+  const groups = {};
+  publicadores.forEach(p => {
+    const key = norm(p.nombre);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  });
+  const dupes = Object.values(groups).filter(g => g.length > 1);
+  if (!dupes.length) {
+    el.innerHTML = '<div class="empty-state">No se encontraron duplicados.</div>';
+    return;
+  }
+  el.innerHTML = dupes.map(group => {
+    const ids = group.map(p => p.id).join(',');
+    const entries = group.map(p => {
+      const asign = (p.roles||[]).filter(r => !r.startsWith('VM_'));
+      const vm    = (p.roles||[]).filter(r =>  r.startsWith('VM_'));
+      const chips = [
+        ...asign.map(r => `<span class="chip chip-asign">${esc(rolLabel(r))}</span>`),
+        ...vm.map(r    => `<span class="chip chip-vm">${esc(rolLabel(r))}</span>`),
+      ].join('') || '<span class="sin-roles">Sin roles</span>';
+      return `<div class="dup-entry">
+        <div class="dup-entry-nombre">${esc(p.nombre)}</div>
+        <div class="hermano-chips">${chips}</div>
+      </div>`;
+    }).join('');
+
+    const allRoles = [...new Set(group.flatMap(p => p.roles || []))];
+    const previewChips = allRoles.map(r => {
+      const cls = r.startsWith('VM_') ? 'chip-vm' : 'chip-asign';
+      return `<span class="chip ${cls}">${esc(rolLabel(r))}</span>`;
+    }).join('') || '<span class="sin-roles">Sin roles</span>';
+
+    return `<div class="dup-group">
+      <div class="dup-header">
+        <span class="dup-nombre">${esc(group[0].nombre)}</span>
+        <span class="dup-count">${group.length} entradas</span>
+      </div>
+      <div class="dup-entries">${entries}</div>
+      <div class="dup-preview">
+        <div class="dup-preview-label">Resultado tras fusionar:</div>
+        <div class="hermano-chips">${previewChips}</div>
+      </div>
+      <button class="btn-fusionar" onclick="fusionarGrupo('${ids}')">Fusionar</button>
+    </div>`;
+  }).join('');
+}
+
+window.fusionarGrupo = async function(idsStr) {
+  const ids   = idsStr.split(',');
+  const group = ids.map(id => publicadores.find(p => p.id === id)).filter(Boolean);
+  if (group.length < 2) return;
+
+  const ok = await uiConfirm({
+    title: 'Fusionar duplicados',
+    msg: `Se conservará "${group[0].nombre}" con todos los roles combinados y se eliminarán ${group.length - 1} entrada${group.length > 2 ? 's' : ''}.`,
+    confirmText: 'Fusionar', cancelText: 'Cancelar', type: 'warn',
+  });
+  if (!ok) return;
+
+  const winner   = group.reduce((a, b) => (b.roles||[]).length > (a.roles||[]).length ? b : a);
+  const allRoles = [...new Set(group.flatMap(p => p.roles || []))];
+  const toDelete = group.filter(p => p.id !== winner.id);
+
+  try {
+    await updateDoc(doc(pubCol(), winner.id), { roles: allRoles });
+    for (const p of toDelete) await deleteDoc(doc(pubCol(), p.id));
+    const winnerIdx = publicadores.findIndex(p => p.id === winner.id);
+    if (winnerIdx >= 0) publicadores[winnerIdx] = { ...publicadores[winnerIdx], roles: allRoles };
+    publicadores = publicadores.filter(p => !toDelete.some(d => d.id === p.id));
+    publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+    uiToast('Fusionado correctamente', 'success');
+    renderDuplicados();
+  } catch(e) {
+    await uiAlert('Error: ' + e.message);
+  }
+};
 
 function showChatFab() {
   const fab = document.getElementById('chat-fab');
