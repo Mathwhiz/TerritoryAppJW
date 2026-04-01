@@ -14,22 +14,20 @@ document.querySelectorAll('.js-congre').forEach(el => el.textContent = CONGRE_NO
 // ─────────────────────────────────────────
 //   ROLES
 // ─────────────────────────────────────────
-const ROLES_ASIGN = [
-  { id: 'LECTOR',                label: 'Lector' },
-  { id: 'SONIDO',                label: 'Sonido' },
-  { id: 'PLATAFORMA',            label: 'Plataforma' },
-  { id: 'MICROFONISTAS',         label: 'Micrófonos' },
-  { id: 'ACOMODADOR_AUDITORIO',  label: 'Acod. Auditorio' },
-  { id: 'ACOMODADOR_ENTRADA',    label: 'Acod. Entrada' },
-  { id: 'PRESIDENTE',            label: 'Pres. Reunión' },
-  { id: 'REVISTAS',              label: 'Revistas' },
-  { id: 'PUBLICACIONES',         label: 'Publicaciones' },
-  { id: 'CONDUCTOR_GRUPO_1',     label: 'Conductor Grupo 1' },
-  { id: 'CONDUCTOR_GRUPO_2',     label: 'Conductor Grupo 2' },
-  { id: 'CONDUCTOR_GRUPO_3',     label: 'Conductor Grupo 3' },
-  { id: 'CONDUCTOR_GRUPO_4',     label: 'Conductor Grupo 4' },
-  { id: 'CONDUCTOR_CONGREGACION',    label: 'Conductor Cong.' },
-  { id: 'SUPERINTENDENTE_CIRCUITO',  label: 'Sup. de Circuito' },
+const ROLES_ASIGN_BASE = [
+  { id: 'LECTOR',               label: 'Lector' },
+  { id: 'SONIDO',               label: 'Sonido' },
+  { id: 'PLATAFORMA',           label: 'Plataforma' },
+  { id: 'MICROFONISTAS',        label: 'Micrófonos' },
+  { id: 'ACOMODADOR_AUDITORIO', label: 'Acod. Auditorio' },
+  { id: 'ACOMODADOR_ENTRADA',   label: 'Acod. Entrada' },
+  { id: 'PRESIDENTE',           label: 'Pres. Reunión' },
+  { id: 'REVISTAS',             label: 'Revistas' },
+  { id: 'PUBLICACIONES',        label: 'Publicaciones' },
+];
+const ROLES_CONDUCTOR_FIJO = [
+  { id: 'CONDUCTOR_CONGREGACION',   label: 'Conductor Congregación' },
+  { id: 'SUPERINTENDENTE_CIRCUITO', label: 'Sup. de Circuito' },
 ];
 
 const ROLES_VM = [
@@ -46,10 +44,47 @@ const ROLES_VM = [
   { id: 'VM_ESTUDIO_CONDUCTOR',        label: 'Conductor Estudio' },
 ];
 
-const TODOS_LOS_ROLES = [...ROLES_ASIGN, ...ROLES_VM];
+// Se reconstruye en buildConductorUI() después de cargar grupos
+let ROLES_ASIGN = [...ROLES_ASIGN_BASE, ...ROLES_CONDUCTOR_FIJO];
+let TODOS_LOS_ROLES = [...ROLES_ASIGN, ...ROLES_VM];
 
 function rolLabel(id) {
   return TODOS_LOS_ROLES.find(r => r.id === id)?.label || id;
+}
+
+// Construye los checkboxes de conductores de grupo en el modal y en el select de filtro
+function buildConductorUI(grupos) {
+  const numGrupos = grupos.filter(g => String(g.id) !== 'C');
+  // Si no hay grupos cargados, defaultear a 4
+  const lista = numGrupos.length
+    ? numGrupos
+    : [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }];
+
+  const rolGrupos = lista.map(g => ({
+    id:    `CONDUCTOR_GRUPO_${g.id}`,
+    label: `Conductor Grupo ${g.id}`,
+  }));
+
+  ROLES_ASIGN    = [...ROLES_ASIGN_BASE, ...rolGrupos, ...ROLES_CONDUCTOR_FIJO];
+  TODOS_LOS_ROLES = [...ROLES_ASIGN, ...ROLES_VM];
+
+  // Modal: regenerar toda la grilla de asignaciones
+  const grid = document.getElementById('modal-roles-asign-grid');
+  if (grid) {
+    grid.innerHTML = ROLES_ASIGN.map(r => {
+      const wide = r.id === 'CONDUCTOR_CONGREGACION' || r.id === 'SUPERINTENDENTE_CIRCUITO'
+        ? ' style="grid-column:span 2"' : '';
+      return `<label class="rol-checkbox"${wide}><input type="checkbox" id="hcb-${r.id}"><span>${r.label}</span></label>`;
+    }).join('');
+  }
+
+  // Select de filtro: regenerar optgroup de Asignaciones
+  const optgroup = document.getElementById('opt-asign');
+  if (optgroup) {
+    optgroup.innerHTML = ROLES_ASIGN.map(r =>
+      `<option value="${r.id}">${r.label}</option>`
+    ).join('');
+  }
 }
 
 // ─────────────────────────────────────────
@@ -101,13 +136,16 @@ function pubCol() {
 }
 
 // ─────────────────────────────────────────
-//   INIT — cargar config
+//   INIT — cargar config + grupos
 // ─────────────────────────────────────────
 (async function init() {
   try {
-    const snap = await getDoc(doc(db, 'congregaciones', CONGRE_ID));
-    if (snap.exists()) {
-      const d = snap.data();
+    const [congreSnap, gruposSnap] = await Promise.all([
+      getDoc(doc(db, 'congregaciones', CONGRE_ID)),
+      getDocs(collection(db, 'congregaciones', CONGRE_ID, 'grupos')),
+    ]);
+    if (congreSnap.exists()) {
+      const d = congreSnap.data();
       pinEncargado = String(d.pinEncargado || '1234');
       if (d.sheetsUrl) {
         sheetsUrl = d.sheetsUrl;
@@ -115,8 +153,17 @@ function pubCol() {
         if (btn) btn.style.display = '';
       }
     }
+    const grupos = [];
+    gruposSnap.forEach(d => { if (d.data().id) grupos.push(d.data()); });
+    grupos.sort((a, b) => {
+      const an = parseInt(a.id), bn = parseInt(b.id);
+      if (!isNaN(an) && !isNaN(bn)) return an - bn;
+      return 0;
+    });
+    buildConductorUI(grupos);
   } catch(e) {
     console.error('Error cargando config:', e);
+    buildConductorUI([]); // fallback: muestra grupos 1-4
   }
 })();
 
@@ -261,12 +308,18 @@ function _actualizarNavModal(id) {
   if (btnNext)  btnNext.disabled      = idx >= total - 1;
 }
 
-window.navHermano = function(dir) {
+window.navHermano = async function(dir) {
   const idx = listaVisible.findIndex(p => p.id === editandoId);
   if (idx === -1) return;
-  const next = listaVisible[idx + dir];
-  if (!next) return;
-  abrirEditar(next.id);
+  const nextHermano = listaVisible[idx + dir];
+  if (!nextHermano) return;
+
+  if (editandoId) {
+    const ok = await _guardarSilencioso();
+    if (ok) { filtrarLista(); uiToast('Guardado', 'success'); }
+    else       uiToast('No se pudo guardar', 'error');
+  }
+  abrirEditar(nextHermano.id);
 };
 
 window.abrirNuevo = function() {
@@ -308,6 +361,32 @@ window.cerrarModal = function() {
   editandoId = null;
 };
 
+// Guarda el hermano actual en Firestore sin cerrar el modal ni mostrar toast.
+// Retorna true si éxito, false si error. Solo funciona si editandoId está seteado.
+async function _guardarSilencioso() {
+  if (!editandoId) return true;
+  const nombre = document.getElementById('modal-nombre').value.trim();
+  if (!nombre) return false;
+  const roles = TODOS_LOS_ROLES
+    .filter(r => document.getElementById('hcb-' + r.id)?.checked)
+    .map(r => r.id);
+  const data = { nombre, roles };
+  if (_modalSexo) data.sexo = _modalSexo;
+  if (!_modalSexo) {
+    const existing = publicadores.find(p => p.id === editandoId);
+    if (existing?.sexo) data.sexo = null;
+  }
+  try {
+    await updateDoc(doc(pubCol(), editandoId), data);
+    const idx = publicadores.findIndex(p => p.id === editandoId);
+    if (idx >= 0) publicadores[idx] = { ...publicadores[idx], ...data };
+    publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
 function renderSexoBtns() {
   ['H', 'M'].forEach(s => {
     const btn = document.getElementById('btn-sexo-' + s);
@@ -337,36 +416,37 @@ window.guardarHermano = async function() {
   const nombre = document.getElementById('modal-nombre').value.trim();
   if (!nombre) { uiToast('Ingresá un nombre', 'error'); return; }
 
-  const roles = TODOS_LOS_ROLES
-    .filter(r => document.getElementById('hcb-' + r.id)?.checked)
-    .map(r => r.id);
-
   const status = document.getElementById('modal-status');
   status.style.color = '#888'; status.textContent = 'Guardando…';
 
-  const data = { nombre, roles };
-  if (_modalSexo) data.sexo = _modalSexo;
-  // Si antes tenía sexo y ahora no, borrarlo (no aplicar si es nuevo)
-  if (!_modalSexo && editandoId) {
-    const existing = publicadores.find(p => p.id === editandoId);
-    if (existing?.sexo) data.sexo = null;
-  }
-
-  try {
-    if (editandoId) {
-      await updateDoc(doc(pubCol(), editandoId), data);
-      const idx = publicadores.findIndex(p => p.id === editandoId);
-      if (idx >= 0) publicadores[idx] = { ...publicadores[idx], ...data };
-    } else {
+  // Nuevo hermano
+  if (!editandoId) {
+    const roles = TODOS_LOS_ROLES
+      .filter(r => document.getElementById('hcb-' + r.id)?.checked)
+      .map(r => r.id);
+    const data = { nombre, roles };
+    if (_modalSexo) data.sexo = _modalSexo;
+    try {
       const ref = await addDoc(pubCol(), { ...data, activo: true });
       publicadores.push({ id: ref.id, ...data, activo: true });
+      publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+      cerrarModal();
+      filtrarLista();
+      uiToast('Hermano agregado', 'success');
+    } catch(e) {
+      status.style.color = '#F09595'; status.textContent = 'Error: ' + e.message;
     }
-    publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+    return;
+  }
+
+  // Editar existente
+  const ok = await _guardarSilencioso();
+  if (ok) {
     cerrarModal();
     filtrarLista();
-    uiToast(editandoId ? 'Guardado' : 'Hermano agregado', 'success');
-  } catch(e) {
-    status.style.color = '#F09595'; status.textContent = 'Error: ' + e.message;
+    uiToast('Guardado', 'success');
+  } else {
+    status.style.color = '#F09595'; status.textContent = 'Error al guardar';
   }
 };
 
@@ -380,7 +460,7 @@ window.confirmarEliminar = async function(id, nombre) {
   try {
     await deleteDoc(doc(pubCol(), id));
     publicadores = publicadores.filter(p => p.id !== id);
-    renderLista(publicadores);
+    filtrarLista();
     uiToast('Eliminado', 'success');
   } catch(e) {
     uiToast('Error: ' + e.message, 'error');
@@ -545,11 +625,14 @@ function levenshtein(a, b) {
 function sonSimilares(a, b) {
   const na = norm(a), nb = norm(b);
   if (na === nb) return true;
-  if (normSorted(a) === normSorted(b)) return true; // orden de palabras invertido
+  const sa = normSorted(a), sb = normSorted(b);
+  if (sa === sb) return true; // orden de palabras invertido (Malco Scalese = Scalese Malco)
   const maxLen = Math.max(na.length, nb.length);
   if (maxLen === 0) return true;
-  const dist = levenshtein(na, nb);
-  return dist <= 2; // hasta 2 caracteres de diferencia (typos)
+  // Levenshtein tanto en orden original como en ordenado (cubre: invertido + typo)
+  const dist       = levenshtein(na, nb);
+  const distSorted = levenshtein(sa, sb);
+  return Math.min(dist, distSorted) <= 2;
 }
 
 window.abrirDuplicados = async function() {

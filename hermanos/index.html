@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ziv">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.6">
+  <link rel="stylesheet" href="styles.css?v=1.7">
 </head>
 <body>
 
@@ -103,7 +103,8 @@
     <select id="h-rol" class="rol-filter" onchange="filtrarLista()">
       <option value="">— Todos los roles —</option>
       <option value="__sin_roles__">Sin asignación</option>
-      <optgroup label="Asignaciones">
+      <optgroup label="Asignaciones" id="opt-asign">
+        <!-- se rellena dinámicamente desde buildConductorUI() -->
         <option value="LECTOR">Lector</option>
         <option value="SONIDO">Sonido</option>
         <option value="PLATAFORMA">Plataforma</option>
@@ -113,12 +114,7 @@
         <option value="PRESIDENTE">Pres. Reunión</option>
         <option value="REVISTAS">Revistas</option>
         <option value="PUBLICACIONES">Publicaciones</option>
-        <option value="CONDUCTOR_GRUPO_1">Conductor Grupo 1</option>
-        <option value="CONDUCTOR_GRUPO_2">Conductor Grupo 2</option>
-        <option value="CONDUCTOR_GRUPO_3">Conductor Grupo 3</option>
-        <option value="CONDUCTOR_GRUPO_4">Conductor Grupo 4</option>
-        <option value="CONDUCTOR_CONGREGACION">Conductor Congregación</option>
-        <option value="SUPERINTENDENTE_CIRCUITO">Sup. de Circuito</option>
+        <!-- conductores de grupo y fijos: se insertan por buildConductorUI() -->
       </optgroup>
       <optgroup label="Vida y Ministerio">
         <option value="VM_PRESIDENTE">Presidente VM</option>
@@ -214,27 +210,11 @@
         <button type="button" id="btn-sexo-M" class="btn-sexo btn-sexo-m" onclick="selectSexo('M')">♀ Mujer</button>
       </div>
 
-      <!-- Roles Asignaciones -->
+      <!-- Roles Asignaciones — se rellena dinámicamente desde buildConductorUI() -->
       <div style="margin-bottom:8px;">
         <span class="roles-section-titulo roles-titulo-asign">Asignaciones</span>
       </div>
-      <div class="roles-grid" style="margin-bottom:18px;">
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-LECTOR"><span>Lector</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-SONIDO"><span>Sonido</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-PLATAFORMA"><span>Plataforma</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-MICROFONISTAS"><span>Micrófonos</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-ACOMODADOR_AUDITORIO"><span>Acod. Auditorio</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-ACOMODADOR_ENTRADA"><span>Acod. Entrada</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-PRESIDENTE"><span>Pres. Reunión</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-REVISTAS"><span>Revistas</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-PUBLICACIONES"><span>Publicaciones</span></label>
-        <label class="rol-checkbox span2" style="grid-column:span 1"><input type="checkbox" id="hcb-CONDUCTOR_GRUPO_1"><span>Conductor Grupo 1</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-CONDUCTOR_GRUPO_2"><span>Conductor Grupo 2</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-CONDUCTOR_GRUPO_3"><span>Conductor Grupo 3</span></label>
-        <label class="rol-checkbox"><input type="checkbox" id="hcb-CONDUCTOR_GRUPO_4"><span>Conductor Grupo 4</span></label>
-        <label class="rol-checkbox" style="grid-column:span 2"><input type="checkbox" id="hcb-CONDUCTOR_CONGREGACION"><span>Conductor Congregación</span></label>
-        <label class="rol-checkbox" style="grid-column:span 2"><input type="checkbox" id="hcb-SUPERINTENDENTE_CIRCUITO"><span>Sup. de Circuito</span></label>
-      </div>
+      <div class="roles-grid" id="modal-roles-asign-grid" style="margin-bottom:18px;"></div>
 
       <!-- Roles VM -->
       <div style="margin-bottom:8px;">
@@ -334,6 +314,6 @@
 
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="../ui-utils.js?v=1.4"></script>
-<script type="module" src="app.js?v=1.5"></script>
+<script type="module" src="app.js?v=1.6"></script>
 </body>
 </html>
