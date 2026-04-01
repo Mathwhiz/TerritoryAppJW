@@ -69,8 +69,22 @@ function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
-  document.getElementById('btn-home').classList.toggle('visible', id !== 'view-cover');
-  if (id === 'view-cover') hideChatFab(); else showChatFab();
+  document.getElementById('btn-home').classList.add('visible');
+  showChatFab();
+}
+
+function showPinModal() {
+  pinBuffer = ''; updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-modal').style.display = 'flex';
+  document.getElementById('btn-home').classList.remove('visible');
+  hideChatFab();
+}
+
+function hidePinModal() {
+  document.getElementById('pin-modal').style.display = 'none';
+  document.getElementById('btn-home').classList.add('visible');
+  showChatFab();
 }
 
 function norm(s) {
@@ -138,7 +152,7 @@ function checkPin() {
   }
   if (pinBuffer === pinEncargado) {
     pinBuffer = ''; updatePinDots();
-    showView('view-menu');
+    hidePinModal();
   } else {
     document.getElementById('pin-error').textContent = 'PIN incorrecto';
     pinBuffer = ''; updatePinDots();
@@ -146,9 +160,7 @@ function checkPin() {
 }
 
 window.goToCover = function() {
-  pinBuffer = '';
-  updatePinDots();
-  showView('view-cover');
+  showPinModal();
 };
 
 window.goToHermanos = function() {
@@ -439,8 +451,35 @@ function addMiIdAdmin(id) {
 }
 
 // ─────────────────────────────────────────
-//   DUPLICADOS
+//   DUPLICADOS — detección fuzzy
 // ─────────────────────────────────────────
+function normSorted(s) {
+  return norm(s).split(/\s+/).filter(Boolean).sort().join(' ');
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => j ? j : i)
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function sonSimilares(a, b) {
+  const na = norm(a), nb = norm(b);
+  if (na === nb) return true;
+  if (normSorted(a) === normSorted(b)) return true; // orden de palabras invertido
+  const maxLen = Math.max(na.length, nb.length);
+  if (maxLen === 0) return true;
+  const dist = levenshtein(na, nb);
+  return dist <= 2; // hasta 2 caracteres de diferencia (typos)
+}
+
 window.abrirDuplicados = async function() {
   showView('view-duplicados');
   const el = document.getElementById('dupes-list');
@@ -462,13 +501,23 @@ window.abrirDuplicados = async function() {
 
 function renderDuplicados() {
   const el = document.getElementById('dupes-list');
-  const groups = {};
-  publicadores.forEach(p => {
-    const key = norm(p.nombre);
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(p);
-  });
-  const dupes = Object.values(groups).filter(g => g.length > 1);
+
+  // Agrupamiento fuzzy: orden de palabras invertido + typos de hasta 2 caracteres
+  const used = new Array(publicadores.length).fill(false);
+  const dupes = [];
+  for (let i = 0; i < publicadores.length; i++) {
+    if (used[i]) continue;
+    const cluster = [publicadores[i]];
+    used[i] = true;
+    for (let j = i + 1; j < publicadores.length; j++) {
+      if (used[j]) continue;
+      if (sonSimilares(publicadores[i].nombre, publicadores[j].nombre)) {
+        cluster.push(publicadores[j]);
+        used[j] = true;
+      }
+    }
+    if (cluster.length > 1) dupes.push(cluster);
+  }
   if (!dupes.length) {
     el.innerHTML = '<div class="empty-state">No se encontraron duplicados.</div>';
     return;

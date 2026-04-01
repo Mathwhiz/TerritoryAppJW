@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ziv">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.3">
+  <link rel="stylesheet" href="styles.css?v=1.4">
 </head>
 <body>
 
@@ -24,53 +24,8 @@
 
 <div class="app">
 
-  <!-- ── COVER (PIN) ── -->
-  <div id="view-cover" class="view active">
-    <div class="cover cs-module-cover">
-
-      <div class="cs-module-icon-anim" style="--module-color:#D85A30;--module-color-dim:rgba(216,90,48,0.35);">
-        <div class="cs-module-icon-wrap" style="background:rgba(216,90,48,0.15);">
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
-            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#D85A30" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="9" cy="7" r="4" stroke="#D85A30" stroke-width="1.6"/>
-            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#D85A30" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="cs-module-title">Administrador</div>
-      <div class="cs-module-sub js-congre" style="color:#D85A30;">—</div>
-
-      <div class="pin-sub" style="margin-top:24px;">Ingresá el PIN de encargado</div>
-      <div class="pin-dots" style="margin-top:20px;margin-bottom:24px;">
-        <div class="pin-dot" id="pd0"></div>
-        <div class="pin-dot" id="pd1"></div>
-        <div class="pin-dot" id="pd2"></div>
-        <div class="pin-dot" id="pd3"></div>
-      </div>
-      <div class="pin-grid" style="width:100%;">
-        <button class="pin-btn" onclick="pinPress('1')">1</button>
-        <button class="pin-btn" onclick="pinPress('2')">2</button>
-        <button class="pin-btn" onclick="pinPress('3')">3</button>
-        <button class="pin-btn" onclick="pinPress('4')">4</button>
-        <button class="pin-btn" onclick="pinPress('5')">5</button>
-        <button class="pin-btn" onclick="pinPress('6')">6</button>
-        <button class="pin-btn" onclick="pinPress('7')">7</button>
-        <button class="pin-btn" onclick="pinPress('8')">8</button>
-        <button class="pin-btn" onclick="pinPress('9')">9</button>
-        <button class="pin-btn" style="visibility:hidden;"></button>
-        <button class="pin-btn" onclick="pinPress('0')">0</button>
-        <button class="pin-btn pin-del" onclick="pinDelete()">⌫</button>
-      </div>
-      <div class="pin-error" id="pin-error"></div>
-
-      <a href="../index.html" class="cs-back-btn">← Volver al módulo</a>
-
-    </div>
-  </div>
-
   <!-- ── MENU (post-PIN) ── -->
-  <div id="view-menu" class="view">
+  <div id="view-menu" class="view active">
     <div class="cover cs-module-cover">
 
       <div class="cs-module-icon-anim" style="--module-color:#D85A30;--module-color-dim:rgba(216,90,48,0.35);">
@@ -184,10 +139,6 @@
       <div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div>
     </div>
 
-    <button id="btn-ver-planilla" class="btn-secondary" onclick="abrirPlanilla()" style="width:100%;margin-top:16px;display:none;">
-      📊 Ver planilla
-    </button>
-
     <div style="height:5rem;"></div>
   </div>
 
@@ -219,6 +170,10 @@
       </div>
     </div>
 
+    <button id="btn-ver-planilla" class="btn-secondary" onclick="abrirPlanilla()" style="width:100%;margin-top:16px;display:none;">
+      📊 Ver planilla
+    </button>
+
     <div style="height:2rem;"></div>
   </div>
 
@@ -229,13 +184,13 @@
         <div class="main-title" style="color:#EF9F27;">Duplicados</div>
         <div class="main-sub js-congre">—</div>
       </div>
-      <button class="btn-nuevo" style="background:#252729;border:1px solid #444;color:#aaa;" onclick="showView('view-main')">Volver</button>
     </div>
     <div id="dupes-loading" class="loading-wrap" style="display:none;">
       <div class="spinner"></div>
       <div class="loading-txt">Buscando duplicados…</div>
     </div>
     <div id="dupes-list"></div>
+    <a href="#" class="cs-back-btn" onclick="showView('view-main');return false;">← Volver</a>
     <div style="height:2rem;"></div>
   </div>
 
@@ -322,6 +277,37 @@
     </div>
   </div>
 
+  <!-- ── PIN MODAL ── -->
+  <div id="pin-modal" class="pin-modal" style="display:flex;">
+    <div class="pin-card">
+      <div class="pin-title">Administrador</div>
+      <div class="pin-sub js-congre">—</div>
+      <div class="pin-sub" style="margin-top:6px;">Ingresá el PIN de encargado</div>
+      <div class="pin-dots" style="margin-top:16px;margin-bottom:20px;">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-grid">
+        <button class="pin-btn" onclick="pinPress('1')">1</button>
+        <button class="pin-btn" onclick="pinPress('2')">2</button>
+        <button class="pin-btn" onclick="pinPress('3')">3</button>
+        <button class="pin-btn" onclick="pinPress('4')">4</button>
+        <button class="pin-btn" onclick="pinPress('5')">5</button>
+        <button class="pin-btn" onclick="pinPress('6')">6</button>
+        <button class="pin-btn" onclick="pinPress('7')">7</button>
+        <button class="pin-btn" onclick="pinPress('8')">8</button>
+        <button class="pin-btn" onclick="pinPress('9')">9</button>
+        <button class="pin-btn" style="visibility:hidden;"></button>
+        <button class="pin-btn" onclick="pinPress('0')">0</button>
+        <button class="pin-btn pin-del" onclick="pinDelete()">⌫</button>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <button class="pin-cancel" onclick="window.location.href='../index.html'">← Cancelar</button>
+    </div>
+  </div>
+
   <div id="chat-edit-modal" class="chat-edit-modal" style="display:none;" onclick="if(event.target===this)closeChatEdit()">
     <div class="chat-edit-card">
       <div style="font-size:14px;font-weight:600;color:#ccc;margin-bottom:10px;">Editar nota</div>
@@ -337,6 +323,6 @@
 
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="../ui-utils.js?v=1.4"></script>
-<script type="module" src="app.js?v=1.2"></script>
+<script type="module" src="app.js?v=1.3"></script>
 </body>
 </html>
