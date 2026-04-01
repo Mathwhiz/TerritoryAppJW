@@ -61,6 +61,7 @@ let pinBuffer       = '';
 let editandoId      = null;
 let sheetsUrl       = null;
 let semanasEspeciales = {};
+let _modalSexo      = null; // 'H' | 'M' | null
 
 // ─────────────────────────────────────────
 //   UTILIDADES
@@ -210,9 +211,17 @@ function renderLista(lista) {
       ...asignRoles.map(r => `<span class="chip chip-asign">${esc(rolLabel(r))}</span>`),
       ...vmRoles.map(r    => `<span class="chip chip-vm">${esc(rolLabel(r))}</span>`),
     ].join('');
+    const sexoChip = h.sexo === 'H'
+      ? `<span class="chip-sexo chip-sexo-h" onclick="event.stopPropagation();toggleSexo('${h.id}','H')" title="Hombre — clic para cambiar">♂</span>`
+      : h.sexo === 'M'
+        ? `<span class="chip-sexo chip-sexo-m" onclick="event.stopPropagation();toggleSexo('${h.id}','M')" title="Mujer — clic para cambiar">♀</span>`
+        : `<span class="chip-sexo chip-sexo-none" onclick="event.stopPropagation();toggleSexo('${h.id}',null)" title="Sin género — clic para asignar">·</span>`;
     return `<div class="hermano-row" onclick="abrirEditar('${h.id}')">
       <div class="hermano-info">
-        <div class="hermano-nombre">${esc(h.nombre)}</div>
+        <div class="hermano-nombre-row">
+          ${sexoChip}
+          <div class="hermano-nombre">${esc(h.nombre)}</div>
+        </div>
         <div class="hermano-chips">${chips || '<span class="sin-roles">Sin roles</span>'}</div>
       </div>
       <div class="hermano-actions">
@@ -238,6 +247,7 @@ window.filtrarLista = function() {
 // ─────────────────────────────────────────
 window.abrirNuevo = function() {
   editandoId = null;
+  _modalSexo = null;
   document.getElementById('modal-titulo').textContent = 'Nuevo hermano';
   document.getElementById('modal-nombre').value = '';
   document.getElementById('modal-status').textContent = '';
@@ -245,6 +255,7 @@ window.abrirNuevo = function() {
     const cb = document.getElementById('hcb-' + r.id);
     if (cb) cb.checked = false;
   });
+  renderSexoBtns();
   document.getElementById('modal-hermano').style.display = 'flex';
   document.getElementById('modal-nombre').focus();
 };
@@ -253,6 +264,7 @@ window.abrirEditar = function(id) {
   const h = publicadores.find(p => p.id === id);
   if (!h) return;
   editandoId = id;
+  _modalSexo = h.sexo || null;
   document.getElementById('modal-titulo').textContent = esc(h.nombre);
   document.getElementById('modal-nombre').value = h.nombre;
   document.getElementById('modal-status').textContent = '';
@@ -260,12 +272,38 @@ window.abrirEditar = function(id) {
     const cb = document.getElementById('hcb-' + r.id);
     if (cb) cb.checked = (h.roles || []).includes(r.id);
   });
+  renderSexoBtns();
   document.getElementById('modal-hermano').style.display = 'flex';
 };
 
 window.cerrarModal = function() {
   document.getElementById('modal-hermano').style.display = 'none';
   editandoId = null;
+};
+
+function renderSexoBtns() {
+  ['H', 'M'].forEach(s => {
+    const btn = document.getElementById('btn-sexo-' + s);
+    if (!btn) return;
+    btn.classList.toggle('btn-sexo-active', _modalSexo === s);
+  });
+}
+
+window.selectSexo = function(s) {
+  _modalSexo = (_modalSexo === s) ? null : s; // toggle off si ya estaba activo
+  renderSexoBtns();
+};
+
+window.toggleSexo = async function(id, currentSexo) {
+  const nextSexo = currentSexo === 'H' ? 'M' : currentSexo === 'M' ? null : 'H';
+  try {
+    await updateDoc(doc(pubCol(), id), { sexo: nextSexo });
+    const idx = publicadores.findIndex(p => p.id === id);
+    if (idx >= 0) publicadores[idx] = { ...publicadores[idx], sexo: nextSexo };
+    filtrarLista();
+  } catch(e) {
+    uiToast('Error: ' + e.message, 'error');
+  }
 };
 
 window.guardarHermano = async function() {
@@ -279,23 +317,26 @@ window.guardarHermano = async function() {
   const status = document.getElementById('modal-status');
   status.style.color = '#888'; status.textContent = 'Guardando…';
 
+  const data = { nombre, roles };
+  if (_modalSexo) data.sexo = _modalSexo;
+  // Si antes tenía sexo y ahora no, borrarlo (no aplicar si es nuevo)
+  if (!_modalSexo && editandoId) {
+    const existing = publicadores.find(p => p.id === editandoId);
+    if (existing?.sexo) data.sexo = null;
+  }
+
   try {
     if (editandoId) {
-      await updateDoc(doc(pubCol(), editandoId), { nombre, roles });
+      await updateDoc(doc(pubCol(), editandoId), data);
       const idx = publicadores.findIndex(p => p.id === editandoId);
-      if (idx >= 0) publicadores[idx] = { ...publicadores[idx], nombre, roles };
+      if (idx >= 0) publicadores[idx] = { ...publicadores[idx], ...data };
     } else {
-      const ref = await addDoc(pubCol(), { nombre, roles, activo: true });
-      publicadores.push({ id: ref.id, nombre, roles, activo: true });
+      const ref = await addDoc(pubCol(), { ...data, activo: true });
+      publicadores.push({ id: ref.id, ...data, activo: true });
     }
     publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
     cerrarModal();
-    // reset filtros
-    const searchEl = document.getElementById('h-search');
-    const rolEl    = document.getElementById('h-rol');
-    if (searchEl) searchEl.value = '';
-    if (rolEl)    rolEl.value    = '';
-    renderLista(publicadores);
+    filtrarLista();
     uiToast(editandoId ? 'Guardado' : 'Hermano agregado', 'success');
   } catch(e) {
     status.style.color = '#F09595'; status.textContent = 'Error: ' + e.message;

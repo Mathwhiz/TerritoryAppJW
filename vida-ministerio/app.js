@@ -554,13 +554,14 @@ function renderSemanaCard(s, lunes) {
   // Conmemoración / Asamblea: card simplificada
   if (esp?.tipo === 'conmemoracion' || esp?.tipo === 'asamblea') {
     const labelEsp = esp.tipo === 'asamblea' ? 'Asamblea' : 'Conmemoración';
+    const cardColor = VM_TIPO_COLORS[esp.tipo] || '#eee';
     return `
-    <div class="semana-card semana-card-conmem${esActual ? ' semana-actual' : ''}" onclick="goToSemana('${s.fecha}')">
+    <div class="semana-card semana-card-conmem${esActual ? ' semana-actual' : ''}" style="border-color:${cardColor}44;background:${cardColor}0a;" onclick="goToSemana('${s.fecha}')">
       <div class="semana-card-top">
         <div class="semana-fecha">${fmtDisplayReunion(s.fecha, false)}</div>
         <button class="btn-del-semana" onclick="event.stopPropagation(); eliminarSemana('${s.fecha}')" title="Eliminar semana">×</button>
       </div>
-      <div class="semana-conmem-label">${labelEsp}</div>
+      <div class="semana-conmem-label" style="color:${cardColor};">${labelEsp}</div>
     </div>`;
   }
 

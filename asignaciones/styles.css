@@ -68,9 +68,17 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
 .loading-txt { font-size: 14px; color: #888; }
 .error-wrap { background: #2e1a1a; border: 0.5px solid #A32D2D; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 16px; font-size: 13px; color: #F09595; }
 
+/* ── Semana nav header ── */
+.semana-nav-header {
+  background: #252525; border: 0.5px solid #2e2e2e; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; padding: 10px 14px; margin-bottom: 14px;
+}
+.semana-nav-label { font-size: 14px; color: #aaa; text-align: center; flex: 1; }
+
 /* ── Reunion card ── */
 .reunion-card {
-  background: #2a2a2a; border: 0.5px solid #333; border-radius: 12px;
+  background: #262626; border: 1px solid #333; border-radius: 12px;
   overflow: hidden; margin-bottom: 12px;
 }
 .reunion-header {

@@ -401,9 +401,10 @@ async function initMap() {
     cargarHistorialInfo().catch(e => console.warn('Historial:', e));
   }
 
-  // Botones de ciudad (todos los modos embebidos cuando hay ciudades extra)
+  // Botones de ciudad (solo para congregación o modo full — territorios extra son siempre del grupo C)
   const esPicker = _modoParam === 'picker' || _params.get('picker') === '1';
-  if (ciudadesExtras.length > 0) {
+  const esCiudadVisible = ciudadesExtras.length > 0 && (_grupoParam === 'all' || _grupoParam === 'C');
+  if (esCiudadVisible) {
     if (esPicker) {
       // Picker: agregar al picker-bar (map-filters está oculto)
       const bar = document.getElementById('picker-bar');
@@ -429,9 +430,12 @@ async function initMap() {
         bar.appendChild(btn);
       });
       // En modos sin header (registrar/info): ocultar botones de grupo, solo mostrar ciudad
+      // y bajar la barra a top:0 (el header está oculto en estos modos)
       if (_modoParam !== 'full') {
         document.querySelectorAll('#map-filters-bar .filter-btn:not([id^="filter-ciudad-"])').forEach(b => b.style.display = 'none');
-        document.querySelector('.map-filters').style.display = '';
+        const filtersEl = document.querySelector('.map-filters');
+        filtersEl.style.top = '0';
+        filtersEl.style.display = '';
       }
     }
   }

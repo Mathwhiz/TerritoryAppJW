@@ -90,9 +90,9 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
   font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
   border: 1px solid rgba(93,184,93,0.3);
 }
-.semana-card-conmem { background: #1f2226; border-color: #8877cc44; }
+.semana-card-conmem { background: #1f2220; }
 .semana-conmem-label {
-  font-size: 15px; font-weight: 700; color: #8877cc;
+  font-size: 15px; font-weight: 700; color: #aaa;
   text-align: center; padding: 8px 0 4px;
   letter-spacing: 0.02em;
 }
@@ -298,15 +298,18 @@ body { font-family: system-ui, sans-serif; background: #1e1e1e; color: #eee; min
 }
 
 /* ── Programa público (read-only) ── */
-.pub-seccion { margin-bottom: 14px; }
+.pub-seccion {
+  background: #252525; border: 0.5px solid #2e2e2e; border-radius: 12px;
+  padding: 10px 14px; margin-bottom: 10px; overflow: hidden;
+}
 .pub-seccion-hdr {
   font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: #888; padding: 6px 0; margin-bottom: 6px;
-  border-bottom: 1px solid #2a2a2a;
+  color: #777; padding: 2px 0 8px; margin-bottom: 4px;
+  border-bottom: 0.5px solid #2e2e2e;
 }
 .pub-parte-row {
   display: flex; align-items: flex-start; gap: 10px;
-  padding: 8px 0; border-bottom: 0.5px solid #222;
+  padding: 7px 0; border-bottom: 0.5px solid #2a2a2a;
 }
 .pub-parte-row:last-child { border-bottom: none; }
 .pub-parte-titulo { flex: 1; font-size: 13px; color: #ccc; line-height: 1.4; }

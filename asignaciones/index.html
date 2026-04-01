@@ -22,7 +22,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Asignaciones — Congregación Sur</title>
-<link rel="stylesheet" href="styles.css?v=2.3">
+<link rel="stylesheet" href="styles.css?v=2.4">
 </head>
 <body>
 
@@ -105,9 +105,9 @@
   <!-- ── VER SEMANA ── -->
   <div id="view-semana" class="view" style="display:none;">
     <p class="section-title">Programación</p>
-    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px;">
+    <div class="semana-nav-header">
       <button onclick="cambiarSemanaVer(-1)" class="semana-nav-btn">←</button>
-      <span id="semana-label" style="font-size:14px;color:#888;text-align:center;"></span>
+      <span id="semana-label" class="semana-nav-label"></span>
       <button onclick="cambiarSemanaVer(1)" class="semana-nav-btn">→</button>
     </div>
     <div id="semana-loading" class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando programación...</div></div>
