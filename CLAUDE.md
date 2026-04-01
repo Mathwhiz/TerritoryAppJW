@@ -155,7 +155,7 @@ Canal interno de comunicación dentro de **Territorios**, implementado como **FA
 - Dos canales con tabs verticales a la izquierda del panel:
   - **Grupo** (notas del grupo logueado)
   - **Congregación** (notas visibles por todos)
-- El autor del mensaje es automáticamente el nombre del grupo (`"Grupo 1"`, `"Congregación"`) — no se pide nombre
+- El autor del mensaje es siempre el nombre del **grupo logueado** (`"Grupo 1"`, `"Grupo 2"`, etc.) — independientemente del canal. Si se postea desde el canal Congregación, el autor sigue siendo el grupo. `"Congregación"` solo se usa si el `grupoId` es `'C'`.
 - Mensajes **eliminables** (con popup de confirmación `uiConfirm`)
 - Mensajes **editables solo por el autor** — autoría rastreada por `sessionStorage chatMisIds` (array de IDs de docs creados en la sesión)
 - `showChatFab()` se llama desde `goToModo()` (post-login); `hideChatFab()` desde `goToCover()` / `cerrarSesion()`
@@ -282,16 +282,29 @@ Las vistas `view-editar`, `view-automatico`, `view-imagen` usan `onclick="goToEn
 Antes llamado "Hermanos". Renombrado a **"Administrador"** en UI, `index.html` raíz, y título de página.
 El botón "Encargado" dentro fue renombrado a **"Lista de Hermanos"** (funcionalidad igual).
 
-### Funcionalidades
+### Funcionalidades (desde el cover — requieren PIN)
 
-1. **Lista de publicadores** — filtro por rol + búsqueda por nombre
-   - Filtro especial `__sin_roles__` → muestra publicadores sin ningún rol asignado
-   - Rol `SUPERINTENDENTE_CIRCUITO` agregado (bajo optgroup Asignaciones)
-2. **Semanas especiales** (✅ movido desde Asignaciones)
-   - CRUD de semanas especiales (`congregaciones/{id}/semanasEspeciales/{lunesISO}`)
-   - Tipos: `conmemoracion`, `superintendente`, `asamblea`
-   - El módulo de Asignaciones consume este dato al generar automático
-3. **Ver planilla** — botón que abre `sheetsUrl` si está configurado en la congregación
+El cover del módulo Administrador tiene **dos cards**:
+1. **Lista de Hermanos** → `goToPin()` con `_pinTarget = 'hermanos'` → `view-main`
+2. **Semanas especiales** → `goToPinEspeciales()` con `_pinTarget = 'especiales'` → `view-especiales`
+
+**`view-main` — Lista de publicadores:**
+- Filtro por rol + búsqueda por nombre
+- Filtro especial `__sin_roles__` → muestra publicadores sin ningún rol asignado
+- Rol `SUPERINTENDENTE_CIRCUITO` agregado (bajo optgroup Asignaciones)
+- Botón "Ver planilla" al fondo si `sheetsUrl` está configurado en la congregación
+
+**`view-especiales` — Semanas especiales:**
+- CRUD de semanas especiales (`congregaciones/{id}/semanasEspeciales/{lunesISO}`)
+- Tipos: `conmemoracion`, `superintendente`, `asamblea`
+- El módulo de Asignaciones consume este dato al generar automático
+
+### Chat / Notas (✅ implementado en Administrador)
+
+FAB flotante igual al de Territorios, pero **solo canal Congregación** y autor siempre `"Administrador"`.
+- `sessionStorage chatMisIdsAdmin` para tracking de autoría (separado del de Territorios)
+- Funciones: `openChatPanel`, `closeChatPanel`, `sendChatNota`, `abrirEditNota`, `closeChatEdit`, `confirmarEditNota`, `eliminarNota`
+- CSS en `hermanos/styles.css`
 
 ### Roles en publicadores
 

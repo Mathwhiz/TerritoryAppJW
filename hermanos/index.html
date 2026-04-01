@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ziv">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.1">
+  <link rel="stylesheet" href="styles.css?v=1.2">
 </head>
 <body>
 
@@ -53,6 +53,20 @@
         <div>
           <div class="cs-module-card-title">Lista de Hermanos</div>
           <div class="cs-module-card-sub">Gestionar publicadores y roles</div>
+        </div>
+      </button>
+
+      <button class="cs-module-card" style="--card-hover-border:rgba(127,119,221,0.55);--card-hover-bg:#1a1830;--card-hover-shadow:0 6px 24px rgba(0,0,0,0.35),0 0 0 1px rgba(127,119,221,0.55),0 4px 20px rgba(127,119,221,0.12);" onclick="goToPinEspeciales()">
+        <div class="cs-module-card-icon" style="background:rgba(127,119,221,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="4" width="18" height="18" rx="3" stroke="#7F77DD" stroke-width="1.8"/>
+            <path d="M16 2v4M8 2v4M3 10h18" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M8 14h2M11 14h2M8 17h2M11 17h2M14 14h2M14 17h2" stroke="#7F77DD" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="cs-module-card-title" style="color:#9b93ee;">Semanas especiales</div>
+          <div class="cs-module-card-sub">Asambleas, conmemoración y más</div>
         </div>
       </button>
 
@@ -147,33 +161,40 @@
       <div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div>
     </div>
 
-    <!-- ── Semanas especiales ── -->
-    <div class="enc-especiales" style="margin-top:24px;">
-      <div class="enc-especiales-header">
-        <span>Semanas especiales</span>
-        <button class="btn-esp-add" onclick="toggleFormEspecial()">+</button>
-      </div>
-      <div id="especiales-lista"><div class="especiales-empty">Cargando…</div></div>
-      <div id="especiales-form" style="display:none;">
-        <select id="esp-tipo" onchange="actualizarLabelFechaEsp()" class="esp-select">
-          <option value="conmemoracion">Conmemoración</option>
-          <option value="superintendente">Visita superintendente</option>
-          <option value="asamblea">Asamblea</option>
-        </select>
-        <div class="esp-field">
-          <label id="esp-fecha-label" class="esp-label">Fecha exacta del evento</label>
-          <input type="date" id="esp-fecha" class="esp-date-input">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button class="btn-secondary" onclick="toggleFormEspecial()" style="flex:1;">Cancelar</button>
-          <button class="btn-save" onclick="guardarEspecial()" style="flex:2;">Guardar</button>
-        </div>
-      </div>
-    </div>
-
     <button id="btn-ver-planilla" class="btn-secondary" onclick="abrirPlanilla()" style="width:100%;margin-top:16px;display:none;">
       📊 Ver planilla
     </button>
+
+    <div style="height:5rem;"></div>
+  </div>
+
+  <!-- ── SEMANAS ESPECIALES ── -->
+  <div id="view-especiales" class="view">
+    <div class="main-header">
+      <div>
+        <div class="main-title" style="color:#9b93ee;">Semanas especiales</div>
+        <div class="main-sub js-congre">—</div>
+      </div>
+      <button class="btn-esp-add" onclick="toggleFormEspecial()" style="width:36px;height:36px;font-size:22px;">+</button>
+    </div>
+
+    <div id="especiales-lista"><div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div></div>
+
+    <div id="especiales-form" style="display:none;background:#1e2023;border:1px solid #2e3033;border-radius:14px;padding:14px 16px;margin-top:12px;">
+      <select id="esp-tipo" onchange="actualizarLabelFechaEsp()" class="esp-select">
+        <option value="conmemoracion">Conmemoración</option>
+        <option value="superintendente">Visita superintendente</option>
+        <option value="asamblea">Asamblea</option>
+      </select>
+      <div class="esp-field">
+        <label id="esp-fecha-label" class="esp-label">Fecha exacta del evento</label>
+        <input type="date" id="esp-fecha" class="esp-date-input">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn-secondary" onclick="toggleFormEspecial()" style="flex:1;">Cancelar</button>
+        <button class="btn-save" onclick="guardarEspecial()" style="flex:2;">Guardar</button>
+      </div>
+    </div>
 
     <div style="height:2rem;"></div>
   </div>
@@ -235,10 +256,47 @@
     </div>
   </div>
 
+  <!-- ── CHAT FAB ── -->
+  <button id="chat-fab" class="chat-fab" onclick="openChatPanel()" style="display:none;" title="Notas compartidas">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <div id="chat-overlay" class="chat-overlay" style="display:none;" onclick="if(event.target===this)closeChatPanel()">
+    <div class="chat-panel">
+      <div class="chat-panel-body">
+        <div class="chat-panel-head">
+          <span id="chat-panel-titulo" class="chat-panel-title">Notas — Congregación</span>
+          <button class="chat-close-btn" onclick="closeChatPanel()">✕</button>
+        </div>
+        <div id="chat-loading" style="display:none;text-align:center;padding:2rem;color:#555;font-size:13px;">Cargando…</div>
+        <div id="chat-error"  style="display:none;"></div>
+        <div id="chat-empty"  style="display:none;text-align:center;padding:2rem;color:#555;font-size:13px;">Sin notas todavía.</div>
+        <div id="chat-list"   class="chat-list" style="display:none;"></div>
+        <div class="chat-composer">
+          <textarea id="chat-mensaje" class="chat-textarea" placeholder="Escribí una nota…" rows="2"></textarea>
+          <button class="chat-send-btn" onclick="sendChatNota(this)">Publicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="chat-edit-modal" class="chat-edit-modal" style="display:none;" onclick="if(event.target===this)closeChatEdit()">
+    <div class="chat-edit-card">
+      <div style="font-size:14px;font-weight:600;color:#ccc;margin-bottom:10px;">Editar nota</div>
+      <textarea id="chat-edit-texto" class="chat-textarea" rows="4"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn-secondary" onclick="closeChatEdit()" style="flex:1;padding:9px;">Cancelar</button>
+        <button class="btn-primary" onclick="confirmarEditNota()" style="flex:2;padding:9px;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /.app -->
 
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="../ui-utils.js?v=1.4"></script>
-<script type="module" src="app.js?v=1.0"></script>
+<script type="module" src="app.js?v=1.1"></script>
 </body>
 </html>

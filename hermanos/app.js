@@ -1,6 +1,6 @@
 import { db } from '../firebase.js';
 import {
-  collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, orderBy
+  collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, orderBy, limit, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });
@@ -70,6 +70,7 @@ function showView(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
   document.getElementById('btn-home').classList.toggle('visible', id !== 'view-cover');
+  if (id === 'view-cover') hideChatFab(); else showChatFab();
 }
 
 function norm(s) {
@@ -130,7 +131,17 @@ window.pinDelete = function() {
   updatePinDots();
 };
 
+let _pinTarget = 'hermanos'; // 'hermanos' | 'especiales'
+
 window.goToPin = function() {
+  _pinTarget = 'hermanos';
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-modal-hermanos').style.display = 'flex';
+};
+
+window.goToPinEspeciales = function() {
+  _pinTarget = 'especiales';
   pinBuffer = '';
   updatePinDots();
   document.getElementById('pin-modal-hermanos').style.display = 'flex';
@@ -150,7 +161,8 @@ function checkPin() {
   if (pinBuffer === pinEncargado) {
     pinBuffer = ''; updatePinDots();
     document.getElementById('pin-modal-hermanos').style.display = 'none';
-    cargarYMostrar();
+    if (_pinTarget === 'especiales') window.goToEspeciales();
+    else cargarYMostrar();
   } else {
     document.getElementById('pin-error').textContent = 'PIN incorrecto';
     pinBuffer = ''; updatePinDots();
@@ -178,8 +190,12 @@ async function cargarYMostrar() {
     document.getElementById('hermanos-list').innerHTML =
       `<div class="error-wrap">Error al cargar: ${e.message}</div>`;
   }
-  cargarEspeciales();
 }
+
+window.goToEspeciales = function() {
+  showView('view-especiales');
+  cargarEspeciales();
+};
 
 // ─────────────────────────────────────────
 //   RENDER LISTA
@@ -421,4 +437,136 @@ window.eliminarEspecial = async function(lunes) {
     renderEspecialesList();
     uiToast('Eliminada', 'success');
   } catch(e) { await uiAlert('Error: ' + e.message); }
+};
+
+// ─────────────────────────────────────────
+//   CHAT / NOTAS — solo canal Congregación, autor "Administrador"
+// ─────────────────────────────────────────
+const CHAT_AUTOR = 'Administrador';
+
+function chatNotasCol() {
+  return collection(db, 'congregaciones', CONGRE_ID, 'chatNotas', 'congregacion', 'mensajes');
+}
+
+function getMisIdsAdmin() {
+  try { return JSON.parse(sessionStorage.getItem('chatMisIdsAdmin') || '[]'); }
+  catch { return []; }
+}
+function addMiIdAdmin(id) {
+  const arr = getMisIdsAdmin(); arr.push(id);
+  sessionStorage.setItem('chatMisIdsAdmin', JSON.stringify(arr));
+}
+
+function showChatFab() {
+  const fab = document.getElementById('chat-fab');
+  if (fab) fab.style.display = 'flex';
+}
+function hideChatFab() {
+  const fab = document.getElementById('chat-fab');
+  if (fab) fab.style.display = 'none';
+}
+
+window.openChatPanel = function() {
+  const overlay = document.getElementById('chat-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  refreshChatNotas();
+};
+
+window.closeChatPanel = function() {
+  const overlay = document.getElementById('chat-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+function escapeHtml(str) {
+  return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+}
+
+async function refreshChatNotas() {
+  const loadEl = document.getElementById('chat-loading');
+  const listEl = document.getElementById('chat-list');
+  const emptyEl = document.getElementById('chat-empty');
+  const errEl = document.getElementById('chat-error');
+  if (loadEl) { loadEl.style.display = ''; listEl.style.display = 'none'; if(emptyEl) emptyEl.style.display='none'; if(errEl) errEl.style.display='none'; }
+  try {
+    const snap = await getDocs(query(chatNotasCol(), orderBy('createdAt', 'desc'), limit(80)));
+    if (loadEl) loadEl.style.display = 'none';
+    const misIds = getMisIdsAdmin();
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!items.length) { if(emptyEl) emptyEl.style.display=''; return; }
+    listEl.innerHTML = items.map(n => {
+      const esMio = misIds.includes(n.id);
+      const fecha = n.createdAt?.toDate ? n.createdAt.toDate() : new Date();
+      const fechaStr = `${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')} ${String(fecha.getHours()).padStart(2,'0')}:${String(fecha.getMinutes()).padStart(2,'0')}`;
+      const acciones = esMio ? `<div class="chat-item-actions"><button class="chat-btn-edit" onclick="abrirEditNota('${n.id}',${JSON.stringify(n.texto||'').replace(/</g,'\\u003c')})">Editar</button><button class="chat-btn-del" onclick="eliminarNota('${n.id}')">Eliminar</button></div>` : '';
+      return `<div class="chat-item"><div class="chat-item-head"><span class="chat-item-author">${escapeHtml(n.autor||'?')}</span><span class="chat-item-date">${fechaStr}</span></div><div class="chat-item-text">${escapeHtml(n.texto||'')}</div>${acciones}</div>`;
+    }).join('');
+    listEl.style.display = '';
+  } catch(err) {
+    if (loadEl) loadEl.style.display = 'none';
+    if (errEl) { errEl.innerHTML = `<div class="error-wrap" style="margin:8px 12px;font-size:12px;">Error: ${err.message}</div>`; errEl.style.display = ''; }
+  }
+}
+
+window.sendChatNota = async function(btnEl) {
+  const texto = document.getElementById('chat-mensaje').value.trim();
+  if (!texto) { await uiAlert('Escribí una nota antes de publicar.', 'Mensaje vacío'); return; }
+  if (btnEl) btnEl.disabled = true;
+  try {
+    const ref = await addDoc(chatNotasCol(), {
+      autor: CHAT_AUTOR, texto,
+      createdAt: Timestamp.now(),
+      canal: 'congregacion', grupo: 'C',
+    });
+    addMiIdAdmin(ref.id);
+    document.getElementById('chat-mensaje').value = '';
+    await refreshChatNotas();
+    uiToast('Nota publicada', 'success');
+  } catch(err) {
+    await uiAlert(`No se pudo publicar: ${err.message}`, 'Error');
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+  }
+};
+
+let _chatEditDocId = null;
+
+window.abrirEditNota = function(docId, textoActual) {
+  _chatEditDocId = docId;
+  const ta = document.getElementById('chat-edit-texto');
+  if (ta) ta.value = textoActual;
+  document.getElementById('chat-edit-modal').style.display = 'flex';
+};
+
+window.closeChatEdit = function() {
+  document.getElementById('chat-edit-modal').style.display = 'none';
+  _chatEditDocId = null;
+};
+
+window.confirmarEditNota = async function() {
+  const texto = document.getElementById('chat-edit-texto').value.trim();
+  if (!texto || !_chatEditDocId) return;
+  try {
+    await updateDoc(doc(chatNotasCol(), _chatEditDocId), { texto });
+    closeChatEdit();
+    await refreshChatNotas();
+    uiToast('Nota actualizada', 'success');
+  } catch(err) {
+    await uiAlert('Error al editar: ' + err.message);
+  }
+};
+
+window.eliminarNota = async function(docId) {
+  const ok = await uiConfirm({ title: 'Eliminar nota', msg: '¿Eliminar este mensaje?', confirmText: 'Eliminar', type: 'danger' });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(chatNotasCol(), docId));
+    const misIds = getMisIdsAdmin().filter(id => id !== docId);
+    sessionStorage.setItem('chatMisIdsAdmin', JSON.stringify(misIds));
+    await refreshChatNotas();
+    uiToast('Nota eliminada', 'success');
+  } catch(err) {
+    await uiAlert('Error: ' + err.message);
+  }
 };

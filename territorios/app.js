@@ -1602,7 +1602,9 @@ function getScopeLabel(scope) {
 }
 
 function getAutorLabel() {
-  return getScopeLabel(chatScope);
+  // Always the group name, regardless of which channel we're posting to
+  const g = GRUPOS.find(x => String(x.id) === String(selectedGrupo));
+  return g?.label || `Grupo ${selectedGrupo}`;
 }
 
 function getMisIds() {
@@ -1696,7 +1698,7 @@ async function sendChatNota(btnEl) {
   if (btnEl) btnEl.disabled = true;
   try {
     const ref = await addDoc(notasColByScope(chatScope), {
-      autor: getScopeLabel(chatScope),
+      autor: getAutorLabel(),
       texto,
       createdAt: Timestamp.now(),
       canal: chatScope,
@@ -1729,7 +1731,7 @@ window.confirmarEditNota = async function() {
   const texto = document.getElementById('chat-edit-texto').value.trim();
   if (!texto || !_chatEditDocId) return;
   try {
-    await updateDoc(doc(db, notasColByScope(chatScope).path, _chatEditDocId), { texto });
+    await updateDoc(doc(notasColByScope(chatScope), _chatEditDocId), { texto });
     closeChatEdit();
     await refreshChatNotas();
     uiToast('Nota actualizada', 'success');
