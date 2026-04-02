@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Completar perfil — Ziv</title>
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <meta name="theme-color" content="#1a1c1f">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+      background: #1a1c1f;
+      background-image:
+        radial-gradient(ellipse at 18% 22%, rgba(55,138,221,0.13) 0%, transparent 52%),
+        radial-gradient(ellipse at 82% 78%, rgba(127,119,221,0.11) 0%, transparent 52%);
+      color: #e8e8e8;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 360px;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── Avatar ── */
+    .avatar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #2a2d30;
+      border: 2px solid #3a3a3a;
+      object-fit: cover;
+    }
+    .avatar-fallback {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(127,119,221,0.18);
+      border: 2px solid rgba(127,119,221,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: #7F77DD;
+    }
+    .avatar-label {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* ── Títulos ── */
+    .titulo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      text-align: center;
+    }
+    .subtitulo {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      margin-top: -12px;
+    }
+
+    /* ── Card del formulario ── */
+    .card {
+      width: 100%;
+      background: #232628;
+      border: 1px solid #2e3033;
+      border-radius: 18px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Campos ── */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .field input,
+    .field select {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #eee;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    .field input:focus,
+    .field select:focus { border-color: #7F77DD; }
+    .field select option { background: #232628; }
+
+    /* ── Botón ── */
+    .btn-primary {
+      width: 100%;
+      background: #7F77DD;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover   { opacity: 0.88; }
+    .btn-primary:active  { opacity: 0.75; }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Match info ── */
+    .match-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .match-badge.ok       { background: rgba(29,158,117,0.12); color: #1D9E75; border: 1px solid rgba(29,158,117,0.2); }
+    .match-badge.pendiente { background: rgba(239,159,39,0.10); color: #EF9F27; border: 1px solid rgba(239,159,39,0.2); }
+    .match-badge.sin_match { background: rgba(163,45,45,0.10);  color: #F09595; border: 1px solid rgba(163,45,45,0.2); }
+
+    /* ── Footer ── */
+    .footer { font-size: 12px; color: #3a3a3a; text-align: center; }
+
+    /* ── Loading ── */
+    #loading-state {
+      color: #555;
+      font-size: 14px;
+      padding: 40px 0;
+      text-align: center;
+    }
+    #form-state { display: none; width: 100%; }
+  </style>
+</head>
+<body>
+
+  <div class="wrap">
+    <div id="loading-state">Cargando…</div>
+
+    <div id="form-state">
+      <div class="avatar-wrap" style="margin-bottom:4px">
+        <img id="avatar-img" class="avatar" style="display:none" alt="Foto de perfil">
+        <div id="avatar-fallback" class="avatar-fallback"></div>
+        <div class="avatar-label">Cuenta de Google</div>
+      </div>
+
+      <div class="titulo" style="margin:12px 0 4px">Completá tu perfil</div>
+      <div class="subtitulo" id="congre-sub">—</div>
+
+      <div class="card" style="margin-top:16px">
+
+        <div id="match-badge-wrap"></div>
+
+        <div class="field">
+          <label>Tu nombre</label>
+          <input id="input-nombre" type="text" placeholder="Como aparece en la congregación" autocomplete="name">
+        </div>
+
+        <div class="field">
+          <label>Sexo</label>
+          <select id="input-sexo">
+            <option value="">Seleccionar…</option>
+            <option value="H">Hermano</option>
+            <option value="M">Hermana</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Fecha de nacimiento</label>
+          <input id="input-fecha" type="date" max="">
+        </div>
+
+        <button class="btn-primary" id="btn-guardar" onclick="guardarPerfil()">Guardar y continuar</button>
+      </div>
+
+      <div class="footer" style="margin-top:8px">Tus datos son de uso interno de la congregación</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import './auth.js';
+
+    const elLoading    = document.getElementById('loading-state');
+    const elForm       = document.getElementById('form-state');
+    const elAvatar     = document.getElementById('avatar-img');
+    const elFallback   = document.getElementById('avatar-fallback');
+    const elNombre     = document.getElementById('input-nombre');
+    const elSexo       = document.getElementById('input-sexo');
+    const elFecha      = document.getElementById('input-fecha');
+    const elBtn        = document.getElementById('btn-guardar');
+    const elCongreSub  = document.getElementById('congre-sub');
+    const elMatchWrap  = document.getElementById('match-badge-wrap');
+
+    // Fecha máxima = hoy
+    elFecha.max = new Date().toISOString().split('T')[0];
+
+    function iniciales(nombre) {
+      return (nombre || '?').trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('');
+    }
+
+    function renderMatch(matchEstado, displayName) {
+      const msgs = {
+        ok:        { cls: 'ok',       txt: `✓ Perfil vinculado con tu registro en la congregación` },
+        pendiente: { cls: 'pendiente', txt: `⚠ Coincidencia ambigua — el admin revisará tu cuenta` },
+        sin_match: { cls: 'sin_match', txt: `✗ No encontramos tu nombre. Contactá al encargado para vincularte manualmente` },
+      };
+      const m = msgs[matchEstado];
+      if (!m) return;
+      elMatchWrap.innerHTML = `<div class="match-badge ${m.cls}">${m.txt}</div>`;
+    }
+
+    window.addEventListener('authStateChanged', ({ detail: { user } }) => {
+      if (!user) {
+        window.location.replace('/');
+        return;
+      }
+
+      if (!user.primerLogin) {
+        window.location.replace('/');
+        return;
+      }
+
+      // Rellenar UI
+      const congre = sessionStorage.getItem('congreNombre') || user.congregacionId || '';
+      elCongreSub.textContent = congre ? `Congregación ${congre}` : 'Ziv';
+
+      if (user.photoURL) {
+        elAvatar.src = user.photoURL;
+        elAvatar.style.display = 'block';
+        elFallback.style.display = 'none';
+      } else {
+        elFallback.textContent = iniciales(user.displayName);
+        elFallback.style.display = 'flex';
+      }
+
+      elNombre.value = user.displayName || '';
+      if (user.sexo)  elSexo.value  = user.sexo;
+      if (user.birthDate) elFecha.value = user.birthDate;
+
+      renderMatch(user.matchEstado, user.displayName);
+
+      elLoading.style.display = 'none';
+      elForm.style.display    = 'flex';
+      elForm.style.flexDirection = 'column';
+      elForm.style.alignItems    = 'center';
+      elForm.style.gap           = '0';
+    });
+
+    // Si auth ya estaba listo antes de que el listener se registrara
+    window.waitForAuth().then(user => {
+      if (!user) window.location.replace('/');
+    });
+
+    window.guardarPerfil = async function() {
+      const nombre = elNombre.value.trim();
+      const sexo   = elSexo.value;
+      const fecha  = elFecha.value;
+
+      if (!nombre) { elNombre.focus(); return; }
+      if (!sexo)   { elSexo.focus();  return; }
+
+      elBtn.disabled = true;
+      elBtn.textContent = 'Guardando…';
+
+      try {
+        await window.updateUserProfile({
+          displayName: nombre,
+          sexo,
+          birthDate:   fecha || null,
+          primerLogin: false,
+        });
+        window.location.replace('/');
+      } catch (err) {
+        console.error(err);
+        elBtn.disabled    = false;
+        elBtn.textContent = 'Guardar y continuar';
+        alert('Error al guardar. Intentá de nuevo.');
+      }
+    };
+  </script>
+
+</body>
+</html>

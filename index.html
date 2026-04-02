@@ -210,6 +210,99 @@
       color: #5f54c5;
     }
 
+    /* ── Vista de autenticación ── */
+    .auth-card {
+      width: 100%;
+      background: #232628;
+      border: 1px solid #2e3033;
+      border-radius: 18px;
+      padding: 1.5rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+    .auth-congre-label {
+      font-size: 12px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    .auth-congre-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e8e8e8;
+      margin-top: 2px;
+    }
+    .auth-divider {
+      width: 100%;
+      height: 1px;
+      background: #2e3033;
+    }
+    .auth-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e8e8e8;
+    }
+    .auth-sub {
+      font-size: 13px;
+      color: #666;
+      margin-top: -8px;
+    }
+    .btn-google {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #2a2d30;
+      border: 1px solid #3a3a3a;
+      border-radius: 10px;
+      padding: 12px 18px;
+      color: #e8e8e8;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-google:hover  { background: #333639; border-color: #4a4a4a; }
+    .btn-google:active { background: #222427; }
+    .btn-google:disabled { opacity: 0.4; cursor: default; }
+    .auth-note { font-size: 12px; color: #444; }
+
+    /* ── Usuario logueado (mini-chip en menú) ── */
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      background: #232628;
+      border: 1px solid #2e3033;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #aaa;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .user-chip:hover { background: #2a2d30; }
+    .user-chip img {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .user-chip-avatar-fallback {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(127,119,221,0.3);
+      color: #7F77DD;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
     /* ── Botón instalar PWA ── */
     .btn-instalar {
       position: fixed;
@@ -258,6 +351,39 @@
         <div class="loading">Cargando congregaciones…</div>
       </div>
       <div class="cs-footer">Ziv · Sistema interno</div>
+    </div>
+  </div>
+
+  <!-- ── VISTA: AUTENTICACIÓN ── -->
+  <div id="view-auth" class="view" style="display:none">
+    <div class="wrap">
+      <div class="logo">
+        <div class="cs-logo-placeholder"></div>
+      </div>
+
+      <div class="auth-card">
+        <div>
+          <div class="auth-congre-label">Congregación seleccionada</div>
+          <div class="auth-congre-name" id="auth-congre-name">—</div>
+        </div>
+        <div class="auth-divider"></div>
+        <div class="auth-title">Iniciá sesión para continuar</div>
+        <div class="auth-sub">Usamos tu cuenta de Google para identificarte dentro de la congregación</div>
+
+        <button class="btn-google" id="btn-google" onclick="handleGoogleSignIn()">
+          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continuar con Google
+        </button>
+
+        <div class="auth-note">Solo para uso interno de la congregación</div>
+      </div>
+
+      <a class="cs-back-btn" href="#" onclick="volverACongres();return false;">← Cambiar congregación</a>
     </div>
   </div>
 
@@ -330,6 +456,7 @@
       </a>
 
       <div class="cs-footer" id="menu-footer"></div>
+      <div id="user-chip-wrap"></div>
       <a class="cs-back-btn" href="#" onclick="volverACongres();return false;">← Congregaciones</a>
     </div>
   </div>
@@ -386,6 +513,7 @@
   <script src="ui-utils.js?v=1.3"></script>
   <script type="module">
     import { db } from './firebase.js';
+    import './auth.js';
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
     const PALETA = [
@@ -398,7 +526,7 @@
     ];
 
     function iniciales(nombre) {
-      return nombre.trim().split(/\s+/).slice(0,2).map(w => w.charAt(0).toUpperCase()).join('');
+      return (nombre || '?').trim().split(/\s+/).slice(0,2).map(w => w.charAt(0).toUpperCase()).join('');
     }
 
     function hexToRgba(hex, a) {
@@ -437,9 +565,34 @@
       congreIcon.style.color      = col;
       titulo.textContent = nombre;
       document.getElementById('menu-footer').textContent = nombre + ' · App interna';
+      renderUserChip();
       btnAdmin.classList.add('hidden');
       document.body.classList.add('en-menu');
       showView('view-menu');
+    }
+
+    function mostrarViewAuth(nombre) {
+      document.getElementById('auth-congre-name').textContent = nombre;
+      btnAdmin.classList.add('hidden');
+      showView('view-auth');
+    }
+
+    function renderUserChip() {
+      const user = window.currentUser;
+      const wrap = document.getElementById('user-chip-wrap');
+      if (!user) { wrap.innerHTML = ''; return; }
+
+      const avatarHtml = user.photoURL
+        ? `<img src="${user.photoURL}" alt="">`
+        : `<div class="user-chip-avatar-fallback">${iniciales(user.displayName)}</div>`;
+
+      wrap.innerHTML = `
+        <button class="user-chip" onclick="handleSignOut()">
+          ${avatarHtml}
+          <span>${user.displayName || user.email}</span>
+          <span style="color:#444;font-size:11px">· Salir</span>
+        </button>
+      `;
     }
 
     window.volverACongres = function() {
@@ -450,6 +603,62 @@
       document.body.classList.remove('en-menu');
       showView('view-congres');
     };
+
+    window.handleGoogleSignIn = async function() {
+      const btn = document.getElementById('btn-google');
+      btn.disabled = true;
+      btn.textContent = 'Conectando…';
+      try {
+        await window.signInWithGoogle();
+        // onAuthStateChanged en auth.js dispara authStateChanged → lo manejamos abajo
+      } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continuar con Google`;
+      }
+    };
+
+    window.handleSignOut = async function() {
+      await window.signOutUser();
+      window.volverACongres();
+    };
+
+    // Reaccionar a cambios de auth (login completado, sesión restaurada)
+    window.addEventListener('authStateChanged', ({ detail: { user } }) => {
+      const enViewAuth = document.getElementById('view-auth').style.display !== 'none';
+      if (!enViewAuth) return;
+
+      if (!user) return; // se deslogueó estando en view-auth (no debería pasar)
+
+      const nombre = sessionStorage.getItem('congreNombre') || '';
+      const color  = sessionStorage.getItem('congreColor')  || '';
+
+      if (user.primerLogin) {
+        window.location.href = '/perfil.html';
+      } else {
+        mostrarMenu(nombre, color);
+      }
+    });
+
+    async function navegarDespuesDeAuth(nombre, color) {
+      const user = await window.waitForAuth();
+      if (!user) {
+        mostrarViewAuth(nombre);
+        return;
+      }
+      if (user.primerLogin) {
+        window.location.href = '/perfil.html';
+        return;
+      }
+      mostrarMenu(nombre, color);
+    }
 
     async function cargarCongres() {
       const list = document.getElementById('congre-list');
@@ -486,7 +695,7 @@
             sessionStorage.setItem('congreId',     id);
             sessionStorage.setItem('congreNombre', nombre);
             sessionStorage.setItem('congreColor',  c.color);
-            mostrarMenu(nombre, c.color);
+            navegarDespuesDeAuth(nombre, c.color);
           });
           list.appendChild(card);
         });
@@ -496,12 +705,18 @@
       }
     }
 
-    // Si ya hay sesión activa → ir directo al menú
+    // Si ya hay sesión de congregación guardada → validar auth y navegar
     const savedId     = sessionStorage.getItem('congreId');
     const savedNombre = sessionStorage.getItem('congreNombre');
     const savedColor  = sessionStorage.getItem('congreColor');
     if (savedId && savedNombre) {
-      mostrarMenu(savedNombre, savedColor);
+      navegarDespuesDeAuth(savedNombre, savedColor);
+    }
+
+    // Mostrar toast si viene de un authGuard que rechazó
+    if (new URLSearchParams(location.search).get('sin_acceso')) {
+      history.replaceState({}, '', '/');
+      window.waitForAuth().then(() => uiToast('No tenés acceso a esa sección', 'error'));
     }
 
     cargarCongres();
