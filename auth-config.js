@@ -15,6 +15,7 @@ export const APP_ROLES = {
   PRECURSOR_AUXILIAR:     'precursor_auxiliar',
   PUBLICADOR:             'publicador',
   PENDIENTE:              'pendiente',  // sin match confirmado — acceso bloqueado
+  ANONIMO:               'anonimo',    // sesión anónima — acceso igual que antes del sistema de perfiles
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -82,6 +83,15 @@ export const PERMISOS = {
 
   pendiente: [
     // Sin acceso hasta que el admin confirme el match
+  ],
+
+  // Acceso anónimo: mismo nivel que antes del sistema de perfiles.
+  // Los módulos siguen protegidos por PIN internamente.
+  anonimo: [
+    'acceso_territorios',
+    'acceso_asignaciones',
+    'acceso_vm',
+    'acceso_hermanos',
   ],
 
 };

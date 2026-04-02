@@ -1,12 +1,15 @@
 // auth.js — Autenticación y perfiles de usuario
 // Importar en cada página con: import './auth.js' (o '../auth.js' desde módulos)
 // Expone en window: waitForAuth, currentUser, hasPermission, authGuard,
-//                   signInWithGoogle, signOutUser, updateUserProfile
+//                   signInWithGoogle, signInAnonymousUser, linkWithGoogle,
+//                   signOutUser, updateUserProfile
 
 import { db, auth } from './firebase.js';
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signInAnonymously,
+  linkWithPopup,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
@@ -68,7 +71,28 @@ async function loadOrCreateUser(fbUser) {
     return { ...snap.data(), _firebaseUser: fbUser };
   }
 
-  // Primera vez — intentar match automático con publicadores
+  // Sesión anónima — doc mínimo, sin matching, sin perfil obligatorio
+  if (fbUser.isAnonymous) {
+    const data = {
+      uid:               fbUser.uid,
+      email:             null,
+      displayName:       null,
+      photoURL:          null,
+      birthDate:         null,
+      sexo:              null,
+      matchedPublisherId: null,
+      congregacionId:    sessionStorage.getItem('congreId') || null,
+      appRol:            'anonimo',
+      matchEstado:       'anonimo',
+      isAnonymous:       true,
+      primerLogin:       false,
+      createdAt:         serverTimestamp(),
+    };
+    await setDoc(ref, data);
+    return { ...data, _firebaseUser: fbUser };
+  }
+
+  // Usuario Google — intentar match automático con publicadores
   const congreId = sessionStorage.getItem('congreId');
   let matchedPublisherId = null;
   let matchEstado        = 'sin_match';
@@ -94,6 +118,7 @@ async function loadOrCreateUser(fbUser) {
     congregacionId:    congreId || null,
     appRol:            matchEstado === 'ok' ? 'publicador' : 'pendiente',
     matchEstado,
+    isAnonymous:       false,
     primerLogin:       true,
     createdAt:         serverTimestamp(),
   };
@@ -153,6 +178,57 @@ window.signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
   const result   = await signInWithPopup(auth, provider);
   return result.user;
+};
+
+/** Inicia sesión anónima (flujo "Omitir por ahora"). */
+window.signInAnonymousUser = async () => {
+  await signInAnonymously(auth);
+  // onAuthStateChanged dispara y crea el doc automáticamente
+};
+
+/**
+ * Vincula una sesión anónima existente con una cuenta de Google.
+ * Después del link, el usuario tiene `primerLogin: true` y se redirige a perfil.html.
+ */
+window.linkWithGoogle = async () => {
+  if (!_user?.isAnonymous) throw new Error('No hay sesión anónima activa');
+
+  const provider = new GoogleAuthProvider();
+  const result   = await linkWithPopup(auth.currentUser, provider);
+  const fbUser   = result.user;
+
+  const congreId = sessionStorage.getItem('congreId') || _user.congregacionId;
+  let matchedPublisherId = null;
+  let matchEstado        = 'sin_match';
+
+  if (congreId && fbUser.displayName) {
+    const m = await tryMatch(fbUser.displayName, congreId);
+    if (m.pub) {
+      matchedPublisherId = m.pub.id;
+      matchEstado        = 'ok';
+    } else if (m.confidence === 'ambiguous') {
+      matchEstado = 'pendiente';
+    }
+  }
+
+  const updates = {
+    email:             fbUser.email,
+    displayName:       fbUser.displayName || '',
+    photoURL:          fbUser.photoURL    || null,
+    matchedPublisherId,
+    congregacionId:    congreId || null,
+    appRol:            matchEstado === 'ok' ? 'publicador' : 'pendiente',
+    matchEstado,
+    isAnonymous:       false,
+    primerLogin:       true,
+  };
+
+  const ref = doc(db, 'usuarios', fbUser.uid);
+  await updateDoc(ref, updates);
+  Object.assign(_user, updates, { _firebaseUser: fbUser });
+
+  window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: _user } }));
+  return _user;
 };
 
 /** Cierra sesión. */
