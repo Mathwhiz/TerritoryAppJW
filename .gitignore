@@ -9,3 +9,4 @@ ui-utils-old.js
 tools/NWS Desktop Personas (157).csv
 .aidesigner/*
 !.aidesigner/.gitkeep
+node_modules/

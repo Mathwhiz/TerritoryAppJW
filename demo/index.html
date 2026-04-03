@@ -27,6 +27,22 @@
       --teal:      #1D9E75;  --teal-bg:   rgba(29,158,117,0.12);
       --body-bg:   #0e1012;
       --glow:      rgba(127,119,221,0.09);
+      --bg-primary:     var(--bg);
+      --bg-card:        var(--surface);
+      --bg-hover:       var(--surface-h);
+      --border-primary: var(--border);
+      --border-light:   #3a3d42;
+      --border-input:   var(--border-h);
+      --text-primary:   var(--text);
+      --text-secondary: var(--text-2);
+      --text-muted:     var(--text-3);
+      --text-dim:       var(--text-3);
+      --shadow-card:    0 2px 12px rgba(0,0,0,.25);
+      --shadow-hover:   0 8px 28px rgba(0,0,0,.24);
+      --congre-sur:     #7F77DD;
+      --congre-norte:   #378ADD;
+      --congre-este:    #97C459;
+      --congre-oeste:   #EF9F27;
     }
 
     /* ── Tokens: light ── */
@@ -42,6 +58,18 @@
       --accent-bg: rgba(127,119,221,0.08);
       --body-bg:   #e2e3e8;
       --glow:      rgba(127,119,221,0.06);
+      --bg-primary:     var(--bg);
+      --bg-card:        var(--surface);
+      --bg-hover:       var(--surface-h);
+      --border-primary: var(--border);
+      --border-light:   #d2d3dd;
+      --border-input:   var(--border-h);
+      --text-primary:   var(--text);
+      --text-secondary: var(--text-2);
+      --text-muted:     var(--text-3);
+      --text-dim:       var(--text-3);
+      --shadow-card:    0 8px 24px rgba(47,55,78,.08);
+      --shadow-hover:   0 14px 34px rgba(47,55,78,.14);
     }
 
     html, body {
@@ -94,6 +122,10 @@
     }
     @media (min-width: 900px) {
       .shell { max-width: 520px; }
+    }
+    @media (min-width: 1100px) {
+      .shell[data-screen="s2"] { max-width: 920px; }
+      .shell[data-screen="s4"] { max-width: 1180px; }
     }
 
     /* ── Screen system ── */
@@ -275,7 +307,7 @@
     #s2 { padding: 0; }
 
     .screen-header {
-      padding: 48px 24px 20px;
+      padding: 48px 68px 20px;
       flex-shrink: 0;
       position: relative;
       text-align: center;
@@ -288,33 +320,53 @@
     .screen-sub { font-size: 14px; color: var(--text-2); }
 
     /* Congregation list */
-    .congre-list { display: flex; flex-direction: column; gap: 10px; padding: 0 24px 16px; }
+    .congre-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 0 24px 16px;
+      max-width: 780px;
+      margin: 0 auto;
+    }
     .congre-item { display: block; cursor: pointer; }
     .congre-item input { position: absolute; opacity: 0; pointer-events: none; }
     .congre-card {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px;
-      background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
-      transition: border-color .15s, background .15s;
+      gap: 14px;
+      padding: 16px 18px;
+      background: linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 92%, var(--congre-color, var(--accent)) 8%) 100%);
+      border: 1px solid color-mix(in srgb, var(--border) 72%, var(--congre-color, var(--accent)) 28%);
+      border-radius: 18px;
+      transition: border-color .18s, background .18s, transform .12s, box-shadow .18s;
+      box-shadow: 0 2px 12px rgba(0,0,0,.18);
     }
     .congre-item input:checked + .congre-card {
-      border-color: var(--accent);
-      background: var(--accent-bg);
+      border-color: color-mix(in srgb, var(--congre-color, var(--accent)) 64%, white 0%);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 80%, var(--congre-color, var(--accent)) 20%) 0%, color-mix(in srgb, var(--surface) 72%, var(--congre-color, var(--accent)) 28%) 100%);
+      box-shadow: 0 10px 28px rgba(0,0,0,.24), 0 0 0 1px color-mix(in srgb, var(--congre-color, var(--accent)) 50%, transparent 50%);
     }
-    .congre-card:hover { border-color: var(--border-h); }
+    .congre-card:hover {
+      border-color: color-mix(in srgb, var(--congre-color, var(--accent)) 52%, white 0%);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 84%, var(--congre-color, var(--accent)) 16%) 0%, color-mix(in srgb, var(--surface) 76%, var(--congre-color, var(--accent)) 24%) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.24), 0 0 0 1px color-mix(in srgb, var(--congre-color, var(--accent)) 46%, transparent 54%);
+    }
     .congre-card-left { display: flex; align-items: center; gap: 12px; }
     .congre-icon {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--bg); border: 1px solid var(--border);
+      width: 42px; height: 42px; border-radius: 13px;
+      background: color-mix(in srgb, var(--congre-color, var(--accent)) 16%, transparent 84%);
+      border: 1px solid color-mix(in srgb, var(--congre-color, var(--accent)) 30%, transparent 70%);
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; color: var(--text-2);
+      flex-shrink: 0; color: var(--congre-color, var(--accent));
       transition: background .3s, border-color .3s;
     }
-    .congre-name { font-size: 15px; font-weight: 500; color: var(--text); }
+    .congre-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .congre-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .congre-meta { font-size: 12px; color: var(--text-2); }
 
     .radio {
       width: 20px; height: 20px; border-radius: 50%;
-      border: 2px solid var(--text-2); flex-shrink: 0;
+      border: 2px solid color-mix(in srgb, var(--congre-color, var(--accent)) 40%, var(--text-2) 60%); flex-shrink: 0;
       position: relative; transition: border-color .2s;
     }
     .radio::after {
@@ -322,10 +374,10 @@
       top: 50%; left: 50%;
       transform: translate(-50%,-50%) scale(0);
       width: 10px; height: 10px; border-radius: 50%;
-      background: var(--accent);
+      background: var(--congre-color, var(--accent));
       transition: transform .2s cubic-bezier(.34,1.56,.64,1);
     }
-    .congre-item input:checked + .congre-card .radio { border-color: var(--accent); }
+    .congre-item input:checked + .congre-card .radio { border-color: var(--congre-color, var(--accent)); }
     .congre-item input:checked + .congre-card .radio::after { transform: translate(-50%,-50%) scale(1); }
 
     .screen-footer { padding: 12px 24px 28px; flex-shrink: 0; }
@@ -387,18 +439,26 @@
     ════════════════════════════════════════ */
     #s4 { padding: 0; }
 
-    .dash-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 40px 24px 18px;
-      background: var(--bg); border-bottom: 1px solid var(--border);
+    .demo-menu-head {
+      padding: 24px 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
       flex-shrink: 0;
-      transition: background .3s, border-color .3s;
+      max-width: 1120px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .demo-menu-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
     .dash-eyebrow {
       font-size: 11px; font-weight: 700; letter-spacing: .1em;
       text-transform: uppercase; color: var(--accent); margin-bottom: 3px;
     }
-    .dash-title { font-size: 1.2rem; font-weight: 700; letter-spacing: -.02em; }
     .user-avatar {
       width: 36px; height: 36px; border-radius: 50%;
       background: var(--surface); border: 1px solid var(--border);
@@ -407,7 +467,72 @@
       transition: background .3s, border-color .3s;
     }
 
-    .dash-content { padding: 20px 24px 32px; }
+    .menu-congre { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+    .menu-congre-wrapper {
+      position: relative;
+      width: 100%;
+      border-radius: 20px;
+      padding: 3px;
+      overflow: hidden;
+      --neon-color: #7F77DD;
+      --neon-color-dim: rgba(127,119,221,0.3);
+    }
+    .menu-congre-wrapper::before {
+      content: '';
+      position: absolute;
+      aspect-ratio: 1;
+      width: 220%;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(0deg);
+      background: conic-gradient(
+        from 0deg,
+        transparent 0%,
+        transparent 50%,
+        rgba(255,255,255,0.15) 60%,
+        var(--neon-color) 68%,
+        white 73%,
+        var(--neon-color) 78%,
+        var(--neon-color-dim) 87%,
+        transparent 100%
+      );
+      animation: menu-border-spin 2.8s linear infinite;
+      z-index: 0;
+    }
+    @keyframes menu-border-spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .menu-congre-inner {
+      position: relative;
+      background: var(--bg-card);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 1;
+    }
+    .menu-congre-icon {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; font-weight: 800;
+    }
+    .menu-congre-copy { min-width: 0; flex: 1; }
+    #menu-titulo {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dash-content {
+      padding: 8px 24px 32px;
+      max-width: 1120px;
+      width: 100%;
+      margin: 0 auto;
+    }
     .section-label {
       font-size: 11px; font-weight: 700; letter-spacing: .08em;
       text-transform: uppercase; color: var(--text-2); margin-bottom: 14px;
@@ -417,39 +542,101 @@
     @media (min-width: 420px) {
       .module-grid { grid-template-columns: 1fr 1fr; }
     }
+    @media (min-width: 1100px) {
+      .module-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
 
-    .module-card {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 16px;
-      background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
-      cursor: pointer; text-align: left; width: 100%;
+    .cs-nav-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      border-radius: 18px;
+      padding: 1.1rem 1.25rem;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.18s, background 0.18s, transform 0.1s, box-shadow 0.18s;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: var(--shadow-card);
       font-family: inherit;
-      transition: border-color .18s, background .18s, transform .12s, box-shadow .18s;
+      border: 1px solid var(--border-primary);
     }
-    .module-card:hover {
-      border-color: var(--border-h); background: var(--surface-h);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 24px rgba(0,0,0,.18);
+    .cs-nav-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-hover);
     }
-    .module-card:active { transform: scale(.98); box-shadow: none; }
-
-    .mod-icon {
+    .cs-nav-card:active { transform: scale(0.98); box-shadow: none; }
+    .cs-nav-icon {
       width: 46px; height: 46px; border-radius: 13px;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      position: relative; overflow: hidden;
     }
-    .mod-text { display: flex; flex-direction: column; justify-content: center; gap: 3px; }
-    .mod-title { font-size: 15px; font-weight: 700; color: var(--text); }
-    .mod-desc  { font-size: 12px; color: var(--text-2); line-height: 1.35; }
+    .cs-nav-icon::before,
+    .cs-nav-icon::after {
+      content: '';
+      position: absolute; aspect-ratio: 1; width: 220%;
+      top: 50%; left: 50%;
+      z-index: 0;
+    }
+    .cs-nav-icon::before {
+      background: conic-gradient(from 0deg,
+        transparent 0%, transparent 70%,
+        var(--nav-c-dim, rgba(127,119,221,0.2)) 76%,
+        var(--nav-c, #7F77DD) 81%,
+        var(--nav-c-dim, rgba(127,119,221,0.2)) 86%,
+        transparent 92%, transparent 100%);
+      animation: cs-nav-spin 4s linear infinite;
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    .cs-nav-icon::after {
+      background: conic-gradient(from 0deg,
+        transparent 0%, transparent 70%,
+        var(--nav-c-dim, rgba(127,119,221,0.2)) 76%,
+        var(--nav-c, #7F77DD) 80%,
+        var(--nav-c-dim, rgba(127,119,221,0.2)) 85%,
+        transparent 91%, transparent 100%);
+      animation: cs-nav-spin-rev 6s linear infinite;
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    .cs-nav-icon svg { position: relative; z-index: 1; }
+    @keyframes cs-nav-spin     { to { transform: translate(-50%, -50%) rotate(360deg);  } }
+    @keyframes cs-nav-spin-rev { to { transform: translate(-50%, -50%) rotate(-360deg); } }
+    .cs-nav-icon-terr  { --nav-c: #97C459; --nav-c-dim: rgba(151,196,89,0.2); background: rgba(151,196,89,0.13); border: 1px solid rgba(151,196,89,0.22); }
+    .cs-nav-icon-asign { --nav-c: #378ADD; --nav-c-dim: rgba(55,138,221,0.2); background: rgba(55,138,221,0.13); border: 1px solid rgba(55,138,221,0.22); }
+    .cs-nav-icon-herm  { --nav-c: #D85A30; --nav-c-dim: rgba(216,90,48,0.2); background: rgba(216,90,48,0.13); border: 1px solid rgba(216,90,48,0.22); }
+    .cs-nav-icon-vm    { --nav-c: #EF9F27; --nav-c-dim: rgba(239,159,39,0.2); background: rgba(239,159,39,0.13); border: 1px solid rgba(239,159,39,0.22); }
+    .cs-nav-card-terr:hover  { border-color: rgba(151,196,89,0.55); background: #1e2810; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(151,196,89,0.55), 0 4px 20px rgba(151,196,89,0.12); }
+    .cs-nav-card-asign:hover { border-color: rgba(55,138,221,0.55); background: #101e28; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(55,138,221,0.55), 0 4px 20px rgba(55,138,221,0.12); }
+    .cs-nav-card-herm:hover  { border-color: rgba(216,90,48,0.55); background: #2a1711; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(216,90,48,0.55), 0 4px 20px rgba(216,90,48,0.12); }
+    .cs-nav-card-vm:hover    { border-color: rgba(239,159,39,0.55); background: #272010; box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(239,159,39,0.55), 0 4px 20px rgba(239,159,39,0.12); }
+    html.light .cs-nav-card-terr:hover  { border-color: rgba(151,196,89,0.55); background: #f1f8e8; box-shadow: 0 8px 26px rgba(93,130,53,0.18), 0 0 0 1px rgba(151,196,89,0.5); }
+    html.light .cs-nav-card-asign:hover { border-color: rgba(55,138,221,0.52); background: #ebf5ff; box-shadow: 0 8px 26px rgba(43,114,191,0.16), 0 0 0 1px rgba(55,138,221,0.5); }
+    html.light .cs-nav-card-herm:hover  { border-color: rgba(216,90,48,0.52); background: #fff0ea; box-shadow: 0 8px 26px rgba(174,76,41,0.16), 0 0 0 1px rgba(216,90,48,0.5); }
+    html.light .cs-nav-card-vm:hover    { border-color: rgba(239,159,39,0.52); background: #fff7e8; box-shadow: 0 8px 26px rgba(195,131,34,0.16), 0 0 0 1px rgba(239,159,39,0.5); }
+    .cs-nav-title { font-size: 19px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+    .cs-nav-sub   { font-size: 14px; color: var(--text-muted); line-height: 1.4; }
 
     /* Desktop: bigger module cards */
     @media (min-width: 600px) {
-      .dash-header { padding: 44px 28px 20px; }
-      .dash-content { padding: 24px 28px 40px; }
+      .demo-menu-head { padding: 28px 28px 18px; }
+      .dash-content { padding: 10px 28px 40px; }
       .module-grid { gap: 14px; }
-      .module-card { padding: 18px; gap: 16px; }
-      .mod-icon { width: 52px; height: 52px; border-radius: 14px; }
-      .mod-title { font-size: 16px; }
-      .mod-desc  { font-size: 13px; }
+      .cs-nav-card { padding: 1.2rem 1.3rem; gap: 16px; }
+      .cs-nav-icon { width: 52px; height: 52px; border-radius: 14px; }
+      .cs-nav-title { font-size: 20px; }
+      .cs-nav-sub  { font-size: 13px; }
+    }
+    @media (min-width: 900px) {
+      .congre-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .screen-footer { max-width: 780px; margin: 0 auto; width: 100%; }
+    }
+    @media (min-width: 1100px) {
+      .screen-header { padding-top: 54px; }
+      .demo-menu-head { padding: 28px 32px 20px; }
+      .dash-content { padding: 12px 32px 44px; }
     }
 
     /* ── Entrance animations ── */
@@ -467,7 +654,7 @@
 <body>
   <div class="glow" aria-hidden="true"></div>
 
-  <div class="shell">
+  <div class="shell" data-screen="s1">
     <div class="screens">
 
       <!-- ══════════════════════════════════════
@@ -677,53 +864,65 @@
           <form id="form-congre" onsubmit="submitCongre(event)">
             <div class="congre-list">
 
-              <label class="congre-item">
+              <label class="congre-item" style="--congre-color: var(--congre-sur);">
                 <input type="radio" name="congre" value="Sur" onchange="unlockContinue()">
                 <div class="congre-card">
                   <div class="congre-card-left">
                     <div class="congre-icon">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     </div>
-                    <span class="congre-name">Sur</span>
+                    <div class="congre-copy">
+                      <span class="congre-name">Sur</span>
+                      <span class="congre-meta">Comunidad principal</span>
+                    </div>
                   </div>
                   <div class="radio"></div>
                 </div>
               </label>
 
-              <label class="congre-item">
+              <label class="congre-item" style="--congre-color: var(--congre-norte);">
                 <input type="radio" name="congre" value="Norte" onchange="unlockContinue()">
                 <div class="congre-card">
                   <div class="congre-card-left">
                     <div class="congre-icon">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     </div>
-                    <span class="congre-name">Norte</span>
+                    <div class="congre-copy">
+                      <span class="congre-name">Norte</span>
+                      <span class="congre-meta">Vista secundaria</span>
+                    </div>
                   </div>
                   <div class="radio"></div>
                 </div>
               </label>
 
-              <label class="congre-item">
+              <label class="congre-item" style="--congre-color: var(--congre-este);">
                 <input type="radio" name="congre" value="Este" onchange="unlockContinue()">
                 <div class="congre-card">
                   <div class="congre-card-left">
                     <div class="congre-icon">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                     </div>
-                    <span class="congre-name">Este</span>
+                    <div class="congre-copy">
+                      <span class="congre-name">Este</span>
+                      <span class="congre-meta">Acceso regional</span>
+                    </div>
                   </div>
                   <div class="radio"></div>
                 </div>
               </label>
 
-              <label class="congre-item">
+              <label class="congre-item" style="--congre-color: var(--congre-oeste);">
                 <input type="radio" name="congre" value="Oeste" onchange="unlockContinue()">
                 <div class="congre-card">
                   <div class="congre-card-left">
                     <div class="congre-icon">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17l4-8 4 5 4-2 4 5"/></svg>
                     </div>
-                    <span class="congre-name">Oeste</span>
+                    <div class="congre-copy">
+                      <span class="congre-name">Oeste</span>
+                      <span class="congre-meta">Cobertura extendida</span>
+                    </div>
                   </div>
                   <div class="radio"></div>
                 </div>
@@ -779,13 +978,27 @@
       ══════════════════════════════════════ -->
       <div id="s4" class="screen">
 
-        <header class="dash-header animate-in d1">
-          <div>
-            <p class="dash-eyebrow">Ziv App</p>
-            <h1 class="dash-title">Bienvenido a <span id="dash-congre">Sur</span></h1>
+        <header class="demo-menu-head animate-in d1">
+          <div class="demo-menu-top">
+            <button class="back-btn" onclick="go(4,2)" aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <div class="user-avatar" aria-label="Perfil">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
           </div>
-          <div class="user-avatar" aria-label="Perfil">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+
+          <div class="menu-congre">
+            <div class="menu-congre-wrapper" id="menu-congre-wrapper">
+              <div class="menu-congre-inner">
+                <div class="menu-congre-icon" id="menu-congre-icon">SU</div>
+                <div class="menu-congre-copy">
+                  <p class="dash-eyebrow">Ziv App</p>
+                  <h1 id="menu-titulo">Sur</h1>
+                </div>
+              </div>
+            </div>
+            <p class="cs-nav-sub">Seleccioná un módulo para continuar.</p>
           </div>
         </header>
 
@@ -794,43 +1007,43 @@
             <p class="section-label">Módulos disponibles</p>
             <div class="module-grid">
 
-              <button class="module-card">
-                <div class="mod-icon" style="background:var(--green-bg)">
+              <button class="module-card cs-nav-card cs-nav-card-terr" type="button">
+                <div class="mod-icon cs-nav-icon cs-nav-icon-terr">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 </div>
                 <div class="mod-text">
-                  <div class="mod-title">Territorios</div>
-                  <div class="mod-desc">Gestión de zonas de predicación.</div>
+                  <div class="mod-title cs-nav-title">Territorios</div>
+                  <div class="mod-desc cs-nav-sub">Gestión de zonas de predicación.</div>
                 </div>
               </button>
 
-              <button class="module-card">
-                <div class="mod-icon" style="background:var(--blue-bg)">
+              <button class="module-card cs-nav-card cs-nav-card-asign" type="button">
+                <div class="mod-icon cs-nav-icon cs-nav-icon-asign">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/><line x1="14" y1="14" x2="20" y2="14"/><line x1="14" y1="17" x2="20" y2="17"/></svg>
                 </div>
                 <div class="mod-text">
-                  <div class="mod-title">Asignaciones</div>
-                  <div class="mod-desc">Programa semanal de reuniones.</div>
+                  <div class="mod-title cs-nav-title">Asignaciones</div>
+                  <div class="mod-desc cs-nav-sub">Programa semanal de reuniones.</div>
                 </div>
               </button>
 
-              <button class="module-card">
-                <div class="mod-icon" style="background:var(--amber-bg)">
+              <button class="module-card cs-nav-card cs-nav-card-herm" type="button">
+                <div class="mod-icon cs-nav-icon cs-nav-icon-herm">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
                 </div>
                 <div class="mod-text">
-                  <div class="mod-title">Administrador</div>
-                  <div class="mod-desc">Hermanos, roles y configuración.</div>
+                  <div class="mod-title cs-nav-title">Administrador</div>
+                  <div class="mod-desc cs-nav-sub">Hermanos, roles y configuración.</div>
                 </div>
               </button>
 
-              <button class="module-card">
-                <div class="mod-icon" style="background:var(--teal-bg)">
+              <button class="module-card cs-nav-card cs-nav-card-vm" type="button">
+                <div class="mod-icon cs-nav-icon cs-nav-icon-vm">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                 </div>
                 <div class="mod-text">
-                  <div class="mod-title">Vida y Ministerio</div>
-                  <div class="mod-desc">Programa de reuniones VM.</div>
+                  <div class="mod-title cs-nav-title">Vida y Ministerio</div>
+                  <div class="mod-desc cs-nav-sub">Programa de reuniones VM.</div>
                 </div>
               </button>
 
@@ -844,6 +1057,37 @@
   </div><!-- /.shell -->
 
   <script>
+    const shell = document.querySelector('.shell');
+    const CONGREGATION_META = {
+      Sur:   { color: '#7F77DD', initials: 'SU' },
+      Norte: { color: '#378ADD', initials: 'NO' },
+      Este:  { color: '#97C459', initials: 'ES' },
+      Oeste: { color: '#EF9F27', initials: 'OE' }
+    };
+    let selectedCongregation = 'Sur';
+
+    function hexToRgba(hex, alpha) {
+      const safe = hex.replace('#', '');
+      const r = parseInt(safe.slice(0, 2), 16);
+      const g = parseInt(safe.slice(2, 4), 16);
+      const b = parseInt(safe.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function applyDashboardCongre(name) {
+      const meta = CONGREGATION_META[name] || CONGREGATION_META.Sur;
+      const wrap = document.getElementById('menu-congre-wrapper');
+      const icon = document.getElementById('menu-congre-icon');
+      const title = document.getElementById('menu-titulo');
+      if (!wrap || !icon || !title) return;
+      wrap.style.setProperty('--neon-color', meta.color);
+      wrap.style.setProperty('--neon-color-dim', hexToRgba(meta.color, 0.3));
+      icon.textContent = meta.initials;
+      icon.style.background = hexToRgba(meta.color, 0.18);
+      icon.style.border = `1px solid ${hexToRgba(meta.color, 0.32)}`;
+      icon.style.color = meta.color;
+      title.textContent = name;
+    }
     /* ── Screen navigation ── */
     function go(from, to) {
       const a = document.getElementById('s' + from);
@@ -863,6 +1107,8 @@
       a.classList.remove('active');
       a.classList.add(fwd ? 'out-left' : 'out-right');
       b.classList.add('active');
+      shell.dataset.screen = `s${to}`;
+      if (to === 4) applyDashboardCongre(selectedCongregation);
     }
 
     /* ── Congregation form ── */
@@ -873,7 +1119,7 @@
       e.preventDefault();
       const v = document.querySelector('[name=congre]:checked')?.value;
       if (!v) return;
-      document.getElementById('dash-congre').textContent = v;
+      selectedCongregation = v;
       go(2, 3);
     }
 
@@ -937,6 +1183,8 @@
         document.getElementById('pwa-btn').classList.remove('visible');
       });
     }
+
+    applyDashboardCongre(selectedCongregation);
   </script>
 </body>
 </html>
