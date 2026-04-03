@@ -121,11 +121,17 @@
       }
     }
     @media (min-width: 900px) {
-      body { padding: 24px 28px; }
+      body {
+        display: block;
+        padding: 20px 24px 24px;
+      }
       .shell {
         width: min(100%, 1220px);
         max-width: 1220px;
-        min-height: min(84vh, 860px);
+        min-height: calc(100vh - 44px);
+        max-height: none;
+        margin: 0 auto;
+        border-radius: 28px;
       }
       .shell[data-screen="s1"],
       .shell[data-screen="s3"] {
@@ -466,7 +472,7 @@
       flex-direction: column;
       gap: 14px;
       flex-shrink: 0;
-      max-width: 1120px;
+      max-width: 1180px;
       width: 100%;
       margin: 0 auto;
     }
@@ -527,17 +533,24 @@
       background: var(--bg-card);
       border-radius: 18px;
       padding: 18px 20px;
-      display: flex;
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) 52px;
       align-items: center;
       gap: 16px;
       z-index: 1;
+    }
+    .menu-congre-inner::after {
+      content: '';
+      width: 52px;
+      height: 52px;
     }
     .menu-congre-icon {
       width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
       font-size: 17px; font-weight: 800;
     }
-    .menu-congre-copy { min-width: 0; flex: 1; }
+    .menu-congre-copy { min-width: 0; text-align: center; }
+    .menu-congre-copy .dash-eyebrow { text-align: center; }
     #menu-titulo {
       font-size: 22px;
       font-weight: 700;
@@ -546,11 +559,12 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      text-align: center;
     }
 
     .dash-content {
       padding: 8px 24px 32px;
-      max-width: 1120px;
+      max-width: 1180px;
       width: 100%;
       margin: 0 auto;
     }
@@ -658,13 +672,17 @@
       .congre-list { max-width: 1180px; }
       .screen-footer { max-width: 1180px; margin: 0 auto; width: 100%; }
       .screen-header { max-width: 1180px; margin: 0 auto; width: 100%; }
-      .demo-menu-head { padding: 28px 30px 20px; }
-      .dash-content { padding: 12px 30px 40px; }
+      .demo-menu-head { padding: 30px 34px 22px; }
+      .dash-content { padding: 14px 34px 44px; }
+      .module-grid { gap: 20px; }
+      .cs-nav-card { min-height: 112px; }
     }
     @media (min-width: 1100px) {
       .screen-header { padding-top: 54px; }
-      .demo-menu-head { padding: 28px 32px 20px; }
-      .dash-content { padding: 12px 32px 44px; }
+      .demo-menu-head { padding: 32px 40px 24px; }
+      .dash-content { padding: 18px 40px 52px; }
+      .module-grid { gap: 24px; }
+      .cs-nav-card { min-height: 120px; }
     }
 
     /* ── Entrance animations ── */
