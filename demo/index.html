@@ -123,20 +123,27 @@
     @media (min-width: 900px) {
       body {
         display: block;
-        padding: 20px 24px 24px;
+        padding: 0;
       }
       .shell {
         width: min(100%, 1220px);
         max-width: 1220px;
-        min-height: calc(100vh - 44px);
+        min-height: 100vh;
         max-height: none;
         margin: 0 auto;
-        border-radius: 28px;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        background: transparent;
       }
       .shell[data-screen="s1"],
       .shell[data-screen="s3"] {
         width: min(100%, 1220px);
         max-width: 1220px;
+      }
+      .screens {
+        background: var(--bg);
+        min-height: 100vh;
       }
     }
 
