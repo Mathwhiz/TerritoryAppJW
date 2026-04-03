@@ -67,7 +67,7 @@ function checkPin() {
 //   NAVEGACIÓN
 // ─────────────────────────────────────────
 function showView(id) {
-  ['view-pin', 'view-dashboard', 'view-wizard', 'view-territorios', 'view-matches'].forEach(v => {
+  ['view-pin', 'view-dashboard', 'view-wizard', 'view-territorios', 'view-matches', 'view-usuarios'].forEach(v => {
     document.getElementById(v).style.display = v === id ? '' : 'none';
   });
 }
@@ -119,6 +119,7 @@ async function loadDashboard() {
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;">
               <button class="btn-card-action" onclick="openTerritorios('${d.id}','${nombreSafe}')" title="Territorios">📍</button>
+              <button class="btn-card-action" onclick="openUsuarios('${d.id}','${nombreSafe}')" title="Usuarios">👥</button>
               <button class="btn-card-action" onclick="editCongre('${d.id}')" title="Editar">✏️</button>
               <button class="btn-card-action btn-card-delete" onclick="deleteCongre('${d.id}','${nombreSafe}')" title="Eliminar">🗑️</button>
             </div>
@@ -933,6 +934,104 @@ async function marcarSinMatch(uid) {
   }
 }
 
+// ─────────────────────────────────────────
+//   USUARIOS POR CONGREGACIÓN
+// ─────────────────────────────────────────
+const ROL_LABELS = {
+  publicador:             'Publicador',
+  precursor_auxiliar:     'Precursor auxiliar',
+  precursor_regular:      'Precursor regular',
+  siervo_ministerial:     'Siervo ministerial',
+  anciano:                'Anciano',
+  encargado_grupo:        'Encargado de grupo',
+  encargado_asignaciones: 'Encargado de asignaciones',
+  encargado_vm:           'Encargado de VM',
+  admin_congre:           'Admin congregación',
+  pendiente:              'Pendiente (sin acceso)',
+};
+
+const ROLES_ASIGNABLES = [
+  'publicador', 'precursor_auxiliar', 'precursor_regular',
+  'siervo_ministerial', 'anciano', 'encargado_grupo',
+  'encargado_asignaciones', 'encargado_vm', 'admin_congre', 'pendiente',
+];
+
+async function openUsuarios(congreId, congreNombre) {
+  showView('view-usuarios');
+  document.getElementById('usuarios-title').textContent = congreNombre;
+  document.getElementById('usuarios-sub').textContent   = 'Cargando...';
+  const loading = document.getElementById('usuarios-loading');
+  const list    = document.getElementById('usuarios-list');
+  loading.style.display = 'flex';
+  list.innerHTML = '';
+
+  try {
+    const snap    = await getDocs(query(collection(db, 'usuarios'), where('congregacionId', '==', congreId)));
+    const usuarios = snap.docs
+      .map(d => ({ uid: d.id, ...d.data() }))
+      .filter(u => !u.isAnonymous)
+      .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'es'));
+
+    document.getElementById('usuarios-sub').textContent =
+      usuarios.length === 0
+        ? 'Sin usuarios registrados'
+        : `${usuarios.length} usuario${usuarios.length !== 1 ? 's' : ''} registrado${usuarios.length !== 1 ? 's' : ''}`;
+
+    loading.style.display = 'none';
+
+    if (usuarios.length === 0) {
+      list.innerHTML = '<p style="color:#666;font-size:14px;text-align:center;padding:24px 0;">Ningún usuario registrado en esta congregación.</p>';
+      return;
+    }
+
+    list.innerHTML = usuarios.map(u => {
+      const ini = (u.displayName || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+      const badge = {
+        ok:        '<span class="mbadge ok">✓ Vinculado</span>',
+        pendiente: '<span class="mbadge pendiente">⚠ Ambiguo</span>',
+        sin_match: '<span class="mbadge sin_match">Sin match</span>',
+      }[u.matchEstado] || '';
+      const opts = ROLES_ASIGNABLES.map(r =>
+        `<option value="${r}" ${r === u.appRol ? 'selected' : ''}>${ROL_LABELS[r]}</option>`
+      ).join('');
+      const nameSafe = (u.displayName || '').replace(/'/g, "\\'");
+      return `
+        <div class="usuario-row">
+          <div class="usuario-avatar">${ini}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:600;color:#eee;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.displayName || '(sin nombre)'}</div>
+            <div style="font-size:11px;color:#666;margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email || 'Sin email'}</span>${badge}
+            </div>
+            <select class="rol-select" data-prev="${u.appRol}"
+              onchange="cambiarRol('${u.uid}','${nameSafe}',this)">
+              ${opts}
+            </select>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch (err) {
+    loading.innerHTML = `<span style="color:#F09595;font-size:14px;">Error: ${err.message}</span>`;
+  }
+}
+
+async function cambiarRol(uid, nombre, selectEl) {
+  const nuevoRol = selectEl.value;
+  const prevRol  = selectEl.dataset.prev;
+  selectEl.disabled = true;
+  try {
+    await updateDoc(doc(db, 'usuarios', uid), { appRol: nuevoRol });
+    selectEl.dataset.prev = nuevoRol;
+    uiToast(`${nombre || 'Usuario'} → ${ROL_LABELS[nuevoRol]}`, 'success');
+  } catch (err) {
+    uiToast('Error al guardar: ' + err.message, 'error');
+    selectEl.value = prevRol;
+  } finally {
+    selectEl.disabled = false;
+  }
+}
+
 // ── Exponer al HTML ──
 window.pinPress          = pinPress;
 window.pinDelete         = pinDelete;
@@ -960,3 +1059,5 @@ window.saveTerritorios   = saveTerritorios;
 window.openMatches       = openMatches;
 window.resolverMatch     = resolverMatch;
 window.marcarSinMatch    = marcarSinMatch;
+window.openUsuarios      = openUsuarios;
+window.cambiarRol        = cambiarRol;
