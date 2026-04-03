@@ -1,4 +1,5 @@
 import { db } from '../firebase.js';
+import '../auth.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
   setDoc, query, where, orderBy
