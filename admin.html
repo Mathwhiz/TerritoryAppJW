@@ -97,6 +97,14 @@
 
     .status-ok  { color: #5DCAA5; font-size: 13px; margin-top: 8px; }
     .status-err { color: #F09595; font-size: 13px; margin-top: 8px; }
+
+    /* Matches pendientes */
+    .match-card { background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+    .match-pub-row { display: flex; align-items: center; gap: 10px; background: #1e1e1e; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; }
+    .btn-match-sel { background: #7F77DD; color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+    .btn-match-sel:active { opacity: .8; }
+    .btn-match-none { background: transparent; border: 1px solid #333; color: #666; border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; margin-top: 10px; width: 100%; }
+    .btn-match-none:hover { border-color: #555; color: #aaa; }
   </style>
 </head>
 <body>
@@ -140,6 +148,15 @@
     <div style="height:52px;"></div>
     <p class="section-title" style="text-align:center;">Congregaciones</p>
     <p class="section-sub" style="text-align:center;">Panel de administración</p>
+    <div id="dash-matches-banner" style="display:none;background:#2a2020;border:1px solid rgba(239,159,39,0.3);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#EF9F27;">👥 Matches pendientes</div>
+          <div style="font-size:12px;color:#888;margin-top:2px;"><span id="dash-matches-n">0</span> usuario(s) sin publicador confirmado</div>
+        </div>
+        <button class="btn-secondary" onclick="openMatches()" style="flex-shrink:0;font-size:13px;padding:8px 14px;">Resolver</button>
+      </div>
+    </div>
     <div id="dash-loading" class="loading-wrap"><div class="spinner"></div><div>Cargando...</div></div>
     <div id="dash-list" style="display:none"></div>
     <button class="btn-primary" style="margin-top:14px;" onclick="startWizard()">+ Nueva congregación</button>
@@ -243,6 +260,16 @@
         Guardar <span id="terr-changes-count">0</span> cambios
       </button>
     </div>
+  </div>
+
+  <!-- ── MATCHES PENDIENTES ── -->
+  <div id="view-matches" class="app" style="display:none">
+    <a href="#" onclick="showView('view-dashboard');loadDashboard();return false;" style="position:fixed;top:16px;left:16px;z-index:100;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#aaa;text-decoration:none;padding:7px 13px;background:#252525;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">‹ Dashboard</a>
+    <div style="height:52px;"></div>
+    <p class="section-title">Matches pendientes</p>
+    <p class="section-sub">Usuarios registrados sin publicador confirmado</p>
+    <div id="matches-loading" class="loading-wrap" style="display:none"><div class="spinner"></div><div>Cargando...</div></div>
+    <div id="matches-list"></div>
   </div>
 
   <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>

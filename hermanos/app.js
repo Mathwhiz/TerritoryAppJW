@@ -4,6 +4,8 @@ import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, orderBy, limit, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
+await window.authGuard('acceso_hermanos');
+
 window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });
 if (!sessionStorage.getItem('congreId')) window.location.href = '../index.html';
 

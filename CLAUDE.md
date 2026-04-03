@@ -118,6 +118,7 @@ Acceso: URL directa → PIN (desde `config/superadmin → { pin }` en Firestore)
 - **Editar** congregación (mismos campos)
 - **Eliminar** congregación (borra todas las subcolecciones)
 - **Asignar territorios a grupos** (📍): lista con filtros, batch update
+- **Resolver matches ambiguos** (`view-matches`): usuarios con `matchEstado: 'pendiente'` — muestra candidatos con nombre y roles, permite seleccionar el publicador correcto o marcar "No encontrado". Al resolver: actualiza `matchedPublisherId`, `matchEstado: 'ok'|'sin_match'`, `appRol: 'publicador'`. El dashboard muestra un banner amarillo con el contador de pendientes.
 
 **Paleta de colores** (`PALETA_COLORES`):
 `#378ADD`, `#97C459`, `#7F77DD`, `#EF9F27`, `#1D9E75`, `#D85A30`
@@ -258,14 +259,18 @@ Chip flotante fijo en `top: 12px; right: 12px` — aparece en todas las páginas
 - Usuarios anónimos: redirigidos a `/` (no tienen perfil)
 - DOB picker custom con dropdown de año (año actual → 1900) y mes — sin `<input type="date">`
 
-### Agregar guard a un módulo
+### Guards activos por módulo (✅ implementado)
 
-```js
-// Al inicio del app.js de cualquier módulo:
-import '../auth.js';
-await window.authGuard('acceso_territorios');
-// → si no tiene permiso: redirige a /?sin_acceso=1
-```
+Cada `app.js` llama `authGuard` justo después de los imports:
+
+| Módulo | Guard |
+|--------|-------|
+| `territorios/app.js` | `await window.authGuard('acceso_territorios')` |
+| `asignaciones/app.js` | `await window.authGuard('acceso_asignaciones')` |
+| `vida-ministerio/app.js` | `await window.authGuard('acceso_vm')` |
+| `hermanos/app.js` | `await window.authGuard('acceso_hermanos')` |
+
+Si no tiene permiso → redirige a `/?sin_acceso=1` → `index.html` muestra un toast de error y limpia el parámetro de la URL.
 
 ---
 
@@ -726,10 +731,10 @@ Almacenamiento: `YYYY-MM-DD`. Display: `DD/MM/YY`.
 - ✅ Matching automático con publicadores existentes
 - ✅ Session header global
 - ✅ Persistencia de congregación en localStorage
-- ⬜ Guards activos en módulos (infraestructura lista, falta agregar `authGuard()` por módulo)
+- ✅ Guards activos en módulos — `authGuard()` llamado al inicio de cada `app.js`
+- ✅ Resolución de matches ambiguos en `admin.html` (vista `view-matches`)
 - ⬜ Reemplazar PINs internos por auth real (decisión pendiente)
 - ⬜ Auditoría: log de cambios importantes (quién modificó qué y cuándo)
-- ⬜ Resolución de matches ambiguos en `admin.html`
 
 ### Mejorar integración Google Sheets (Asignaciones)
 - Fetch actual usa `no-cors` + `keepalive:true` → respuesta opaca, no se puede confirmar éxito

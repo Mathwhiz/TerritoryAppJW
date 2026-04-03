@@ -7,3 +7,5 @@ tools/Copia de Reunión Vida y Ministerio Cristiano.xlsx
 tools/congregacionsur.kml
 ui-utils-old.js
 tools/NWS Desktop Personas (157).csv
+.aidesigner/*
+!.aidesigner/.gitkeep

@@ -5,6 +5,8 @@ import {
   query, where, orderBy, limit, Timestamp,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
+await window.authGuard('acceso_territorios');
+
 // Fuerza recarga si la página viene del caché (back/forward)
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) window.location.reload();

@@ -4,6 +4,8 @@ import {
   collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, updateDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
+await window.authGuard('acceso_vm');
+
 // ─────────────────────────────────────────
 //   CONSTANTES
 // ─────────────────────────────────────────

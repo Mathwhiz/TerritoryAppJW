@@ -1,7 +1,8 @@
 import { db } from './firebase.js';
 import './auth.js';
 import {
-  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp
+  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp,
+  query, where,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 // ── Super-admin PIN ──
@@ -66,7 +67,7 @@ function checkPin() {
 //   NAVEGACIÓN
 // ─────────────────────────────────────────
 function showView(id) {
-  ['view-pin', 'view-dashboard', 'view-wizard', 'view-territorios'].forEach(v => {
+  ['view-pin', 'view-dashboard', 'view-wizard', 'view-territorios', 'view-matches'].forEach(v => {
     document.getElementById(v).style.display = v === id ? '' : 'none';
   });
 }
@@ -129,6 +130,18 @@ async function loadDashboard() {
   } catch(err) {
     loading.innerHTML = `<span style="color:#F09595;font-size:14px;">Error: ${err.message}</span>`;
   }
+
+  // Badge de matches pendientes
+  try {
+    const pendSnap = await getDocs(query(collection(db, 'usuarios'), where('matchEstado', '==', 'pendiente')));
+    const banner = document.getElementById('dash-matches-banner');
+    if (pendSnap.size > 0) {
+      document.getElementById('dash-matches-n').textContent = pendSnap.size;
+      banner.style.display = '';
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch(_) { /* ignora si no hay índice aún */ }
 }
 
 // ─────────────────────────────────────────
@@ -802,6 +815,124 @@ async function saveTerritorios() {
   }
 }
 
+// ─────────────────────────────────────────
+//   MATCHES PENDIENTES
+// ─────────────────────────────────────────
+let matchesList = [];
+
+function normalizeMatch(str) {
+  if (!str) return '';
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ');
+}
+
+function getCandidates(displayName, pubs) {
+  const tokens = normalizeMatch(displayName).split(' ').filter(Boolean);
+  return pubs.filter(p => {
+    const n = normalizeMatch(p.nombre);
+    return tokens.every(t => n.includes(t));
+  });
+}
+
+async function openMatches() {
+  showView('view-matches');
+  const loading = document.getElementById('matches-loading');
+  const list    = document.getElementById('matches-list');
+  loading.style.display = 'flex';
+  list.innerHTML = '';
+
+  try {
+    const snap = await getDocs(query(collection(db, 'usuarios'), where('matchEstado', '==', 'pendiente')));
+    matchesList = [];
+
+    // Caché de publicadores por congregación para no recargar múltiples veces
+    const pubsCache = {};
+    for (const d of snap.docs) {
+      const user = { uid: d.id, ...d.data() };
+      let candidates = [];
+      if (user.congregacionId && user.displayName) {
+        if (!pubsCache[user.congregacionId]) {
+          const pubSnap = await getDocs(collection(db, 'congregaciones', user.congregacionId, 'publicadores'));
+          pubsCache[user.congregacionId] = pubSnap.docs.map(p => ({ id: p.id, ...p.data() }));
+        }
+        candidates = getCandidates(user.displayName, pubsCache[user.congregacionId]);
+      }
+      matchesList.push({ uid: user.uid, displayName: user.displayName, email: user.email, congregacionId: user.congregacionId, candidates });
+    }
+  } catch(err) {
+    document.getElementById('matches-list').innerHTML = `<p style="color:#F09595;font-size:14px;">Error: ${err.message}</p>`;
+    loading.style.display = 'none';
+    return;
+  }
+
+  loading.style.display = 'none';
+  renderMatchesList();
+}
+
+function fmtRoles(roles) {
+  if (!roles?.length) return '';
+  return roles.slice(0, 3)
+    .map(r => r.replace(/^VM_/, '').replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase()))
+    .join(' · ');
+}
+
+function renderMatchesList() {
+  const list = document.getElementById('matches-list');
+  if (matchesList.length === 0) {
+    list.innerHTML = '<p style="color:#666;font-size:14px;text-align:center;padding:24px 0;">No hay matches pendientes.</p>';
+    return;
+  }
+  list.innerHTML = matchesList.map(m => {
+    const rolesHtml = roles => fmtRoles(roles)
+      ? `<div style="font-size:11px;color:#666;margin-top:2px;">${fmtRoles(roles)}</div>` : '';
+    const candidatesHtml = m.candidates.length > 0
+      ? m.candidates.map(p => `
+          <div class="match-pub-row">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;color:#ddd;">${p.nombre}</div>
+              ${rolesHtml(p.roles)}
+            </div>
+            <button class="btn-match-sel" onclick="resolverMatch('${m.uid}','${p.id}','${p.nombre.replace(/'/g,"\\'")}')">Seleccionar</button>
+          </div>`).join('')
+      : '<p style="font-size:13px;color:#666;margin:6px 0;">No se encontraron coincidencias en la base.</p>';
+
+    return `<div class="match-card">
+      <div style="font-size:16px;font-weight:600;color:#eee;">${m.displayName || '(sin nombre)'}</div>
+      <div style="font-size:12px;color:#666;margin-top:2px;">${m.email || 'Sin email'}${m.congregacionId ? ' · ' + m.congregacionId : ''}</div>
+      ${m.candidates.length > 0
+        ? '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">Posibles coincidencias</div>'
+        : ''}
+      <div>${candidatesHtml}</div>
+      <button class="btn-match-none" onclick="marcarSinMatch('${m.uid}')">No encontrado</button>
+    </div>`;
+  }).join('');
+}
+
+async function resolverMatch(uid, pubId, pubNombre) {
+  const ok = await uiConfirm({ title: 'Confirmar match', msg: `¿Vincular este usuario con "${pubNombre}"?`, confirmText: 'Confirmar', type: 'info' });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, 'usuarios', uid), { matchedPublisherId: pubId, matchEstado: 'ok', appRol: 'publicador' });
+    matchesList = matchesList.filter(m => m.uid !== uid);
+    renderMatchesList();
+    uiToast('Match confirmado', 'success');
+  } catch(err) {
+    await uiAlert('Error al guardar: ' + err.message);
+  }
+}
+
+async function marcarSinMatch(uid) {
+  const ok = await uiConfirm({ title: 'Sin match', msg: 'El usuario recibirá acceso básico como publicador sin vincular a nadie.', confirmText: 'Confirmar', type: 'warn' });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, 'usuarios', uid), { matchedPublisherId: null, matchEstado: 'sin_match', appRol: 'publicador' });
+    matchesList = matchesList.filter(m => m.uid !== uid);
+    renderMatchesList();
+    uiToast('Marcado sin match', 'success');
+  } catch(err) {
+    await uiAlert('Error al guardar: ' + err.message);
+  }
+}
+
 // ── Exponer al HTML ──
 window.pinPress          = pinPress;
 window.pinDelete         = pinDelete;
@@ -826,3 +957,6 @@ window.openTerritorios   = openTerritorios;
 window.setTerrFiltro     = setTerrFiltro;
 window.assignGrupo       = assignGrupo;
 window.saveTerritorios   = saveTerritorios;
+window.openMatches       = openMatches;
+window.resolverMatch     = resolverMatch;
+window.marcarSinMatch    = marcarSinMatch;
