@@ -29,6 +29,8 @@ congregaciones/{congreId}/
   └── vidaministerio/{semanaId} → fecha, canciones, presidente, oraciones, tesoros, ministerio[], vidaCristiana[], tipoEspecial?
 
 config/superadmin              → pin  ← PIN del panel de admin
+
+usuarios/{uid}                 → perfil de usuario (ver sección Auth)
 ```
 
 ### Campos opcionales del doc de congregación
@@ -45,8 +47,11 @@ config/superadmin              → pin  ← PIN del panel de admin
 
 ### Navegación
 
-1. `index.html` — elige congregación **y** módulo (dos vistas en la misma página)
-   - Si hay `congreId` en `sessionStorage`, salta directo a la vista 2
+1. `index.html` — elige congregación **y** módulo
+   - La congregación se persiste en `localStorage` (`ziv_congre_id`, `ziv_congre_nombre`, `ziv_congre_color`)
+   - Si hay congregación guardada + sesión Firebase activa → salta directo al menú de módulos
+   - Si hay congregación pero sin sesión Firebase → muestra `#view-auth` (Google o Anónimo)
+   - "← Congregaciones" limpia `sessionStorage` pero **no** `localStorage` (se recuerda en próxima visita)
 2. `territorios/index.html`, `asignaciones/index.html`, `vida-ministerio/index.html` o `hermanos/index.html`
 3. Al volver ("← Volver al módulo") → `../index.html` → muestra vista 2 automáticamente
 
@@ -58,11 +63,14 @@ El ID de congregación es un slug legible (ej: `"sur"`, `"norte"`), elegido al c
 
 ```
 /
-├── index.html              # SPA: elegir congregación → elegir módulo
+├── index.html              # SPA: elegir congregación → auth → módulo
+├── perfil.html             # Perfil de usuario: primer login y edición posterior
 ├── admin.html              # Panel de superadmin (URL + PIN)
 ├── admin.js                # Lógica del panel de admin
-├── firebase.js             # Inicialización compartida de Firebase (exporta `db`)
-├── ui-utils.js             # Componentes UI: modales, pickers, loading, toast
+├── firebase.js             # Inicialización compartida de Firebase (exporta `db` y `auth`)
+├── auth.js                 # Auth: Google sign-in, anónimo, perfiles, session header
+├── auth-config.js          # Roles de app + mapa de permisos (único lugar a editar)
+├── ui-utils.js             # Componentes UI: modales, pickers, loading, toast, session header
 ├── favicon.svg
 ├── territorios/
 │   ├── index.html          # App de territorios
@@ -126,21 +134,138 @@ Acceso: URL directa → PIN (desde `config/superadmin → { pin }` en Firestore)
 - **Frontend:** HTML + CSS + JS vanilla (sin frameworks, sin bundler)
 - **Hosting:** GitHub Pages (repo AppJWCongSur), dominio `congsur.lat`
 - **Base de datos:** Firebase Firestore (`appjw-3697e`)
+- **Auth:** Firebase Authentication — Google + Anónimo (coexiste con PINs)
 - **Mapa:** Leaflet.js + OpenStreetMap
 - **Imagen para compartir:** html2canvas (CDN)
 - **Analytics:** PostHog
-- **Auth:** ninguna — acceso por PIN por grupo / PIN superadmin
 
 ---
 
 ## Firebase
 
 ```js
-import { db } from '../firebase.js';
+import { db }         from '../firebase.js';   // Firestore
+import { db, auth }   from '../firebase.js';   // Firestore + Auth
+import '../auth.js';                            // activa session header y globals de auth
 ```
 
 - Firebase SDK 11.6.0 (ES modules via gstatic CDN)
 - Scripts con firebase.js necesitan `type="module"` en el HTML
+- `auth.js` está importado en todos los `app.js` de módulos — activa el session header automáticamente
+
+---
+
+## Sistema de Auth y Perfiles (✅ implementado)
+
+### Flujo de entrada
+
+```
+Abrir app
+  └─ ¿hay congregación en localStorage?
+       SÍ → ¿hay sesión Firebase activa?
+              Google/Anónima → menú de módulos directo
+              Sin sesión     → view-auth (sign-in o skip)
+       NO  → selector de congregaciones → view-auth
+```
+
+### Proveedores activos en Firebase Console
+- **Google** — sign-in completo con perfil
+- **Anónimo** — acceso inmediato sin fricción ("Omitir por ahora")
+
+### Documento de usuario (`usuarios/{uid}`)
+
+```js
+{
+  uid:               "firebase-uid",
+  email:             "user@gmail.com" | null,
+  displayName:       "Juan Pérez"    | null,
+  photoURL:          "https://..."   | null,
+  birthDate:         "1990-05-15"    | null,   // YYYY-MM-DD
+  sexo:              "H" | "M"       | null,
+  matchedPublisherId: "pubId"        | null,   // ref a publicadores/{id}
+  congregacionId:    "sur"           | null,
+  appRol:            "publicador",             // ver roles en auth-config.js
+  matchEstado:       "ok" | "pendiente" | "sin_match" | "anonimo",
+  isAnonymous:       false,
+  primerLogin:       false,
+  createdAt:         timestamp,
+}
+```
+
+### Roles y permisos (`auth-config.js`)
+
+Único archivo a editar para cambiar qué puede hacer cada rol.
+
+| Rol | Descripción |
+|-----|-------------|
+| `admin_general` | Acceso a todo, incluyendo `admin.html` |
+| `admin_congre` | Todos los módulos de una congregación |
+| `encargado_asignaciones` | Asignaciones + Administrador |
+| `encargado_vm` | Vida y Ministerio + Administrador |
+| `encargado_grupo` | Territorios |
+| `anciano` | Territorios + VM |
+| `siervo_ministerial` | Territorios |
+| `precursor_regular` | Territorios |
+| `precursor_auxiliar` | Territorios |
+| `publicador` | Territorios |
+| `anonimo` | Todos los módulos (igual que antes del sistema de perfiles) |
+| `pendiente` | Sin acceso — match no confirmado por admin |
+
+### Matching automático con publicadores
+
+Al registrarse con Google, `auth.js` intenta matchear `displayName` con `publicadores/{id}.nombre`:
+1. Coincidencia exacta (normalizado: lowercase, sin tildes)
+2. Todos los tokens del nombre de Google presentes en el nombre del pub
+3. Si ambiguo (`matchEstado: 'pendiente'`) → admin resuelve en `admin.html`
+
+### API global expuesta por `auth.js`
+
+| Función | Descripción |
+|---------|-------------|
+| `window.waitForAuth()` | Promise → resuelve con el usuario cuando `onAuthStateChanged` disparó |
+| `window.currentUser` | Objeto usuario actual (null si no logueado) |
+| `window.hasPermission(feature)` | Boolean — verifica `PERMISOS[appRol].includes(feature)` |
+| `window.authGuard(feature)` | Async — redirige a `/?sin_acceso=1` si no tiene permiso |
+| `window.signInWithGoogle()` | Abre popup de Google |
+| `window.signInAnonymousUser()` | Crea sesión anónima |
+| `window.linkWithGoogle()` | Vincula sesión anónima con Google → luego redirigir a `perfil.html` |
+| `window.signOutUser()` | Cierra sesión Firebase |
+| `window.updateUserProfile(data)` | Actualiza `usuarios/{uid}` en Firestore y en memoria |
+
+### Session header (`ui-utils.js`)
+
+Chip flotante fijo en `top: 12px; right: 12px` — aparece en todas las páginas que cargan `ui-utils.js`.
+
+- Google: muestra foto (o iniciales) + primer nombre → menú: "Ver perfil" / "Cerrar sesión"
+- Anónimo: ícono genérico + "Invitado" → menú: "Vincular con Google" / "Cerrar sesión"
+- `window.updateSessionHeader(user)` — llamado por `auth.js` en cada cambio de estado
+- `window.sessionSignOut()` — limpia localStorage + sessionStorage + Firebase + redirige a `/`
+- `window.toggleSessionMenu()` / `window.closeSessionMenu()` — control del dropdown
+
+### Persistencia de congregación
+
+| Almacenamiento | Keys | Cuándo se escribe | Cuándo se borra |
+|----------------|------|-------------------|-----------------|
+| `localStorage` | `ziv_congre_id`, `ziv_congre_nombre`, `ziv_congre_color` | Al elegir congregación | Solo al cerrar sesión |
+| `sessionStorage` | `congreId`, `congreNombre`, `congreColor` | Al elegir congregación o al restaurar desde localStorage | Al cerrar sesión o "← Congregaciones" |
+
+**"← Congregaciones"** solo limpia `sessionStorage` → el usuario puede cambiar de congregación en esta pestaña, pero la próxima visita vuelve a la guardada.
+
+### `perfil.html`
+
+- Primer login (`primerLogin: true`): título "Completá tu perfil", botón "Guardar y continuar", setea `primerLogin: false`
+- Edición (`primerLogin: false`): título "Tu perfil", botón "Guardar cambios"
+- Usuarios anónimos: redirigidos a `/` (no tienen perfil)
+- DOB picker custom con dropdown de año (año actual → 1900) y mes — sin `<input type="date">`
+
+### Agregar guard a un módulo
+
+```js
+// Al inicio del app.js de cualquier módulo:
+import '../auth.js';
+await window.authGuard('acceso_territorios');
+// → si no tiene permiso: redirige a /?sin_acceso=1
+```
 
 ---
 
@@ -595,10 +720,16 @@ Almacenamiento: `YYYY-MM-DD`. Display: `DD/MM/YY`.
 ### Responsive mejorado (ANOTAR)
 - Optimizar para tablets (actualmente mobile-first)
 
-### Seguridad (pronto, pero no ahora)
-- Firebase Auth: reemplazar PINs por auth real con email/Google
-- Roles de usuario: Admin, Encargado, Publicador (con permisos diferenciados)
-- Auditoría: log de cambios importantes (quién modificó qué y cuándo)
+### Seguridad — en progreso
+- ✅ Firebase Auth con Google + Anónimo
+- ✅ Roles de usuario + mapa de permisos (`auth-config.js`)
+- ✅ Matching automático con publicadores existentes
+- ✅ Session header global
+- ✅ Persistencia de congregación en localStorage
+- ⬜ Guards activos en módulos (infraestructura lista, falta agregar `authGuard()` por módulo)
+- ⬜ Reemplazar PINs internos por auth real (decisión pendiente)
+- ⬜ Auditoría: log de cambios importantes (quién modificó qué y cuándo)
+- ⬜ Resolución de matches ambiguos en `admin.html`
 
 ### Mejorar integración Google Sheets (Asignaciones)
 - Fetch actual usa `no-cors` + `keepalive:true` → respuesta opaca, no se puede confirmar éxito
@@ -613,8 +744,11 @@ Almacenamiento: `YYYY-MM-DD`. Display: `DD/MM/YY`.
 - No usar `toISOString()` para fechas (bug UTC-3)
 - No commitear `tools/serviceAccountKey.json` ni archivos `.xlsx`
 - No fetchear el KML de Google My Maps en runtime (CORS)
-- No usar `confirm()`, `alert()`, `prompt()` nativos
+- No usar `confirm()`, `alert()`, `prompt()` nativos — usar `uiConfirm`, `uiAlert`, `uiToast`
 - No setear `.value` en inputs upgradeados sin disparar el evento `change`
 - **No usar IDs de párrafo WOL (`#p6`, `#p7`, etc.)** — varían cada semana
 - No usar `style.background` para el estado **deseleccionado** de `.grupo-btn` — limpiar el inline style para que CSS del tema lo maneje
 - No llamar `showView('view-encargado')` directamente en asignaciones — usar `goToEncargado()` (también recarga especiales)
+- No llamar `window.signOutUser()` directamente desde UI — usar `window.sessionSignOut()` (limpia localStorage + sessionStorage + Firebase)
+- No modificar permisos inline en el código — editar solo `auth-config.js` (`PERMISOS`)
+- No hacer `initializeApp()` más de una vez — `firebase.js` ya lo hace; importar `{ db, auth }` desde ahí
