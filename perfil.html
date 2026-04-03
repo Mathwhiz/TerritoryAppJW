@@ -206,7 +206,7 @@
         <div class="avatar-label">Cuenta de Google</div>
       </div>
 
-      <div style="font-size:22px;font-weight:700;letter-spacing:-0.4px;text-align:center;margin:12px 0 4px">
+      <div id="titulo-perfil" style="font-size:22px;font-weight:700;letter-spacing:-0.4px;text-align:center;margin:12px 0 4px">
         Completá tu perfil
       </div>
       <div style="font-size:14px;color:#666;text-align:center" id="congre-sub">—</div>
@@ -427,6 +427,9 @@
     const elBtn       = document.getElementById('btn-guardar');
     const elCongreSub = document.getElementById('congre-sub');
     const elMatchWrap = document.getElementById('match-badge-wrap');
+    const elTitulo    = document.getElementById('titulo-perfil');
+
+    let _perfilCargado = false;
 
     function iniciales(nombre) {
       return (nombre || '?').trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('');
@@ -443,9 +446,8 @@
       elMatchWrap.innerHTML = `<div class="match-badge ${m.cls}">${m.txt}</div>`;
     }
 
-    window.addEventListener('authStateChanged', ({ detail: { user } }) => {
-      // Usuarios anónimos no tienen perfil que editar
-      if (!user || user.isAnonymous) { window.location.replace('/'); return; }
+    function renderPerfil(user) {
+      _perfilCargado = true;
 
       const congre = sessionStorage.getItem('congreNombre') || user.congregacionId || '';
       elCongreSub.textContent = congre ? `Congregación ${congre}` : 'Ziv';
@@ -459,10 +461,8 @@
         elFallback.style.display = 'flex';
       }
 
-      // Título dinámico según contexto
-      document.querySelector('[style*="Completá"]').textContent =
-        user.primerLogin ? 'Completá tu perfil' : 'Tu perfil';
-      elBtn.textContent = user.primerLogin ? 'Guardar y continuar' : 'Guardar cambios';
+      elTitulo.textContent  = user.primerLogin ? 'Completá tu perfil' : 'Tu perfil';
+      elBtn.textContent     = user.primerLogin ? 'Guardar y continuar' : 'Guardar cambios';
 
       elNombre.value = user.displayName || '';
       if (user.sexo)      elSexo.value = user.sexo;
@@ -475,10 +475,24 @@
       elForm.style.flexDirection = 'column';
       elForm.style.alignItems    = 'center';
       elForm.style.gap           = '0';
+    }
+
+    // Timeout de seguridad: si auth no resuelve en 10s, redirigir a inicio
+    const authTimeout = setTimeout(() => {
+      if (!_perfilCargado) window.location.replace('/');
+    }, 10000);
+
+    // waitForAuth() es la fuente primaria — siempre resuelve (finally en auth.js)
+    window.waitForAuth().then(user => {
+      clearTimeout(authTimeout);
+      if (!user || user.isAnonymous) { window.location.replace('/'); return; }
+      renderPerfil(user);
     });
 
-    window.waitForAuth().then(user => {
-      if (!user) window.location.replace('/');
+    // Detectar cierre de sesión mientras el usuario está en esta página
+    window.addEventListener('authStateChanged', ({ detail: { user } }) => {
+      if (!_perfilCargado) return; // el render inicial lo maneja waitForAuth()
+      if (!user || user.isAnonymous) window.location.replace('/');
     });
 
     window.guardarPerfil = async function() {
