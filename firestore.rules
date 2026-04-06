@@ -150,6 +150,18 @@ service cloud.firestore {
 
       match /predicacion/{mes} {
         allow read, write: if isSelf(uid);
+
+        match /dias/{dia} {
+          allow read, write: if isSelf(uid);
+        }
+      }
+
+      match /revisitas/{id} {
+        allow read, write: if isSelf(uid);
+      }
+
+      match /estudios/{id} {
+        allow read, write: if isSelf(uid);
       }
     }
 

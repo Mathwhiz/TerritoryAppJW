@@ -155,7 +155,9 @@ async function cargarMes() {
   diasSnap.forEach(d => _diasMes.push({ id: d.id, ...d.data() }));
   _diasMes.sort((a, b) => b.fecha.localeCompare(a.fecha)); // más reciente primero
 
-  _dataMes.minutos = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+  const totalDias = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+  // Si hay días individuales usamos su suma; si no, usamos el total cacheado del doc padre (datos legacy)
+  _dataMes.minutos = _diasMes.length > 0 ? totalDias : (parentData.minutos || 0);
   _mesExiste = parentSnap.exists() || _diasMes.length > 0;
 
   renderStats();
@@ -274,7 +276,7 @@ function renderMonthLabel() {
 
 function renderStats() {
   const sinActividad = !_mesExiste ||
-    (_diasMes.length === 0 && (_dataMes.revisitas || 0) === 0 && (_dataMes.estudios || 0) === 0);
+    ((_dataMes.minutos || 0) === 0 && (_dataMes.revisitas || 0) === 0 && (_dataMes.estudios || 0) === 0);
 
   document.getElementById('mes-vacio').style.display = sinActividad ? ''     : 'none';
   document.getElementById('mes-stats').style.display = sinActividad ? 'none' : '';
