@@ -266,7 +266,18 @@ window.linkWithGoogle = async () => {
   if (!_user?.isAnonymous) throw new Error('No hay sesión anónima activa');
 
   const provider = new GoogleAuthProvider();
-  const result   = await linkWithPopup(auth.currentUser, provider);
+  let result;
+  try {
+    result = await linkWithPopup(auth.currentUser, provider);
+  } catch (err) {
+    if (err?.code === 'auth/credential-already-in-use') {
+      // La cuenta Google ya existe en Firebase: en ese caso no hay nada que
+      // vincular, hay que iniciar sesión con esa cuenta.
+      const fbUser = await window.signInWithGoogle();
+      return fbUser;
+    }
+    throw err;
+  }
   const fbUser   = result.user;
 
   const congreId = sessionStorage.getItem('congreId') || _user.congregacionId;
