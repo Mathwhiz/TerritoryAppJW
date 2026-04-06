@@ -478,3 +478,93 @@ Cuándo preocuparse:
 - si además fallan lecturas en tiempo real
 - si snapshots/listeners dejan de actualizar
 - si ocurre igual en incógnito sin extensiones
+
+### Estado actual del mapa público
+
+Se avanzó con una versión pública de mapa accesible desde:
+
+```txt
+/territorios/mapa.html?congre=<id>&modo=public
+```
+
+Objetivo de este modo:
+
+- permitir ver el mapa completo sin entrar al módulo privado
+- no mostrar historial de territorios
+- no mostrar "último uso"
+- no mostrar "hace cuántos días"
+- no mostrar `notas`
+
+Cambios aplicados:
+
+- se agregó un espejo público de datos de mapa dentro de cada congregación:
+  - `mapa_config/publico`
+  - `mapa_grupos`
+  - `mapa_territorios`
+- `admin.js` sincroniza ese espejo público
+- `territorios/mapa.html` en `modo=public` ya lee ese espejo
+- se agregó una tarjeta `Ver mapa` al selector principal
+
+### Hallazgo importante durante pruebas del mapa
+
+El grupo 4 mostraba zoom incorrecto aunque la geometría visible parecía normal.
+
+Se detectó:
+
+- un bug en el espejo público donde `mapa_territorios` podía escribirse usando a veces el `id` lógico y otras veces el `docId` de Firestore
+- eso podía dejar datos inconsistentes o duplicados en el espejo
+
+Se corrigió:
+
+- ahora el espejo público escribe territorios usando siempre `String(terr.id)`
+- si detecta IDs públicos inesperados, reconstruye el espejo completo
+
+### Ajuste de viewport / zoom
+
+Durante las pruebas del mapa se detectó que confiar en `polygon.getBounds()` no era estable para algunos territorios.
+
+Se cambió la estrategia:
+
+- el viewport del mapa pasa a calcular bounds desde las coordenadas reales (`coords`)
+- no depende del `getBounds()` del layer de Leaflet para encuadrar grupos o ciudad principal
+
+Beneficio:
+
+- mejor zoom inicial
+- mejor zoom al filtrar grupos
+- evita bugs raros de encuadre como el observado con el grupo 4
+
+Nota:
+
+- este ajuste impacta positivamente tanto en el mapa público como en buena parte del mapa interno, porque comparten `territorios/mapa.html`
+
+### Espejo público para Vida y Ministerio
+
+Se preparó un espejo público específico para el visor de VM, para no depender de:
+
+- `congregaciones/{congreId}` completo
+- `publicadores` reales completos
+- `vidaministerio` privado
+
+Estructura creada:
+
+- `congregaciones/{congreId}/vm_config/publico`
+- `congregaciones/{congreId}/vm_publicadores/{id}`
+- `congregaciones/{congreId}/vm_programa/{fecha}`
+- `congregaciones/{congreId}/vm_especiales/{fecha}`
+
+Objetivo:
+
+- que `vida-ministerio/programa.html` pueda funcionar con datos públicos mínimos
+- evitar exponer PINs, `scriptUrl` y otros campos privados del doc principal de congregación
+
+Estado:
+
+- `vida-ministerio/app.js` ya sincroniza ese espejo
+- `vida-ministerio/programa.js` ya fue adaptado para leer el espejo público
+- `vida-ministerio/programa.js` ya no importa `shared/auth.js`, para no depender de auth en el visor
+
+Importante:
+
+- esto todavía **no mejora la seguridad real por sí solo** mientras `congregaciones/{congreId}` y sus subcolecciones sigan con `allow read, write: if true`
+- el valor de este paso es dejar separada la data pública para que después sí podamos cerrar rules sin romper el visor

@@ -1,7 +1,7 @@
 import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
 import {
-  collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, updateDoc, query, orderBy
+  collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, updateDoc, query, orderBy, writeBatch
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 await window.authGuard('acceso_vm');
@@ -60,6 +60,114 @@ let semanasLista      = [];  // cache para navegación encargado (orden desc)
 let pubFecha          = null; // fecha activa en vista pública
 let vmEspeciales      = {};   // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
 let vmScriptUrl       = null; // Apps Script URL para exportar a Sheets
+
+function vmPublicConfigRef() {
+  return doc(db, 'congregaciones', congreId, 'vm_config', 'publico');
+}
+
+function vmPublicadoresCol() {
+  return collection(db, 'congregaciones', congreId, 'vm_publicadores');
+}
+
+function vmProgramaCol() {
+  return collection(db, 'congregaciones', congreId, 'vm_programa');
+}
+
+function vmEspecialesCol() {
+  return collection(db, 'congregaciones', congreId, 'vm_especiales');
+}
+
+function toPublicVmSemana(semana) {
+  return {
+    fecha: semana.fecha,
+    cancionApertura: semana.cancionApertura || null,
+    cancionIntermedia: semana.cancionIntermedia || null,
+    cancionCierre: semana.cancionCierre || null,
+    presidente: semana.presidente || null,
+    oracionApertura: semana.oracionApertura || null,
+    oracionCierre: semana.oracionCierre || null,
+    tesoros: semana.tesoros || {},
+    ministerio: semana.ministerio || [],
+    vidaCristiana: semana.vidaCristiana || [],
+    estudioBiblico: semana.estudioBiblico || {},
+    updatedAt: Date.now(),
+  };
+}
+
+async function syncVmPublicConfig() {
+  await setDoc(vmPublicConfigRef(), {
+    nombre: congreNombre || congreId,
+    tieneAuxiliar: tieneAuxiliar === true,
+    updatedAt: Date.now(),
+  });
+}
+
+async function replaceVmPublicadores() {
+  const existing = await getDocs(vmPublicadoresCol());
+  if (!existing.empty) {
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  for (let i = 0; i < publicadores.length; i += 400) {
+    const batch = writeBatch(db);
+    publicadores.slice(i, i + 400).forEach(p => {
+      batch.set(doc(db, 'congregaciones', congreId, 'vm_publicadores', String(p.id)), {
+        id: String(p.id),
+        nombre: p.nombre || '',
+      });
+    });
+    await batch.commit();
+  }
+}
+
+async function replaceVmEspecialesPublicos() {
+  const existing = await getDocs(vmEspecialesCol());
+  if (!existing.empty) {
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  const entries = Object.entries(vmEspeciales);
+  for (let i = 0; i < entries.length; i += 400) {
+    const batch = writeBatch(db);
+    entries.slice(i, i + 400).forEach(([fecha, esp]) => {
+      batch.set(doc(db, 'congregaciones', congreId, 'vm_especiales', fecha), {
+        tipo: esp?.tipo || null,
+        fechaEvento: esp?.fechaEvento || null,
+      });
+    });
+    await batch.commit();
+  }
+}
+
+async function syncVmProgramaCompleto() {
+  const snap = await getDocs(collection(db, 'congregaciones', congreId, 'vidaministerio'));
+  const semanas = snap.docs
+    .map(d => d.data())
+    .filter(s => s?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(s.fecha));
+
+  const existing = await getDocs(vmProgramaCol());
+  if (!existing.empty) {
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  for (let i = 0; i < semanas.length; i += 400) {
+    const batch = writeBatch(db);
+    semanas.slice(i, i + 400).forEach(s => {
+      batch.set(doc(db, 'congregaciones', congreId, 'vm_programa', s.fecha), toPublicVmSemana(s));
+    });
+    await batch.commit();
+  }
+}
 
 const VM_TIPO_LABELS = {
   conmemoracion:   'Conmemoración',
@@ -355,6 +463,7 @@ window.guardarConfig = async function() {
   try {
     await setDoc(doc(db, 'congregaciones', congreId), { tieneAuxiliar: nuevo }, { merge: true });
     tieneAuxiliar = nuevo;
+    await syncVmPublicConfig();
     uiLoading.hide();
     uiToast('Configuración guardada', 'success');
     goToSemanas();
@@ -463,6 +572,7 @@ async function cargarPublicadores() {
     publicadores.sort((a, b) =>
       (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
     );
+    await replaceVmPublicadores();
   } catch(e) {
     console.error('Error al cargar publicadores:', e);
   }
@@ -539,6 +649,7 @@ async function cargarVmEspeciales() {
     const snap = await getDocs(collection(db, 'congregaciones', congreId, 'semanasEspeciales'));
     vmEspeciales = {};
     snap.forEach(d => { vmEspeciales[d.id] = d.data(); });
+    await replaceVmEspecialesPublicos();
   } catch(e) {
     console.error('Error cargando especiales VM:', e);
   }
@@ -643,6 +754,7 @@ window.eliminarSemana = async function(fecha) {
   if (!ok) return;
   try {
     await deleteDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
+    await deleteDoc(doc(db, 'congregaciones', congreId, 'vm_programa', fecha));
     semanasLista = semanasLista.filter(s => s.fecha !== fecha);
     renderSemanas(semanasLista);
     uiToast('Semana eliminada', 'success');
@@ -1012,6 +1124,7 @@ window.guardarSemana = async function() {
   try {
     const ref = doc(db, 'congregaciones', congreId, 'vidaministerio', semanaData.fecha);
     await setDoc(ref, semanaData);
+    await setDoc(doc(db, 'congregaciones', congreId, 'vm_programa', semanaData.fecha), toPublicVmSemana(semanaData));
     uiLoading.hide();
     uiToast('Programa guardado', 'success');
   } catch(e) {
@@ -1547,6 +1660,7 @@ window.crearSemana = async function() {
     // Guardar en Firestore
     try {
       await setDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha), semanaData);
+      await setDoc(doc(db, 'congregaciones', congreId, 'vm_programa', fecha), toPublicVmSemana(semanaData));
     } catch(e) {
       uiLoading.hide();
       uiToast(`Error guardando ${fmtDisplay(fecha)}: ${e.message}`, 'error');
@@ -1747,8 +1861,10 @@ window.exportarMesASheets = async function() {
     pinVM = data.pinVidaMinisterio || '1234';
     tieneAuxiliar = data.tieneAuxiliar === true;
     vmScriptUrl = data.scriptUrl || null;
+    await syncVmPublicConfig();
     await cargarPublicadores();
     await cargarVmEspeciales();
+    await syncVmProgramaCompleto();
   } catch(e) {
     console.error('Error al inicializar:', e);
   }

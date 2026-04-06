@@ -1,5 +1,4 @@
 import { db } from '../shared/firebase.js';
-import '../shared/auth.js';
 import {
   collection, doc, getDoc, getDocs
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
@@ -74,9 +73,9 @@ async function init() {
   try {
     // Cargar datos de congregación, publicadores y semanas especiales en paralelo
     const [congreSnap, pubsSnap, espSnap] = await Promise.all([
-      getDoc(doc(db, 'congregaciones', congreId)),
-      getDocs(collection(db, 'congregaciones', congreId, 'publicadores')),
-      getDocs(collection(db, 'congregaciones', congreId, 'semanasEspeciales')).catch(() => ({ forEach: () => {} })),
+      getDoc(doc(db, 'congregaciones', congreId, 'vm_config', 'publico')),
+      getDocs(collection(db, 'congregaciones', congreId, 'vm_publicadores')),
+      getDocs(collection(db, 'congregaciones', congreId, 'vm_especiales')).catch(() => ({ forEach: () => {} })),
     ]);
 
     if (!congreSnap.exists()) {
@@ -114,7 +113,7 @@ async function cargarPrograma() {
   el.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div>';
 
   try {
-    const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', semanaActual));
+    const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vm_programa', semanaActual));
     const banner = vmBannerHtml(semanaActual);
     if (!snap.exists()) {
       el.innerHTML = banner + '<div class="empty-state">No hay programa cargado para esta semana.<br><span style="color:#3a3a3a;">El encargado todavía no lo subió.</span></div>';
