@@ -332,7 +332,7 @@ async function deleteCongre(id, nombre) {
 
   uiLoading.show('Eliminando...');
   try {
-    const subcols = ['grupos', 'territorios', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio'];
+    const subcols = ['grupos', 'territorios', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio', 'mapa_grupos', 'mapa_territorios'];
     for (const sub of subcols) {
       const snap = await getDocs(collection(db, 'congregaciones', id, sub));
       if (snap.empty) continue;
@@ -340,6 +340,7 @@ async function deleteCongre(id, nombre) {
       snap.forEach(d => batch.delete(d.ref));
       await batch.commit();
     }
+    await deleteDoc(publicConfigRef(id)).catch(() => {});
     await deleteDoc(doc(db, 'congregaciones', id));
     uiLoading.hide();
     uiToast('Congregación eliminada', 'success');
@@ -536,6 +537,82 @@ function onCiudadExtraKmlFile(idx, input) {
   reader.readAsText(file);
 }
 
+function publicConfigRef(congreId) {
+  return doc(db, 'congregaciones', congreId, 'mapa_config', 'publico');
+}
+
+function publicGruposCol(congreId) {
+  return collection(db, 'congregaciones', congreId, 'mapa_grupos');
+}
+
+function publicTerritoriosCol(congreId) {
+  return collection(db, 'congregaciones', congreId, 'mapa_territorios');
+}
+
+function toPublicTerritorio(t) {
+  return {
+    id: t.id,
+    nombre: t.nombre || `Territorio ${t.id}`,
+    tipo: t.tipo || 'normal',
+    grupoId: t.grupoId || null,
+    punto: t.punto || null,
+    poligonos: t.poligonos || [],
+    ciudad: t.ciudad || null,
+  };
+}
+
+async function syncPublicMapConfig(congreId, data) {
+  await setDoc(publicConfigRef(congreId), {
+    nombre: data.nombre || congreId,
+    color: data.color || null,
+    ciudadPrincipal: data.ciudadPrincipal || null,
+    ciudadesExtras: data.ciudadesExtras || [],
+    updatedAt: Timestamp.now(),
+  });
+}
+
+async function replacePublicMapGroups(congreId, grupos) {
+  const existing = await getDocs(publicGruposCol(congreId));
+  if (!existing.empty) {
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  for (let i = 0; i < grupos.length; i += 400) {
+    const batch = writeBatch(db);
+    grupos.slice(i, i + 400).forEach(g => {
+      batch.set(doc(db, 'congregaciones', congreId, 'mapa_grupos', String(g.id)), {
+        id: String(g.id),
+        label: g.label || `Grupo ${g.id}`,
+        color: g.color || '#888',
+      });
+    });
+    await batch.commit();
+  }
+}
+
+async function replacePublicMapTerritories(congreId, territorios) {
+  const existing = await getDocs(publicTerritoriosCol(congreId));
+  if (!existing.empty) {
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  for (let i = 0; i < territorios.length; i += 400) {
+    const batch = writeBatch(db);
+    territorios.slice(i, i + 400).forEach(t => {
+      batch.set(doc(db, 'congregaciones', congreId, 'mapa_territorios', String(t.id)), toPublicTerritorio(t));
+    });
+    await batch.commit();
+  }
+}
+
 // ─────────────────────────────────────────
 //   RENAME CONGREGACIÓN (copia + elimina)
 // ─────────────────────────────────────────
@@ -546,7 +623,7 @@ async function renameCongre(oldId, newId) {
   const oldSnap = await getDoc(doc(db, 'congregaciones', oldId));
   await setDoc(doc(db, 'congregaciones', newId), oldSnap.data());
 
-  const subcols = ['grupos', 'territorios', 'historial', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio'];
+  const subcols = ['grupos', 'territorios', 'historial', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio', 'mapa_grupos', 'mapa_territorios'];
   for (const sub of subcols) {
     const snap = await getDocs(collection(db, 'congregaciones', oldId, sub));
     if (snap.empty) continue;
@@ -556,6 +633,12 @@ async function renameCongre(oldId, newId) {
       docs.slice(i, i + 400).forEach(d => batch.set(doc(db, 'congregaciones', newId, sub, d.id), d.data()));
       await batch.commit();
     }
+  }
+
+  const oldPublicConfig = await getDoc(publicConfigRef(oldId));
+  if (oldPublicConfig.exists()) {
+    await setDoc(publicConfigRef(newId), oldPublicConfig.data());
+    await deleteDoc(publicConfigRef(oldId));
   }
 
   for (const sub of subcols) {
@@ -616,6 +699,12 @@ async function crearCongregacion(skipKml) {
         ciudadesExtras: ciudadesExtrasMetadata,
         ...(color && { color }),
       });
+      await syncPublicMapConfig(congreId, {
+        nombre,
+        color,
+        ciudadPrincipal: ciudadPrincipal || null,
+        ciudadesExtras: ciudadesExtrasMetadata,
+      });
 
       // Reemplazar grupos: borrar existentes y crear los nuevos
       const existSnap = await getDocs(collection(db, 'congregaciones', congreId, 'grupos'));
@@ -641,6 +730,12 @@ async function crearCongregacion(skipKml) {
         color,
         creadoEn: Timestamp.now(),
       });
+      await syncPublicMapConfig(congreId, {
+        nombre,
+        color,
+        ciudadPrincipal: ciudadPrincipal || null,
+        ciudadesExtras: ciudadesExtrasMetadata,
+      });
     }
 
     // Grupos en batch
@@ -649,9 +744,11 @@ async function crearCongregacion(skipKml) {
       gruposBatch.set(doc(db, 'congregaciones', congreId, 'grupos', g.id), g);
     });
     await gruposBatch.commit();
+    await replacePublicMapGroups(congreId, grupos);
 
     // Territorios del KML en batches de 400
     const terrColRef = collection(db, 'congregaciones', congreId, 'territorios');
+    const publicTerritories = [];
     if (!skipKml && kmlTerritories?.length > 0) {
       const total = kmlTerritories.length;
       for (let i = 0; i < total; i += 400) {
@@ -659,6 +756,7 @@ async function crearCongregacion(skipKml) {
         const batch = writeBatch(db);
         kmlTerritories.slice(i, i + 400).forEach(t => {
           batch.set(doc(terrColRef, String(t.id)), t);
+          publicTerritories.push(toPublicTerritorio(t));
         });
         await batch.commit();
       }
@@ -672,10 +770,17 @@ async function crearCongregacion(skipKml) {
         uiLoading.show(`Subiendo ${ec.nombre}... (${Math.min(i + 400, total)}/${total})`);
         const batch = writeBatch(db);
         ec.territories.slice(i, i + 400).forEach(t => {
-          batch.set(doc(terrColRef, String(t.id)), { ...t, ciudad: ec.nombre });
+          const saved = { ...t, ciudad: ec.nombre };
+          batch.set(doc(terrColRef, String(t.id)), saved);
+          publicTerritories.push(toPublicTerritorio(saved));
         });
         await batch.commit();
       }
+    }
+    const shouldReplacePublicTerritories =
+      !editingCongreId || (!skipKml && publicTerritories.length > 0);
+    if (shouldReplacePublicTerritories) {
+      await replacePublicMapTerritories(congreId, publicTerritories);
     }
 
     uiLoading.hide();
@@ -834,12 +939,17 @@ async function saveTerritorios() {
   try {
     for (let i = 0; i < entries.length; i += 400) {
       const batch = writeBatch(db);
+      const publicBatch = writeBatch(db);
       entries.slice(i, i + 400).forEach(([docId, grupoId]) => {
         batch.update(doc(db, 'congregaciones', terrCongreId, 'territorios', docId), {
           grupoId: grupoId || null,
         });
+        publicBatch.set(doc(db, 'congregaciones', terrCongreId, 'mapa_territorios', docId), {
+          grupoId: grupoId || null,
+        }, { merge: true });
       });
       await batch.commit();
+      await publicBatch.commit();
     }
     entries.forEach(([docId, grupoId]) => {
       const t = terrData.find(x => x._docId === docId);

@@ -195,7 +195,8 @@ import {
   collection, doc, getDoc, getDocs, query, where, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
-const CONGRE_ID = sessionStorage.getItem('congreId') || 'sur';
+const _params = new URLSearchParams(window.location.search);
+const CONGRE_ID = _params.get('congre') || sessionStorage.getItem('congreId') || 'sur';
 
 // Dinámico — se construye en cargarGrupos()
 let GRUPO_COLORS = {};
@@ -212,7 +213,9 @@ function _darkenHex(hex) {
 
 async function cargarGrupos() {
   try {
-    const gruposCol = collection(db, 'congregaciones', CONGRE_ID, 'grupos');
+    const gruposCol = isPublicMapMode()
+      ? collection(db, 'congregaciones', CONGRE_ID, 'mapa_grupos')
+      : collection(db, 'congregaciones', CONGRE_ID, 'grupos');
     const snap = await getDocs(gruposCol);
     GRUPOS_DATA = [];
     snap.forEach(d => {
@@ -263,7 +266,6 @@ let territoriosInfo = {};  // { [id]: { lastFin, lastIni, enProgreso } }
 let activeFilter = 'all';
 let pickerSelected = new Set();
 
-const _params     = new URLSearchParams(window.location.search);
 const _grupoParam = _params.get('grupo') || 'all';
 const _modoParam  = _params.get('modo')  || 'full';
 const _enProgreso = (_params.get('enprogreso') || '').split(',').filter(Boolean);
@@ -274,9 +276,15 @@ let encuentroMarker = null;
 let encuentroLatLng = null;
 let terrCorners     = null;
 
+function isPublicMapMode() {
+  return _modoParam === 'public';
+}
+
 // ── Cargar datos desde Firestore ──
 async function cargarTerritorios() {
-  const terrCol = collection(db, 'congregaciones', CONGRE_ID, 'territorios');
+  const terrCol = isPublicMapMode()
+    ? collection(db, 'congregaciones', CONGRE_ID, 'mapa_territorios')
+    : collection(db, 'congregaciones', CONGRE_ID, 'territorios');
   const snap = await getDocs(terrCol);
 
   TERRITORIOS = snap.docs.flatMap(d => {
@@ -301,7 +309,7 @@ async function cargarTerritorios() {
       punto:  normPunto(t.punto),
       tipo:   t.tipo || 'normal',
       ciudad: t.ciudad || null,
-      notas:  t.notas  || null,
+      notas:  isPublicMapMode() ? null : (t.notas || null),
     })).filter(entry => entry.coords.length >= 3);
   });
 }
@@ -345,7 +353,11 @@ async function cargarHistorialInfo() {
 // ── Carga ciudades extra del doc de congregación ──
 async function cargarCiudadesExtras() {
   try {
-    const snap = await getDoc(doc(db, 'congregaciones', CONGRE_ID));
+    const snap = await getDoc(
+      isPublicMapMode()
+        ? doc(db, 'congregaciones', CONGRE_ID, 'mapa_config', 'publico')
+        : doc(db, 'congregaciones', CONGRE_ID)
+    );
     if (snap.exists()) ciudadesExtras = snap.data().ciudadesExtras || [];
   } catch(e) { /* sin ciudades extras */ }
 }
@@ -463,7 +475,11 @@ async function initMap() {
 
   // Leyenda según modo
   const legend = document.getElementById('map-legend');
-  if (_modoParam === 'full') {
+  if (isPublicMapMode()) {
+    legend.innerHTML = GRUPOS_DATA.map(g =>
+      `<div class="legend-row"><div class="legend-dot" style="background:${g.color};"></div>${g.label}</div>`
+    ).join('');
+  } else if (_modoParam === 'full') {
     legend.innerHTML = GRUPOS_DATA.map(g =>
       `<div class="legend-row"><div class="legend-dot" style="background:${g.color};"></div>${g.label}</div>`
     ).join('');
@@ -583,6 +599,19 @@ function renderTerritories() {
           polygon.setStyle({ fillOpacity: fillOp, weight });
       });
       allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, baseStyle:{ fillOp, weight, opacity, isMainGroup }, c });
+      polygon.addTo(map); label.addTo(map);
+      return;
+    }
+
+    // MODO PUBLIC
+    if (isPublicMapMode()) {
+      const c = GRUPO_COLORS[t.grupo] || { fill:'#888', border:'#555' };
+      const polygon = L.polygon(t.coords, { color:c.border, fillColor:c.fill, fillOpacity:0.22, weight:2, opacity:0.9 });
+      const label   = makeLabel(t.coords, c.fill, t.num);
+      polygon.on('click',     () => openPopup(polygon, t.num, t.grupo));
+      polygon.on('mouseover', () => polygon.setStyle({ fillOpacity:0.45, weight:2.5 }));
+      polygon.on('mouseout',  () => polygon.setStyle({ fillOpacity:0.22, weight:2 }));
+      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null });
       polygon.addTo(map); label.addTo(map);
       return;
     }
@@ -804,6 +833,21 @@ function showToast(msg, isRemove = false) {
 // ── Popup normal ──
 function openPopup(layer, numero, grupo) {
   const c = GRUPO_COLORS[grupo] || { fill:'#888' };
+  if (isPublicMapMode()) {
+    const terrEntry = TERRITORIOS.find(t => baseNum(t.num) === baseNum(numero));
+    const ciudadHtml = terrEntry?.ciudad
+      ? `<div class="terr-popup-row"><span class="terr-popup-label">Ciudad</span><span class="terr-popup-val">${terrEntry.ciudad}</span></div>`
+      : '';
+    const html = `
+      <div>
+        <div class="terr-popup-num" style="color:${c.fill};">${numero}</div>
+        <div class="terr-popup-group" style="color:${c.fill};">${GRUPO_LABEL[grupo] || ''}</div>
+        ${ciudadHtml}
+      </div>`;
+    const center = layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng();
+    L.popup({ maxWidth: 220, closeButton: true }).setLatLng(center).setContent(html).openOn(map);
+    return;
+  }
   const info = territoriosInfo[baseNum(numero)] || {};
   const lastDate = info.lastFin || info.lastIni;
   const dias = lastDate ? daysSince(lastDate) : null;
@@ -840,7 +884,8 @@ window.handleBack = function() {
     if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
     else if (window.opener) window.opener.postMessage(msg, '*');
   } else {
-    history.back();
+    if (isPublicMapMode()) window.location.href = '../index.html';
+    else history.back();
   }
 };
 
