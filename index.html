@@ -894,6 +894,149 @@
     @media (min-width: 420px) {
       .module-grid { grid-template-columns: 1fr 1fr; }
     }
+    @media (max-width: 520px) {
+      body {
+        min-height: 100svh;
+        overflow-x: hidden;
+      }
+      .view {
+        min-height: 100svh;
+      }
+      .wrap {
+        max-width: 352px;
+        gap: 10px;
+        padding: 1.15rem 1rem 1.25rem;
+      }
+      #view-welcome,
+      #view-auth {
+        min-height: 100svh;
+      }
+      .welcome-shell {
+        min-height: 100svh;
+        padding: 10px 0 14px;
+      }
+      .s1-bar {
+        padding: 0 16px;
+      }
+      .s1-hero {
+        padding: 8px 22px 8px;
+        gap: 8px;
+      }
+      .app-icon-shell {
+        width: 92px;
+        height: 92px;
+      }
+      .app-icon-orbit {
+        transform: translate(-50%, -50%) rotate(var(--clock-angle, 35deg)) translateY(-37px);
+      }
+      .app-name {
+        font-size: 2.1rem;
+      }
+      .app-tagline {
+        font-size: 14px;
+        line-height: 1.45;
+      }
+      .s1-slider {
+        gap: 8px;
+      }
+      .slider-viewport {
+        height: 150px;
+        padding: 0 16px;
+      }
+      .slide-card {
+        padding: 12px 14px;
+        gap: 8px;
+      }
+      .s1-foot {
+        padding: 6px 20px 14px;
+      }
+      .btn-primary {
+        padding: 14px 18px;
+        border-radius: 14px;
+      }
+      .congre-card {
+        padding: 0.95rem 1rem;
+        border-radius: 16px;
+      }
+      .congre-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+      }
+      .congre-nombre {
+        font-size: 20px;
+      }
+      #view-auth {
+        padding: 18px 18px 16px;
+      }
+      .auth-screen {
+        max-width: 332px;
+      }
+      .auth-icon-wrap {
+        width: 54px;
+        height: 54px;
+        margin-bottom: 18px;
+      }
+      .auth-congre-block {
+        margin-bottom: 8px;
+      }
+      .auth-congre-name {
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+      .auth-title {
+        font-size: 1.32rem;
+      }
+      .auth-sub {
+        font-size: 13px;
+        line-height: 1.45;
+        margin-bottom: 22px;
+      }
+      .btn-google,
+      .btn-skip {
+        padding: 13px 16px;
+        border-radius: 13px;
+      }
+      .auth-note {
+        margin-top: 12px;
+      }
+      .demo-menu-head {
+        padding: 16px 16px 10px;
+      }
+      #view-menu .menu-session-slot {
+        position: static;
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
+      #view-menu .menu-session-slot #ziv-session {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+      #view-menu .menu-session-slot #ziv-session .ziv-sBtn {
+        max-width: min(100%, 220px);
+      }
+      .menu-congre-wrapper {
+        width: 100%;
+      }
+      .menu-congre-inner {
+        padding: 16px 18px 15px;
+      }
+      #menu-titulo {
+        font-size: 20px;
+      }
+      .menu-congre-sub {
+        font-size: 12px;
+      }
+      .dash-content {
+        padding: 6px 16px 24px;
+      }
+      .btn-theme-float {
+        left: 12px;
+        bottom: 12px;
+      }
+    }
     @media (min-width: 600px) {
       .demo-menu-head { padding: 28px 28px 18px; }
       .dash-content { padding: 10px 28px 40px; }
