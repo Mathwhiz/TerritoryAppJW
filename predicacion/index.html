@@ -59,6 +59,7 @@
   <div class="tabs-bar">
     <button class="tab-btn active" id="tab-btn-tiempo" onclick="switchTab('tiempo')">Tiempo</button>
     <button class="tab-btn" id="tab-btn-contactos" onclick="switchTab('contactos')">Revisitas y estudios</button>
+    <button class="tab-btn" id="tab-btn-metas" onclick="switchTab('metas')">Metas</button>
   </div>
 
   <!-- ── Tab: Tiempo ── -->
@@ -77,7 +78,11 @@
         </div>
       </div>
 
-      <button class="add-manual-link" onclick="abrirAgregarTiempo()">+ Agregar tiempo de otro día</button>
+      <div class="manual-actions">
+        <button class="pred-btn pred-btn-ghost pred-btn-wide" onclick="abrirAgregarTiempo()">
+          + Agregar tiempo manual
+        </button>
+      </div>
 
       <!-- Mes -->
       <div class="pred-card">
@@ -130,7 +135,10 @@
       </div>
 
       <!-- Historial -->
-      <div class="hist-section-title">Historial</div>
+      <div class="hist-section-head">
+        <div class="hist-section-title">Historial</div>
+        <div class="hist-section-sub" id="hist-section-sub">Mes seleccionado: —</div>
+      </div>
       <div id="hist-container">
         <div class="loading-wrap"><div class="spinner"></div></div>
       </div>
@@ -167,6 +175,14 @@
     </div>
   </div><!-- /tab-contactos -->
 
+  <div class="tab-panel" id="tab-metas">
+    <div class="pred-body">
+      <div id="metas-container">
+        <div class="loading-wrap"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div><!-- /tab-metas -->
+
   <!-- ── Modal: agregar tiempo manual ── -->
   <div id="modal-add-tiempo" class="modal-overlay" style="display:none;"
        onclick="if(event.target===this) cerrarAgregarTiempo()">
@@ -186,6 +202,12 @@
           <label>Minutos</label>
           <input class="edit-time-input" type="number" id="add-mins" min="0" max="59" placeholder="0">
         </div>
+      </div>
+      <div class="quick-time-wrap">
+        <button class="quick-time-btn" type="button" onclick="sumarTiempoRapido(0,15)">+15 min</button>
+        <button class="quick-time-btn" type="button" onclick="sumarTiempoRapido(0,30)">+30 min</button>
+        <button class="quick-time-btn" type="button" onclick="sumarTiempoRapido(1,0)">+1 h</button>
+        <button class="quick-time-btn" type="button" onclick="sumarTiempoRapido(2,0)">+2 h</button>
       </div>
       <div class="modal-actions">
         <button class="pred-btn pred-btn-ghost" onclick="cerrarAgregarTiempo()">Cancelar</button>

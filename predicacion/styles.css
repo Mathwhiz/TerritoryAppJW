@@ -54,12 +54,16 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   display: flex; max-width: 480px; margin: 12px auto 0;
   padding: 0 16px; gap: 4px;
   border-bottom: 1px solid var(--border-primary);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.tabs-bar::-webkit-scrollbar { display: none; }
 .tab-btn {
   padding: 10px 16px; font-size: 14px; font-weight: 600; font-family: inherit;
   background: none; border: none; border-bottom: 2px solid transparent;
   margin-bottom: -1px; cursor: pointer; color: var(--text-muted);
   transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
 }
 .tab-btn.active { color: #E05277; border-bottom-color: #E05277; }
 .tab-btn:hover:not(.active) { color: var(--text-secondary); }
@@ -88,6 +92,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .pred-btn:active { opacity: 0.78; }
 .pred-btn-primary { background: #E05277; color: #fff; }
 .pred-btn-primary:hover { background: #c8415e; }
+.pred-btn-wide { width: 100%; }
 .pred-btn-ghost {
   background: var(--bg-primary); border: 1px solid var(--border-light);
   color: var(--text-secondary);
@@ -107,6 +112,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .timer-display.running { color: #E05277; }
 .timer-btns { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
 .timer-add-wrap { text-align: center; }
+.manual-actions { margin-bottom: 12px; }
 .timer-add-btn {
   font-size: 14px; padding: 9px 20px; border-radius: 10px;
   background: rgba(224,82,119,0.1); border: 1px solid rgba(224,82,119,0.3);
@@ -210,6 +216,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px;
 }
+.hist-section-head .hist-section-title { margin-bottom: 0; }
 .hist-card {
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: 16px; overflow: hidden;
@@ -239,6 +246,12 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .hist-val { min-width: 54px; text-align: right; font-size: 13px; color: var(--text-secondary); }
 .hist-val-dim { font-size: 11px; color: var(--text-muted); }
 .hist-empty { padding: 28px 14px; text-align: center; font-size: 13px; color: var(--text-muted); }
+
+.hist-section-head {
+  display: flex; align-items: end; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px;
+}
+.hist-section-sub { font-size: 11px; color: var(--text-muted); text-align: right; }
 
 /* ─────────────────────────────────────────
    CONTACTS TAB (revisitas & estudios)
@@ -288,6 +301,38 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   font-size: 13px; color: var(--text-muted);
 }
 
+.metas-grid {
+  display: grid;
+  gap: 12px;
+}
+.meta-card {
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: 16px; padding: 18px;
+}
+.meta-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px;
+}
+.meta-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.meta-sub { font-size: 12px; color: var(--text-muted); }
+.meta-main { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.meta-current { font-size: 28px; font-weight: 700; color: #E05277; }
+.meta-target { font-size: 14px; color: var(--text-secondary); }
+.meta-bar {
+  width: 100%; height: 10px; border-radius: 999px;
+  background: var(--bg-primary); overflow: hidden; margin-bottom: 10px;
+}
+.meta-bar-fill {
+  height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, #E05277 0%, #ff7e9b 100%);
+}
+.meta-foot { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+.meta-empty {
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: 16px; padding: 22px 18px; text-align: center;
+  font-size: 14px; color: var(--text-muted); line-height: 1.6;
+}
+
 /* ─────────────────────────────────────────
    MODALS
 ───────────────────────────────────────── */
@@ -323,6 +368,21 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .edit-time-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .edit-time-input:focus { border-color: #E05277; }
 .edit-time-sep { font-size: 26px; font-weight: 300; color: var(--text-muted); padding-top: 18px; }
+.quick-time-wrap {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px; margin-top: 14px;
+}
+.quick-time-btn {
+  padding: 9px 10px; border-radius: 10px;
+  background: rgba(224,82,119,0.08); border: 1px solid rgba(224,82,119,0.22);
+  color: #E05277; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.quick-time-btn:hover {
+  background: rgba(224,82,119,0.14);
+  border-color: rgba(224,82,119,0.32);
+}
 
 /* contact modal fields */
 .modal-field { margin-bottom: 14px; }
@@ -341,3 +401,13 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   resize: vertical; min-height: 90px; line-height: 1.55;
 }
 .modal-textarea:focus { border-color: #E05277; }
+
+@media (max-width: 420px) {
+  .hist-section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .hist-section-sub {
+    text-align: left;
+  }
+}
