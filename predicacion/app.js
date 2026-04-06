@@ -104,6 +104,24 @@ if (!_user || _user.isAnonymous) {
   init(_user.uid);
 }
 
+window.predicacionLoginRequired = async () => {
+  try {
+    const current = window.currentUser;
+    if (current?.isAnonymous && typeof window.linkWithGoogle === 'function') {
+      await window.linkWithGoogle();
+    } else if (typeof window.signInWithGoogle === 'function') {
+      await window.signInWithGoogle();
+    }
+
+    const refreshed = await window.waitForAuth();
+    if (refreshed && !refreshed.isAnonymous && !_predicacionInitDone) {
+      await init(refreshed.uid);
+    }
+  } catch (err) {
+    console.error('[predicacion] No se pudo completar el login requerido:', err);
+  }
+};
+
 window.addEventListener('authStateChanged', ({ detail: { user } }) => {
   if (!user || user.isAnonymous) {
     if (!_predicacionInitDone) showView('view-noauth');
