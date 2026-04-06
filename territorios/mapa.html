@@ -1043,6 +1043,29 @@ window.debugVisibleBounds = function() {
   return rows;
 };
 
+window.debugTerritorio = function(numero) {
+  const targets = allLayers.filter(l => String(l.numero) === String(numero) || String(l.numero).replace(/[A-Za-z]$/, '') === String(numero));
+  const rows = targets.map(l => {
+    const b = l.polygon.getBounds();
+    const center = b.getCenter();
+    return {
+      numero: l.numero,
+      grupo: l.group,
+      ciudad: l.ciudad || '(principal)',
+      south: +b.getSouth().toFixed(6),
+      west: +b.getWest().toFixed(6),
+      north: +b.getNorth().toFixed(6),
+      east: +b.getEast().toFixed(6),
+      centerLat: +center.lat.toFixed(6),
+      centerLng: +center.lng.toFixed(6),
+      puntos: l.polygon.getLatLngs()[0]?.length || 0,
+      coords: l.polygon.getLatLngs()[0]?.map(p => ({ lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6) })) || [],
+    };
+  });
+  console.log(rows);
+  return rows;
+};
+
 // ── Utilidades ──
 function fmtDate(ds) {
   if (!ds) return '—';
