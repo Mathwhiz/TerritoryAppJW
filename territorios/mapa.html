@@ -269,6 +269,7 @@ let allLayers = [];
 let territoriosInfo = {};  // { [id]: { lastFin, lastIni, enProgreso } }
 let activeFilter = 'all';
 let pickerSelected = new Set();
+window.__allLayers = allLayers;
 
 const _grupoParam = _params.get('grupo') || 'all';
 const _modoParam  = _params.get('modo')  || 'full';
@@ -556,6 +557,7 @@ function makeLabel(coords, fill, text) {
 }
 
 function renderTerritories() {
+  window.__allLayers = allLayers;
   TERRITORIOS.forEach(t => {
     if (!t.coords || t.coords.length < 3) return; // skip polígonos inválidos
 
