@@ -344,3 +344,112 @@ Mejor dejarlo versionado porque:
 - deja trazabilidad de lo que se corrigió
 
 Solo convendría ignorarlo si fueras a poner secretos reales, exploits sensibles o credenciales. En su estado actual, es documentación técnica del proyecto.
+
+## Progreso aplicado
+
+### Endurecimiento transicional ya desplegado
+
+Se aplicó una primera capa de seguridad sin romper el flujo actual de invitados + PIN.
+
+Cambios realizados:
+
+- se desplegaron `firestore.rules` transicionales al proyecto `appjw-3697e`
+- `config/superadmin` ya no queda abierto a cualquier cliente
+- `usuarios/{uid}` ya no permite auto-escalada simple de roles desde el navegador
+- `admin.html` ahora exige:
+  1. login con Google
+  2. que el usuario tenga permiso real de admin
+  3. luego recién el PIN
+
+Objetivo de esta etapa:
+
+- no romper módulos actuales
+- no romper invitados
+- empezar a cerrar ataques muy obvios
+
+### Hallazgo operativo importante
+
+El sistema de permisos del frontend espera que `appRoles` sea un array.
+
+Formato correcto:
+
+```js
+appRol: "admin_general",
+appRoles: ["admin_general"]
+```
+
+Formato incorrecto que causó fallas:
+
+```js
+appRol: "admin_general",
+appRoles: "admin_general"
+```
+
+Síntoma observado:
+
+- en `admin.html` quedaba “Verificando acceso…”
+- DevTools mostraba:
+
+```txt
+TypeError: roles.some is not a function
+```
+
+Se corrigió el frontend para tolerar valores legacy o mal tipados en `appRoles`, pero igual conviene normalizar los datos en Firestore.
+
+### Próximos pasos recomendados sin romper flujo
+
+- normalizar todos los documentos de `usuarios` para que `appRoles` siempre sea array
+- mejorar mensajes de error del panel admin cuando un usuario está logueado pero mal configurado
+- completar endurecimiento de chat con `ownerUid`
+- más adelante separar secretos del doc `congregaciones/{congreId}`
+
+### Cambio aplicado sobre invitados anónimos
+
+Se decidió dejar de crear automáticamente documentos `usuarios/{uid}` para sesiones anónimas.
+
+Motivo:
+
+- los invitados no estaban aportando valor real en Firestore
+- solo llenaban la colección `usuarios` con registros descartables
+- el flujo visible de la app no depende de que exista ese doc
+
+Cómo queda ahora:
+
+- la sesión anónima sigue existiendo en Firebase Auth
+- el frontend sigue viendo al usuario como invitado
+- si luego el invitado se vincula con Google, recién ahí se crea/actualiza el documento en `usuarios/{uid}`
+
+Riesgo / nota:
+
+- los invitados viejos ya existentes en Firestore quedan como basura histórica hasta que se limpien
+- si en el futuro alguna rule dependiera de docs anónimos persistidos, habría que revisarlo
+
+### Error visto en DevTools
+
+```txt
+POST https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?...TYPE=terminate...
+net::ERR_BLOCKED_BY_CLIENT
+```
+
+Interpretación más probable:
+
+- el navegador o una extensión bloqueó esa request
+- suele pasar con adblockers, Brave Shields, bloqueadores de tracking o filtros de privacidad
+
+Contexto:
+
+- Firestore abre conexiones de escucha (`Listen/channel`) para realtime
+- cuando cierra o recicla una conexión, puede mandar una request `TYPE=terminate`
+- si una extensión la bloquea, suele aparecer este error en consola aunque la app siga funcionando
+
+Conclusión práctica:
+
+- normalmente **no indica un bug de tu app**
+- normalmente **no indica un problema de rules**
+- si todo sigue funcionando, suele ser ruido de cliente/extensiones
+
+Cuándo preocuparse:
+
+- si además fallan lecturas en tiempo real
+- si snapshots/listeners dejan de actualizar
+- si ocurre igual en incógnito sin extensiones

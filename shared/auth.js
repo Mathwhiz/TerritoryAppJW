@@ -119,9 +119,10 @@ async function loadOrCreateUser(fbUser) {
       matchEstado:       'anonimo',
       isAnonymous:       true,
       primerLogin:       false,
-      createdAt:         serverTimestamp(),
+      createdAt:         null,
     };
-    await setDoc(ref, data);
+    // No persistir invitados en Firestore: la sesión anónima de Firebase alcanza
+    // para mantener el flujo actual sin llenar `usuarios/` de docs descartables.
     return { ...data, _firebaseUser: fbUser };
   }
 
@@ -297,7 +298,7 @@ window.linkWithGoogle = async () => {
 
   console.log('[auth] linkWithGoogle:', { uid: fbUser.uid, appRol, matchEstado, congreId });
   const ref = doc(db, 'usuarios', fbUser.uid);
-  await updateDoc(ref, updates);
+  await setDoc(ref, { uid: fbUser.uid, createdAt: serverTimestamp(), ...updates }, { merge: true });
   Object.assign(_user, updates, { _firebaseUser: fbUser });
   _setCachedUser(_user);
 
