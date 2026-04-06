@@ -403,6 +403,31 @@ Se corrigió el frontend para tolerar valores legacy o mal tipados en `appRoles`
 - completar endurecimiento de chat con `ownerUid`
 - más adelante separar secretos del doc `congregaciones/{congreId}`
 
+### Endurecimiento chico adicional aplicado
+
+Se aplicaron tres mejoras de bajo riesgo y sin cambiar el flujo principal:
+
+1. `updateUserProfile()` ahora filtra campos permitidos en frontend
+
+- solo deja pasar:
+  - `displayName`
+  - `photoURL`
+  - `birthDate`
+  - `sexo`
+  - `primerLogin`
+- evita abuso casual desde DevTools mandando campos arbitrarios
+
+2. `predicacion` ahora usa `authGuard('acceso_predicacion')`
+
+- alinea el módulo con el resto de la app
+- evita que un usuario sin permiso entre solo por UI
+
+3. `firestore.rules` valida mejor updates administrativos de roles
+
+- cuando un admin cambia roles, `appRoles` debe seguir siendo array
+- `appRol` debe coincidir con el primer valor de `appRoles`
+- reduce errores de datos y estados inconsistentes
+
 ### Cambio aplicado sobre invitados anónimos
 
 Se decidió dejar de crear automáticamente documentos `usuarios/{uid}` para sesiones anónimas.

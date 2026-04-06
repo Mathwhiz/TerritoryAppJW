@@ -32,6 +32,8 @@ function normalizeAppRoles(data) {
   return ['publicador'];
 }
 
+const SELF_PROFILE_FIELDS = ['displayName', 'photoURL', 'birthDate', 'sexo', 'primerLogin'];
+
 // ── Caché de sesión (sessionStorage) ─────────────────────────────
 // Permite que authGuard resuelva inmediatamente en cada cambio de página
 // sin esperar el getDoc de Firestore. Se invalida al cerrar la pestaña.
@@ -320,8 +322,14 @@ window.signOutUser = async () => {
  */
 window.updateUserProfile = async (data) => {
   if (!_user) throw new Error('No hay usuario logueado');
+  const safeData = Object.fromEntries(
+    Object.entries(data || {}).filter(([key]) => SELF_PROFILE_FIELDS.includes(key))
+  );
+  if (Object.keys(safeData).length === 0) {
+    throw new Error('No hay campos válidos para actualizar');
+  }
   const ref = doc(db, 'usuarios', _user.uid);
-  await updateDoc(ref, data);
-  Object.assign(_user, data);
+  await updateDoc(ref, safeData);
+  Object.assign(_user, safeData);
   _setCachedUser(_user);
 };

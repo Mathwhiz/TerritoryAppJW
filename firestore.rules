@@ -72,6 +72,12 @@ service cloud.firestore {
         );
     }
 
+    function isValidManagedRoleUpdate() {
+      return request.resource.data.appRoles is list &&
+        request.resource.data.appRoles.size() > 0 &&
+        request.resource.data.appRol == request.resource.data.appRoles[0];
+    }
+
     match /config/superadmin {
       allow read: if isAdminGeneral();
       allow write: if false;
@@ -143,7 +149,8 @@ service cloud.firestore {
             'grupoEncargado',
             'matchEstado',
             'matchedPublisherId'
-          ])
+          ]) &&
+          isValidManagedRoleUpdate()
         );
 
       allow delete: if false;

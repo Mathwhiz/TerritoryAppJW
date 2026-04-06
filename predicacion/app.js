@@ -91,6 +91,10 @@ let _contactoId   = null;
 // ─────────────────────────────────────────
 //   AUTH CHECK
 // ─────────────────────────────────────────
+try {
+  await window.authGuard('acceso_predicacion');
+} catch {}
+
 const _user = await window.waitForAuth();
 
 if (!_user || _user.isAnonymous) {
