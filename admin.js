@@ -949,7 +949,9 @@ async function saveTerritorios() {
   uiLoading.show(`Guardando ${entries.length} territorios...`);
   try {
     const publicSnap = await getDocs(collection(db, 'congregaciones', terrCongreId, 'mapa_territorios'));
-    if (publicSnap.empty) {
+    const needsFullMirror =
+      publicSnap.empty || publicSnap.size !== terrData.length;
+    if (needsFullMirror) {
       const congreSnap = await getDoc(doc(db, 'congregaciones', terrCongreId));
       const territoriosPublicos = terrData.map(t => toPublicTerritorio({
         ...t,
