@@ -533,7 +533,6 @@ window.exportarResumenWhatsApp = function() {
   const texto = [
     `Resumen de predicación — ${fmtMes(_mesMostrado)}`,
     `Horas: ${fmtTiempoSoloHoras(_dataMes.minutos || 0)}`,
-    `Revisitas: ${_dataMes.revisitas || 0}`,
     `Estudios: ${_dataMes.estudios || 0}`,
   ].join('\n');
   const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
