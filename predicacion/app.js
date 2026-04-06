@@ -46,7 +46,27 @@ function toast(msg, type = 'success') {
 }
 
 // ─────────────────────────────────────────
-//   AUTH CHECK (sin authGuard — mensaje en página)
+//   ESTADO — declarado antes del await
+// ─────────────────────────────────────────
+let _uid         = '';
+let _mesMostrado = mesHoy();
+let _dataMes     = { minutos: 0, revisitas: 0, estudios: 0 };
+
+// Timer
+let _timerInterval = null;
+let _timerStart    = 0;
+let _timerAccum    = 0;
+let _timerRunning  = false;
+
+// Debounce save
+let _saveTimeout = null;
+function scheduleSave() {
+  clearTimeout(_saveTimeout);
+  _saveTimeout = setTimeout(guardarMes, 600);
+}
+
+// ─────────────────────────────────────────
+//   AUTH CHECK (top-level await)
 // ─────────────────────────────────────────
 const _user = await window.waitForAuth();
 
@@ -57,26 +77,6 @@ if (!_user || _user.isAnonymous) {
 }
 
 // ─────────────────────────────────────────
-//   ESTADO
-// ─────────────────────────────────────────
-let _uid          = '';
-let _mesMostrado  = mesHoy();
-let _dataMes      = { minutos: 0, revisitas: 0, estudios: 0 };
-
-// Timer
-let _timerInterval = null;
-let _timerStart    = 0;   // Date.now() al iniciar la corrida actual
-let _timerAccum    = 0;   // ms acumulados de corridas anteriores (pausas)
-let _timerRunning  = false;
-
-// Debounce para guardar
-let _saveTimeout = null;
-function scheduleSave() {
-  clearTimeout(_saveTimeout);
-  _saveTimeout = setTimeout(guardarMes, 600);
-}
-
-// ─────────────────────────────────────────
 //   INIT
 // ─────────────────────────────────────────
 async function init(uid) {
@@ -84,7 +84,7 @@ async function init(uid) {
   showView('view-app');
   renderMonthLabel();
   await cargarMes();
-  cargarHistorial(); // fire-and-forget, muestra spinner hasta resolverse
+  cargarHistorial();
 }
 
 // ─────────────────────────────────────────
@@ -187,7 +187,7 @@ window.cambiarContador = function(campo, delta) {
 };
 
 // ─────────────────────────────────────────
-//   EDITAR TIEMPO (modal)
+//   EDITAR TIEMPO
 // ─────────────────────────────────────────
 window.abrirEditTiempo = function() {
   const mins = _dataMes.minutos || 0;
@@ -249,8 +249,8 @@ window.timerToggle = function() {
   const display   = document.getElementById('timer-display');
 
   if (!_timerRunning) {
-    _timerRunning = true;
-    _timerStart   = Date.now();
+    _timerRunning  = true;
+    _timerStart    = Date.now();
     _timerInterval = setInterval(tickTimer, 1000);
     toggleBtn.textContent = 'Pausar';
     display.classList.add('running');
