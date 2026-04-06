@@ -949,8 +949,10 @@ async function saveTerritorios() {
   uiLoading.show(`Guardando ${entries.length} territorios...`);
   try {
     const publicSnap = await getDocs(collection(db, 'congregaciones', terrCongreId, 'mapa_territorios'));
+    const expectedPublicIds = new Set(terrData.map(t => String(t.id)));
+    const hasUnexpectedPublicIds = publicSnap.docs.some(d => !expectedPublicIds.has(String(d.id)));
     const needsFullMirror =
-      publicSnap.empty || publicSnap.size !== terrData.length;
+      publicSnap.empty || publicSnap.size !== terrData.length || hasUnexpectedPublicIds;
     if (needsFullMirror) {
       const congreSnap = await getDoc(doc(db, 'congregaciones', terrCongreId));
       const territoriosPublicos = terrData.map(t => toPublicTerritorio({
@@ -973,7 +975,7 @@ async function saveTerritorios() {
         batch.update(doc(db, 'congregaciones', terrCongreId, 'territorios', docId), {
           grupoId: grupoId || null,
         });
-        publicBatch.set(doc(db, 'congregaciones', terrCongreId, 'mapa_territorios', docId), {
+        publicBatch.set(doc(db, 'congregaciones', terrCongreId, 'mapa_territorios', String(terr.id)), {
           ...toPublicTerritorio({
             ...terr,
             grupoId: grupoId || null,
