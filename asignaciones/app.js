@@ -2,7 +2,7 @@ import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-  setDoc, query, where, orderBy
+  setDoc, query, where, orderBy, writeBatch
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 await window.authGuard('acceso_asignaciones');
@@ -21,6 +21,9 @@ function congreRef()  { return doc(db, 'congregaciones', CONGRE_ID); }
 function asigCol()    { return collection(db, 'congregaciones', CONGRE_ID, 'asignaciones'); }
 function pubCol()     { return collection(db, 'congregaciones', CONGRE_ID, 'publicadores'); }
 function especCol()   { return collection(db, 'congregaciones', CONGRE_ID, 'semanasEspeciales'); }
+function asigPublicConfigRef() { return doc(db, 'congregaciones', CONGRE_ID, 'asig_config', 'publico'); }
+function asigPublicProgramaCol() { return collection(db, 'congregaciones', CONGRE_ID, 'asig_programa'); }
+function asigPublicEspecialesCol() { return collection(db, 'congregaciones', CONGRE_ID, 'asig_especiales'); }
 
 // ── Roles que aparecen en la tabla semanal ──
 const ROLES_LABELS = {
@@ -90,6 +93,11 @@ let SHEETS_URL    = null;
     const snap = await getDoc(congreRef());
     if (snap.exists()) {
       const data = snap.data();
+      await syncAsigPublicConfig(data.nombre || CONGRE_NOMBRE || CONGRE_ID);
+      const rowsActuales = await getProgramacion();
+      todasLasFilas = rowsActuales;
+      await replaceAsigPublicPrograma(rowsActuales);
+      await cargarEspeciales();
       if (data.pinEncargado) {
         PIN_ENCARGADO = data.pinEncargado;
       } else {
@@ -127,6 +135,61 @@ let semanaOffsetVer   = 0;
 let semanaOffsetImagen = 0;
 let suggIndex     = -1;
 let semanasEspeciales = {}; // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
+
+async function syncAsigPublicConfig(nombreCongre) {
+  await setDoc(asigPublicConfigRef(), {
+    nombre: nombreCongre || CONGRE_NOMBRE || CONGRE_ID,
+    updatedAt: Date.now(),
+  });
+}
+
+async function replaceAsigPublicPrograma(rows) {
+  const existing = await getDocs(asigPublicProgramaCol());
+  if (!existing.empty) {
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  for (let i = 0; i < rows.length; i += 400) {
+    const batch = writeBatch(db);
+    rows.slice(i, i + 400).forEach(row => {
+      const m = row.fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if (!m) return;
+      const y = m[3].length === 2 ? '20' + m[3] : m[3];
+      const isoFecha = `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+      const publicRow = { fecha: isoFecha, diaSemana: row.dia || getNombreDia(row.fecha), roles: {} };
+      ROLES.forEach(r => { if (row[r]) publicRow.roles[r] = row[r]; });
+      batch.set(doc(db, 'congregaciones', CONGRE_ID, 'asig_programa', isoFecha), publicRow);
+    });
+    await batch.commit();
+  }
+}
+
+async function replaceAsigPublicEspeciales() {
+  const existing = await getDocs(asigPublicEspecialesCol());
+  if (!existing.empty) {
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  const entries = Object.entries(semanasEspeciales);
+  for (let i = 0; i < entries.length; i += 400) {
+    const batch = writeBatch(db);
+    entries.slice(i, i + 400).forEach(([lunes, data]) => {
+      batch.set(doc(db, 'congregaciones', CONGRE_ID, 'asig_especiales', lunes), {
+        tipo: data?.tipo || null,
+        fechaEvento: data?.fechaEvento || null,
+      });
+    });
+    await batch.commit();
+  }
+}
 
 const TIPO_LABELS = {
   conmemoracion:   'Conmemoración',
@@ -321,6 +384,8 @@ async function saveProgramacion(data) {
     }
   }
   todasLasFilas = []; // invalidar cache
+  const rowsActualizadas = await getProgramacion();
+  await replaceAsigPublicPrograma(rowsActualizadas);
 }
 
 /**
@@ -1125,6 +1190,7 @@ async function cargarEspeciales() {
     const snap = await getDocs(especCol());
     semanasEspeciales = {};
     snap.forEach(d => { semanasEspeciales[d.id] = d.data(); });
+    await replaceAsigPublicEspeciales();
     renderEspecialesList();
   } catch(e) {
     console.error('Error cargando especiales:', e);
@@ -1187,6 +1253,7 @@ window.guardarEspecial = async function() {
   try {
     await setDoc(doc(db, 'congregaciones', CONGRE_ID, 'semanasEspeciales', lunes), data);
     semanasEspeciales[lunes] = data;
+    await replaceAsigPublicEspeciales();
     renderEspecialesList();
     window.toggleFormEspecial();
     uiToast(`${TIPO_LABELS[tipo]} guardada`, 'success');
@@ -1199,6 +1266,7 @@ window.eliminarEspecial = async function(lunes) {
   try {
     await deleteDoc(doc(db, 'congregaciones', CONGRE_ID, 'semanasEspeciales', lunes));
     delete semanasEspeciales[lunes];
+    await replaceAsigPublicEspeciales();
     renderEspecialesList();
     uiToast('Eliminada', 'success');
   } catch(e) { await uiAlert('Error: ' + e.message); }

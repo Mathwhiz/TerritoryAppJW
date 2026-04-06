@@ -568,3 +568,29 @@ Importante:
 
 - esto todavía **no mejora la seguridad real por sí solo** mientras `congregaciones/{congreId}` y sus subcolecciones sigan con `allow read, write: if true`
 - el valor de este paso es dejar separada la data pública para que después sí podamos cerrar rules sin romper el visor
+
+### Espejo público para Asignaciones
+
+Se preparó también un visor público separado para Asignaciones.
+
+Archivos nuevos:
+
+- `asignaciones/programa.html`
+- `asignaciones/programa.js`
+
+Estructura pública creada:
+
+- `congregaciones/{congreId}/asig_config/publico`
+- `congregaciones/{congreId}/asig_programa/{fecha}`
+- `congregaciones/{congreId}/asig_especiales/{lunes}`
+
+Objetivo:
+
+- mostrar la semana actual y navegar semanas sin cargar PIN, `scriptUrl`, `sheetsUrl` ni lógica de encargado
+- separar la vista pública del módulo grande `asignaciones/app.js`
+
+Estado:
+
+- `asignaciones/app.js` ya sincroniza el espejo `asig_*`
+- `asignaciones/programa.js` ya lee solo el espejo público
+- igual que en VM, esto prepara el cierre futuro pero todavía no da seguridad real mientras `congregaciones/**` siga abierto en rules
