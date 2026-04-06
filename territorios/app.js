@@ -312,7 +312,7 @@ async function fetchConfig(grupo) {
 const WEEK = getWeekDates();
 
 
-function selectGrupo(el, n) {
+function selectGrupo(el, n, autoOpenPin = true) {
   document.querySelectorAll('.grupo-btn').forEach(b => {
     b.classList.remove('selected');
     b.style.background = '';
@@ -321,6 +321,7 @@ function selectGrupo(el, n) {
   el.style.background = GBGS[n] || 'rgba(100,100,100,0.18)';
   selectedGrupo = n;
   document.getElementById('btn-start').classList.add('enabled');
+  if (autoOpenPin && selectedGrupo) openPin();
 }
 
 function goToCover() {
@@ -457,7 +458,7 @@ function renderGrupoButtons() {
       btn.dataset.grupo = g.id;
       btn.style.flex = '1';
       btn.textContent = g.label;
-      btn.onclick = () => selectGrupo(btn, g.id);
+      btn.onclick = () => selectGrupo(btn, g.id, true);
       _applyGrupoColorToBtn(btn, g.id);
       row.appendChild(btn);
     });
@@ -471,7 +472,7 @@ function renderGrupoButtons() {
     btn.dataset.grupo = g.id;
     btn.style.cssText = 'width:100%;font-size:15px;';
     btn.textContent = g.label;
-    btn.onclick = () => selectGrupo(btn, g.id);
+    btn.onclick = () => selectGrupo(btn, g.id, true);
     _applyGrupoColorToBtn(btn, g.id);
     wrap.appendChild(btn);
   });
@@ -482,7 +483,7 @@ function renderGrupoButtons() {
     sessionStorage.removeItem('selectedGrupo');
     const btn = wrap.querySelector(`[data-grupo="${grupoGuardado}"]`);
     if (btn) {
-      selectGrupo(btn, grupoGuardado);
+      selectGrupo(btn, grupoGuardado, false);
       goToModo();
       cargarConductores();
       cargarConfigCongre();
