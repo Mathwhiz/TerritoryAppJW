@@ -924,14 +924,16 @@ function boundsFromLayers(layers) {
 function applyCityViewport(ciudad, animate = true) {
   const tight = getCityBounds(ciudad);
   if (!tight) return;
-  const padded = tight.pad(0.28);
+  const padRatio = isPublicMapMode() ? 0.12 : 0.22;
+  const fitPadding = isPublicMapMode() ? [16, 16] : [28, 28];
+  const padded = tight.pad(padRatio);
   map.setMaxBounds(padded);
   const fitZoom = map.getBoundsZoom(tight, false);
   map.setMinZoom(Math.max(fitZoom - 1, 10));
   if (animate) {
-    map.flyToBounds(tight, { padding: [28, 28], maxZoom: 17, duration: 0.7 });
+    map.flyToBounds(tight, { padding: fitPadding, maxZoom: 18, duration: 0.7 });
   } else {
-    map.fitBounds(tight, { padding: [28, 28], maxZoom: 17 });
+    map.fitBounds(tight, { padding: fitPadding, maxZoom: 18 });
   }
 }
 
