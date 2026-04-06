@@ -842,15 +842,21 @@
       box-shadow: var(--shadow-hover, 0 8px 28px rgba(0,0,0,.24));
     }
     .cs-nav-card:active { transform: scale(0.98); box-shadow: none; }
-    .cs-nav-card-map {
-      --c-border-hover: rgba(224, 82, 119, 0.58);
-      --c-bg-hover: rgba(224, 82, 119, 0.10);
-      --shadow-hover: 0 8px 28px rgba(0,0,0,.24), 0 0 0 1px rgba(224, 82, 119, 0.32);
+    .cs-nav-icon-map {
+      --nav-c: #C94A3D;
+      --nav-c-dim: rgba(201,74,61,0.2);
+      background: rgba(201,74,61,0.13);
+      border: 1px solid rgba(201,74,61,0.22);
     }
-    .cs-nav-card-map .cs-nav-icon {
-      background: rgba(224,82,119,0.14);
-      border: 1px solid rgba(224,82,119,0.32);
-      color: #E05277;
+    .cs-nav-card-map:hover {
+      border-color: rgba(201,74,61,0.55);
+      background: #2a1711;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(201,74,61,0.55), 0 4px 20px rgba(201,74,61,0.12);
+    }
+    body.light-mode .cs-nav-card-map:hover {
+      border-color: rgba(201,74,61,0.52);
+      background: #fff0ea;
+      box-shadow: 0 8px 26px rgba(174,76,41,0.16), 0 0 0 1px rgba(201,74,61,0.5);
     }
     .cs-nav-title {
       font-size: 19px;
@@ -1274,11 +1280,11 @@
         </div>
       </a>
 
-      <a class="cs-nav-card cs-nav-card-pred" href="#" onclick="openPublicMap(event)">
-        <div class="cs-nav-icon cs-nav-icon-pred">
+      <a class="cs-nav-card cs-nav-card-map" href="#" onclick="openPublicMap(event)">
+        <div class="cs-nav-icon cs-nav-icon-map">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M3 6.5l6-2.5 6 2.5 6-2.5v13l-6 2.5-6-2.5-6 2.5v-13z" stroke="#E05277" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M9 4v13.5M15 6.5V20" stroke="#E05277" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 6.5l6-2.5 6 2.5 6-2.5v13l-6 2.5-6-2.5-6 2.5v-13z" stroke="#C94A3D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 4v13.5M15 6.5V20" stroke="#C94A3D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <div>
