@@ -87,6 +87,7 @@ function scheduleGuardarContadores() {
 // Estado modal contacto
 let _contactoTipo = 'revisita';
 let _contactoId   = null;
+let _predicacionInitDone = false;
 
 // ─────────────────────────────────────────
 //   AUTH CHECK
@@ -103,10 +104,20 @@ if (!_user || _user.isAnonymous) {
   init(_user.uid);
 }
 
+window.addEventListener('authStateChanged', ({ detail: { user } }) => {
+  if (!user || user.isAnonymous) {
+    if (!_predicacionInitDone) showView('view-noauth');
+    return;
+  }
+  if (_predicacionInitDone) return;
+  init(user.uid);
+});
+
 // ─────────────────────────────────────────
 //   INIT
 // ─────────────────────────────────────────
 async function init(uid) {
+  _predicacionInitDone = true;
   _uid = uid;
   showView('view-app');
   renderMonthLabel();
