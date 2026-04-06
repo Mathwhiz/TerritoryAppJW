@@ -613,6 +613,17 @@ async function replacePublicMapTerritories(congreId, territorios) {
   }
 }
 
+async function ensurePublicMapMirror(congreId, congreData, grupos, territorios) {
+  await syncPublicMapConfig(congreId, {
+    nombre: congreData?.nombre || congreId,
+    color: congreData?.color || null,
+    ciudadPrincipal: congreData?.ciudadPrincipal || null,
+    ciudadesExtras: congreData?.ciudadesExtras || [],
+  });
+  await replacePublicMapGroups(congreId, grupos || []);
+  await replacePublicMapTerritories(congreId, territorios || []);
+}
+
 // ─────────────────────────────────────────
 //   RENAME CONGREGACIÓN (copia + elimina)
 // ─────────────────────────────────────────
@@ -937,15 +948,34 @@ async function saveTerritorios() {
   if (!entries.length) return;
   uiLoading.show(`Guardando ${entries.length} territorios...`);
   try {
+    const publicSnap = await getDocs(collection(db, 'congregaciones', terrCongreId, 'mapa_territorios'));
+    if (publicSnap.empty) {
+      const congreSnap = await getDoc(doc(db, 'congregaciones', terrCongreId));
+      const territoriosPublicos = terrData.map(t => toPublicTerritorio({
+        ...t,
+        grupoId: terrChanges[t._docId] ?? t.grupoId ?? null,
+      }));
+      await ensurePublicMapMirror(
+        terrCongreId,
+        congreSnap.exists() ? congreSnap.data() : {},
+        terrGrupos,
+        territoriosPublicos
+      );
+    }
+
     for (let i = 0; i < entries.length; i += 400) {
       const batch = writeBatch(db);
       const publicBatch = writeBatch(db);
       entries.slice(i, i + 400).forEach(([docId, grupoId]) => {
+        const terr = terrData.find(t => t._docId === docId);
         batch.update(doc(db, 'congregaciones', terrCongreId, 'territorios', docId), {
           grupoId: grupoId || null,
         });
         publicBatch.set(doc(db, 'congregaciones', terrCongreId, 'mapa_territorios', docId), {
-          grupoId: grupoId || null,
+          ...toPublicTerritorio({
+            ...terr,
+            grupoId: grupoId || null,
+          }),
         }, { merge: true });
       });
       await batch.commit();
