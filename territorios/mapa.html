@@ -569,7 +569,7 @@ function renderTerritories() {
       polygon.on('click',     () => openPopup(polygon, t.num, t.grupo));
       polygon.on('mouseover', () => polygon.setStyle({ fillOpacity:0.65, weight:3 }));
       polygon.on('mouseout',  () => polygon.setStyle({ fillOpacity:0.45, weight:2.5 }));
-      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null });
+      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, coords:t.coords });
       polygon.addTo(map); label.addTo(map);
       return;
     }
@@ -584,7 +584,7 @@ function renderTerritories() {
       polygon.on('click', (e) => { L.DomEvent.stopPropagation(e); selectEncuentroPoint(e.latlng); });
       polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.45, weight: 2.5 }));
       polygon.on('mouseout',  () => polygon.setStyle({ fillOpacity: 0.22, weight: 2 }));
-      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null });
+      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, coords:t.coords });
       polygon.addTo(map); label.addTo(map);
       return;
     }
@@ -611,7 +611,7 @@ function renderTerritories() {
         if (!pickerSelected.has(t.num))
           polygon.setStyle({ fillOpacity: fillOp, weight });
       });
-      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, baseStyle:{ fillOp, weight, opacity, isMainGroup }, c });
+      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, coords:t.coords, baseStyle:{ fillOp, weight, opacity, isMainGroup }, c });
       polygon.addTo(map); label.addTo(map);
       return;
     }
@@ -624,7 +624,7 @@ function renderTerritories() {
       polygon.on('click',     () => openPopup(polygon, t.num, t.grupo));
       polygon.on('mouseover', () => polygon.setStyle({ fillOpacity:0.45, weight:2.5 }));
       polygon.on('mouseout',  () => polygon.setStyle({ fillOpacity:0.22, weight:2 }));
-      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null });
+      allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, coords:t.coords });
       polygon.addTo(map); label.addTo(map);
       return;
     }
@@ -643,7 +643,7 @@ function renderTerritories() {
     polygon.on('click',     () => openPopup(polygon, t.num, t.grupo));
     polygon.on('mouseover', () => polygon.setStyle({ fillOpacity:0.45, weight:2.5 }));
     polygon.on('mouseout',  () => polygon.setStyle({ fillOpacity:0.22, weight:2 }));
-    allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null });
+    allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, coords:t.coords });
     polygon.addTo(map); label.addTo(map);
   });
 }
@@ -819,14 +819,9 @@ window.confirmEncuentro = function() {
 function applyPickerFilter(grupo) {
   if (allLayers.length === 0) return;
 
-  const validLayers = allLayers.filter(l =>
-    String(l.group) === String(grupo) &&
-    l.polygon.getBounds().isValid()
-  );
-
-  if (validLayers.length) {
-    const b = validLayers[0].polygon.getBounds();
-    validLayers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
+  const validLayers = allLayers.filter(l => String(l.group) === String(grupo));
+  const b = boundsFromLayers(validLayers);
+  if (b) {
     map.flyToBounds(b, { padding:[24,24], maxZoom:16, duration:0.4 });
   }
 }
@@ -905,13 +900,23 @@ window.handleBack = function() {
 // ── Bounds dinámicos por ciudad ──
 // Devuelve los bounds ajustados de las capas de una ciudad (null = ciudad principal)
 function getCityBounds(ciudad) {
-  const layers = allLayers.filter(l =>
-    (ciudad === null ? !l.ciudad : l.ciudad === ciudad) && l.polygon.getBounds().isValid()
-  );
-  if (!layers.length) return null;
-  const b = layers[0].polygon.getBounds();
-  layers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
-  return b;
+  const layers = allLayers.filter(l => (ciudad === null ? !l.ciudad : l.ciudad === ciudad));
+  return boundsFromLayers(layers);
+}
+
+function boundsFromLayers(layers) {
+  let minLat = Infinity, minLng = Infinity, maxLat = -Infinity, maxLng = -Infinity;
+  layers.forEach(l => {
+    (l.coords || []).forEach(([lat, lng]) => {
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      if (lat < minLat) minLat = lat;
+      if (lng < minLng) minLng = lng;
+      if (lat > maxLat) maxLat = lat;
+      if (lng > maxLng) maxLng = lng;
+    });
+  });
+  if (!isFinite(minLat) || !isFinite(minLng) || !isFinite(maxLat) || !isFinite(maxLng)) return null;
+  return L.latLngBounds([minLat, minLng], [maxLat, maxLng]);
 }
 
 // Aplica maxBounds y minZoom recortados a una ciudad
@@ -986,10 +991,8 @@ window.filterGroup = function(group) {
       if (!map.hasLayer(label))   label.addTo(map);
       polygon.setStyle({ fillOpacity: 0.35, weight: 2.5 });
     });
-    const validLayers = visible.filter(l => l.polygon.getBounds().isValid());
-    if (validLayers.length) {
-      const b = validLayers[0].polygon.getBounds();
-      validLayers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
+    const b = boundsFromLayers(visible);
+    if (b) {
       map.setMaxBounds(null);
       map.setMinZoom(10);
       map.flyToBounds(b, { padding:[30,30], maxZoom:16, duration:0.5 });
