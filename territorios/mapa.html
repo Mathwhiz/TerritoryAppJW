@@ -996,6 +996,53 @@ window.filterGroup = function(group) {
   map.closePopup();
 };
 
+window.debugGrupo = function(group) {
+  const visibles = allLayers.filter(l => {
+    if (String(l.group) !== String(group)) return false;
+    if (_ciudadFiltro) return l.ciudad === _ciudadFiltro;
+    if (isPublicMapMode() && String(group) === 'C' && ciudadesExtras.length > 0) return !l.ciudad;
+    return true;
+  });
+  const rows = visibles.map(l => {
+    const b = l.polygon.getBounds();
+    const center = b.getCenter();
+    return {
+      numero: l.numero,
+      grupo: l.group,
+      ciudad: l.ciudad || '(principal)',
+      south: +b.getSouth().toFixed(6),
+      west: +b.getWest().toFixed(6),
+      north: +b.getNorth().toFixed(6),
+      east: +b.getEast().toFixed(6),
+      centerLat: +center.lat.toFixed(6),
+      centerLng: +center.lng.toFixed(6),
+    };
+  });
+  console.table(rows);
+  return rows;
+};
+
+window.debugVisibleBounds = function() {
+  const visibles = allLayers.filter(l => map.hasLayer(l.polygon));
+  const rows = visibles.map(l => {
+    const b = l.polygon.getBounds();
+    const center = b.getCenter();
+    return {
+      numero: l.numero,
+      grupo: l.group,
+      ciudad: l.ciudad || '(principal)',
+      south: +b.getSouth().toFixed(6),
+      west: +b.getWest().toFixed(6),
+      north: +b.getNorth().toFixed(6),
+      east: +b.getEast().toFixed(6),
+      centerLat: +center.lat.toFixed(6),
+      centerLng: +center.lng.toFixed(6),
+    };
+  });
+  console.table(rows);
+  return rows;
+};
+
 // ── Utilidades ──
 function fmtDate(ds) {
   if (!ds) return '—';
