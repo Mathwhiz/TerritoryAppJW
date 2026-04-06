@@ -112,11 +112,7 @@ window.predicacionLoginRequired = async () => {
     } else if (typeof window.signInWithGoogle === 'function') {
       await window.signInWithGoogle();
     }
-
-    const refreshed = await window.waitForAuth();
-    if (refreshed && !refreshed.isAnonymous && !_predicacionInitDone) {
-      await init(refreshed.uid);
-    }
+    window.location.replace('/predicacion/index.html');
   } catch (err) {
     console.error('[predicacion] No se pudo completar el login requerido:', err);
   }
