@@ -357,11 +357,18 @@ async function cargarHistorialInfo() {
 // ── Carga ciudades extra del doc de congregación ──
 async function cargarCiudadesExtras() {
   try {
-    const snap = await getDoc(
-      isPublicMapMode()
-        ? doc(db, 'congregaciones', CONGRE_ID, 'mapa_config', 'publico')
-        : doc(db, 'congregaciones', CONGRE_ID)
-    );
+    if (isPublicMapMode()) {
+      const publicSnap = await getDoc(doc(db, 'congregaciones', CONGRE_ID, 'mapa_config', 'publico'));
+      if (publicSnap.exists()) {
+        const publicCities = publicSnap.data().ciudadesExtras || [];
+        if (Array.isArray(publicCities) && publicCities.length > 0) {
+          ciudadesExtras = publicCities;
+          return;
+        }
+      }
+    }
+
+    const snap = await getDoc(doc(db, 'congregaciones', CONGRE_ID));
     if (snap.exists()) ciudadesExtras = snap.data().ciudadesExtras || [];
   } catch(e) { /* sin ciudades extras */ }
 }
@@ -447,7 +454,7 @@ async function initMap() {
       });
       // En modos sin header (registrar/info): ocultar botones de grupo, solo mostrar ciudad
       // y bajar la barra a top:0 (el header está oculto en estos modos)
-      if (_modoParam !== 'full') {
+      if (_modoParam !== 'full' && !isPublicMapMode()) {
         document.querySelectorAll('#map-filters-bar .filter-btn:not([id^="filter-ciudad-"])').forEach(b => b.style.display = 'none');
         const filtersEl = document.querySelector('.map-filters');
         filtersEl.style.top = '0';
