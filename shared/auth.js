@@ -8,6 +8,7 @@ import { db, auth } from './firebase.js';
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithCredential,
   signInAnonymously,
   linkWithPopup,
   signOut,
@@ -271,8 +272,13 @@ window.linkWithGoogle = async () => {
     result = await linkWithPopup(auth.currentUser, provider);
   } catch (err) {
     if (err?.code === 'auth/credential-already-in-use') {
-      // La cuenta Google ya existe en Firebase: en ese caso no hay nada que
-      // vincular, hay que iniciar sesión con esa cuenta.
+      // La cuenta Google ya existe en Firebase: reutilizar la credencial del
+      // popup fallido evita pedirle al usuario que elija la cuenta dos veces.
+      const credential = GoogleAuthProvider.credentialFromError(err);
+      if (credential) {
+        const signInResult = await signInWithCredential(auth, credential);
+        return signInResult.user;
+      }
       const fbUser = await window.signInWithGoogle();
       return fbUser;
     }
