@@ -842,6 +842,11 @@
       box-shadow: var(--shadow-hover, 0 8px 28px rgba(0,0,0,.24));
     }
     .cs-nav-card:active { transform: scale(0.98); box-shadow: none; }
+    .cs-nav-card-map {
+      --c-border-hover: rgba(224, 82, 119, 0.58);
+      --c-bg-hover: rgba(224, 82, 119, 0.10);
+      --shadow-hover: 0 8px 28px rgba(0,0,0,.24), 0 0 0 1px rgba(224, 82, 119, 0.32);
+    }
     .cs-nav-title {
       font-size: 19px;
       font-weight: 600;
@@ -1264,11 +1269,11 @@
         </div>
       </a>
 
-      <a class="cs-nav-card cs-nav-card-terr" href="#" onclick="openPublicMap(event)">
+      <a class="cs-nav-card cs-nav-card-map" href="#" onclick="openPublicMap(event)">
         <div class="cs-nav-icon cs-nav-icon-terr">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M3 6.5l6-2.5 6 2.5 6-2.5v13l-6 2.5-6-2.5-6 2.5v-13z" stroke="#5DB85D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M9 4v13.5M15 6.5V20" stroke="#5DB85D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 6.5l6-2.5 6 2.5 6-2.5v13l-6 2.5-6-2.5-6 2.5v-13z" stroke="#E05277" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 4v13.5M15 6.5V20" stroke="#E05277" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <div>

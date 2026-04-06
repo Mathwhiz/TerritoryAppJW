@@ -297,9 +297,9 @@ async function cargarTerritorios() {
     // Estructura real en Firestore: poligonos[i].coords[j] = {lat, lng}
     function normCoords(poly) {
       const arr = poly.coords || poly; // soporta {coords:[]} y [[lat,lng]]
-      return (Array.isArray(arr) ? arr : []).map(v =>
-        Array.isArray(v) ? [v[0], v[1]] : [v.lat, v.lng]
-      );
+      return (Array.isArray(arr) ? arr : [])
+        .map(v => Array.isArray(v) ? [v[0], v[1]] : [v.lat, v.lng])
+        .filter(v => Array.isArray(v) && v.length >= 2 && isFinite(v[0]) && isFinite(v[1]));
     }
     // punto puede ser {lat,lng} o [lat,lng]
     function normPunto(p) {
@@ -983,10 +983,8 @@ window.filterGroup = function(group) {
     if (validLayers.length) {
       const b = validLayers[0].polygon.getBounds();
       validLayers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
-      const padded = b.pad(0.28);
-      map.setMaxBounds(padded);
-      const fitZoom = map.getBoundsZoom(b, false);
-      map.setMinZoom(Math.max(fitZoom - 1, 10));
+      map.setMaxBounds(null);
+      map.setMinZoom(10);
       map.flyToBounds(b, { padding:[30,30], maxZoom:16, duration:0.5 });
     }
   }
