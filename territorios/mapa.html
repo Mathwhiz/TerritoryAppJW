@@ -983,6 +983,10 @@ window.filterGroup = function(group) {
     if (validLayers.length) {
       const b = validLayers[0].polygon.getBounds();
       validLayers.slice(1).forEach(l => b.extend(l.polygon.getBounds()));
+      const padded = b.pad(0.28);
+      map.setMaxBounds(padded);
+      const fitZoom = map.getBoundsZoom(b, false);
+      map.setMinZoom(Math.max(fitZoom - 1, 10));
       map.flyToBounds(b, { padding:[30,30], maxZoom:16, duration:0.5 });
     }
   }
