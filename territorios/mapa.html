@@ -951,6 +951,11 @@ window.filterGroup = function(group) {
   document.querySelectorAll('.filter-btn:not([id^="filter-ciudad-"])').forEach(b => b.classList.remove('active'));
   const activeBtn = document.getElementById('filter-' + group);
   if (activeBtn) activeBtn.classList.add('active');
+  const matchCityForGroup = (layer) => {
+    if (_ciudadFiltro) return layer.ciudad === _ciudadFiltro;
+    if (isPublicMapMode() && String(group) === 'C' && ciudadesExtras.length > 0) return !layer.ciudad;
+    return true;
+  };
 
   if (group === 'all') {
     allLayers.forEach(l => {
@@ -967,7 +972,7 @@ window.filterGroup = function(group) {
   } else {
     const visible = [], hidden = [];
     allLayers.forEach(l => {
-      const cityOk = !_ciudadFiltro || l.ciudad === _ciudadFiltro;
+      const cityOk = matchCityForGroup(l);
       ((l.group === group && cityOk) ? visible : hidden).push(l);
     });
     hidden.forEach(({ polygon, label }) => {
