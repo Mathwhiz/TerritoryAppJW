@@ -49,6 +49,13 @@ function fmtTiempo(mins) {
   return `${h} h ${m} min`;
 }
 
+function fmtTiempoSoloHoras(mins) {
+  if (!mins || mins <= 0) return '0 h';
+  const horas = mins / 60;
+  const rounded = Number.isInteger(horas) ? String(horas) : horas.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+  return `${rounded} h`;
+}
+
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -520,6 +527,17 @@ window.cambiarContador = function(campo, delta) {
   _mesExiste = true;
   renderStats();
   scheduleGuardarContadores();
+};
+
+window.exportarResumenWhatsApp = function() {
+  const texto = [
+    `Resumen de predicación — ${fmtMes(_mesMostrado)}`,
+    `Horas: ${fmtTiempoSoloHoras(_dataMes.minutos || 0)}`,
+    `Revisitas: ${_dataMes.revisitas || 0}`,
+    `Estudios: ${_dataMes.estudios || 0}`,
+  ].join('\n');
+  const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+  window.open(url, '_blank', 'noopener');
 };
 
 // ─────────────────────────────────────────

@@ -93,6 +93,13 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .pred-btn-primary { background: #E05277; color: #fff; }
 .pred-btn-primary:hover { background: #c8415e; }
 .pred-btn-wide { width: 100%; }
+.pred-btn-wa {
+  background: #1D9E75;
+  color: #fff;
+}
+.pred-btn-wa:hover {
+  background: #0F6E56;
+}
 .pred-btn-ghost {
   background: var(--bg-primary); border: 1px solid var(--border-light);
   color: var(--text-secondary);
@@ -184,6 +191,11 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .counter-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .counter-val { font-size: 18px; font-weight: 600; min-width: 26px; text-align: center; color: var(--text-primary); }
+.share-actions {
+  padding-top: 14px;
+  border-top: 1px solid var(--border-primary);
+  margin-top: 6px;
+}
 
 /* ─────────────────────────────────────────
    DÍAS DEL MES
