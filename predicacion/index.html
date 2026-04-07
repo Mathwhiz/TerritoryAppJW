@@ -114,6 +114,10 @@
             <span class="stat-label-text">Tiempo</span>
             <span class="stat-value-text" id="stat-tiempo">0 min</span>
           </div>
+          <div class="stat-row">
+            <span class="stat-label-text">LDC</span>
+            <span class="stat-value-text" id="stat-ldc">0 min</span>
+          </div>
           <div id="dias-list"></div>
           <div class="stat-row">
             <span class="stat-label-text">Revisitas</span>
@@ -196,6 +200,13 @@
       <div class="modal-field">
         <label class="modal-label">Fecha</label>
         <input class="modal-input" type="date" id="add-fecha">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Tipo de horas</label>
+        <select class="modal-input" id="add-tipo">
+          <option value="predicacion">Predicación</option>
+          <option value="ldc">LDC</option>
+        </select>
       </div>
       <div class="edit-time-wrap" style="margin-bottom:0;">
         <div class="edit-time-field">

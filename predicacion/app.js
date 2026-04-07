@@ -75,7 +75,7 @@ function toast(msg, type = 'success') {
 let _uid         = '';
 let _mesMostrado = mesHoy();
 let _diasMes     = [];   // [{ id, fecha, minutos }] del mes actual, ordenado por fecha desc
-let _dataMes     = { minutos: 0, revisitas: 0, estudios: 0 };
+let _dataMes     = { minutos: 0, ldcMinutos: 0, revisitas: 0, estudios: 0 };
 let _mesExiste   = false;
 let _historialMeses = [];
 
@@ -199,8 +199,10 @@ async function cargarMes() {
   _diasMes.sort((a, b) => b.fecha.localeCompare(a.fecha)); // más reciente primero
 
   const totalDias = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+  const totalLdcDias = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
   // Si hay días individuales usamos su suma; si no, usamos el total cacheado del doc padre (datos legacy)
   _dataMes.minutos = _diasMes.length > 0 ? totalDias : (parentData.minutos || 0);
+  _dataMes.ldcMinutos = _diasMes.length > 0 ? totalLdcDias : (parentData.ldcMinutos || 0);
   _mesExiste = parentSnap.exists() || _diasMes.length > 0;
 
   renderStats();
@@ -211,22 +213,26 @@ async function cargarMes() {
 // ─────────────────────────────────────────
 
 // Guarda un día individual y actualiza el total en el doc padre
-async function guardarDia(fecha, minutos) {
+async function guardarDia(fecha, minutos, extras = {}) {
+  const ldcMinutos = Math.max(0, extras.ldcMinutos || 0);
   const newRef = await addDoc(diasRef(_mesMostrado), {
     fecha,
     minutos,
+    ldcMinutos,
     creadoEn: serverTimestamp(),
   });
 
   // Actualiza estado local sin refetch
-  _diasMes.push({ id: newRef.id, fecha, minutos });
+  _diasMes.push({ id: newRef.id, fecha, minutos, ldcMinutos });
   _diasMes.sort((a, b) => b.fecha.localeCompare(a.fecha));
   _dataMes.minutos = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+  _dataMes.ldcMinutos = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
   _mesExiste = true;
 
   // Actualiza el total en el doc padre (para que el historial lo lea rápido)
   await setDoc(mesRef(_mesMostrado), {
     minutos:   _dataMes.minutos,
+    ldcMinutos: _dataMes.ldcMinutos,
     revisitas: _dataMes.revisitas || 0,
     estudios:  _dataMes.estudios  || 0,
     updatedAt: serverTimestamp(),
@@ -238,6 +244,7 @@ async function guardarContadores() {
   _mesExiste = true;
   await setDoc(mesRef(_mesMostrado), {
     minutos:   _dataMes.minutos,
+    ldcMinutos: _dataMes.ldcMinutos || 0,
     revisitas: _dataMes.revisitas || 0,
     estudios:  _dataMes.estudios  || 0,
     updatedAt: serverTimestamp(),
@@ -257,11 +264,13 @@ window.eliminarDia = async function(id) {
   await deleteDoc(diaRef(_mesMostrado, id));
   _diasMes = _diasMes.filter(d => d.id !== id);
   _dataMes.minutos = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+  _dataMes.ldcMinutos = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
   renderStats();
 
   // Actualiza total en padre
   await setDoc(mesRef(_mesMostrado), {
     minutos:   _dataMes.minutos,
+    ldcMinutos: _dataMes.ldcMinutos || 0,
     updatedAt: serverTimestamp(),
   }, { merge: true });
 
@@ -329,6 +338,7 @@ function renderStats() {
 
   if (!sinActividad) {
     document.getElementById('stat-tiempo').textContent    = fmtTiempo(_dataMes.minutos);
+    document.getElementById('stat-ldc').textContent       = fmtTiempo(_dataMes.ldcMinutos || 0);
     document.getElementById('stat-revisitas').textContent = _dataMes.revisitas || 0;
     document.getElementById('stat-estudios').textContent  = _dataMes.estudios  || 0;
     renderDias();
@@ -344,7 +354,7 @@ function renderDias() {
   }
   cont.innerHTML = _diasMes.map(d => `
     <div class="dia-row">
-      <span class="dia-fecha">${fmtFecha(d.fecha)}</span>
+      <span class="dia-fecha">${fmtFecha(d.fecha)}${d.ldcMinutos ? ' <span class="dia-badge">LDC</span>' : ''}</span>
       <span class="dia-tiempo">${fmtTiempo(d.minutos)}</span>
       <button class="dia-del" onclick="eliminarDia('${d.id}')" title="Eliminar">×</button>
     </div>
@@ -363,6 +373,7 @@ function renderHistorial() {
          data-mes="${m.id}" onclick="irAMes('${m.id}')">
       <span class="hist-mes">${fmtMes(m.id)}${m.id === mesHoy() ? ' <span class="hist-badge-hoy">este mes</span>' : ''}</span>
       <span class="hist-val">${fmtTiempo(m.minutos || 0)}</span>
+      <span class="hist-val">${fmtTiempo(m.ldcMinutos || 0)} <span class="hist-val-dim">ldc</span></span>
       <span class="hist-val">${m.revisitas || 0} <span class="hist-val-dim">rev</span></span>
       <span class="hist-val">${m.estudios  || 0} <span class="hist-val-dim">est</span></span>
     </div>
@@ -372,6 +383,7 @@ function renderHistorial() {
       <div class="hist-header">
         <span class="hist-header-cell">Mes</span>
         <span class="hist-header-cell">Tiempo</span>
+        <span class="hist-header-cell">LDC</span>
         <span class="hist-header-cell">Rev</span>
         <span class="hist-header-cell">Est</span>
       </div>
@@ -533,6 +545,7 @@ window.exportarResumenWhatsApp = function() {
   const texto = [
     `Resumen de predicación — ${fmtMes(_mesMostrado)}`,
     `Horas: ${fmtTiempoSoloHoras(_dataMes.minutos || 0)}`,
+    `LDC: ${fmtTiempoSoloHoras(_dataMes.ldcMinutos || 0)}`,
     `Estudios: ${_dataMes.estudios || 0}`,
   ].join('\n');
   const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
@@ -544,6 +557,7 @@ window.exportarResumenWhatsApp = function() {
 // ─────────────────────────────────────────
 window.abrirAgregarTiempo = function() {
   document.getElementById('add-fecha').value = fechaHoy();
+  document.getElementById('add-tipo').value  = 'predicacion';
   document.getElementById('add-horas').value = '';
   document.getElementById('add-mins').value  = '';
   document.getElementById('modal-add-tiempo').style.display = 'flex';
@@ -565,6 +579,7 @@ window.sumarTiempoRapido = function(horas, mins) {
 
 window.guardarAgregarTiempo = async function() {
   const fecha = document.getElementById('add-fecha').value;
+  const tipo  = document.getElementById('add-tipo').value;
   const h     = Math.max(0, parseInt(document.getElementById('add-horas').value) || 0);
   const m     = Math.max(0, Math.min(59, parseInt(document.getElementById('add-mins').value) || 0));
   const mins  = h * 60 + m;
@@ -583,7 +598,7 @@ window.guardarAgregarTiempo = async function() {
   }
 
   cerrarAgregarTiempo();
-  await guardarDia(fecha, mins);
+  await guardarDia(fecha, mins, { ldcMinutos: tipo === 'ldc' ? mins : 0 });
   renderStats();
   await cargarHistorial();
   toast(`${fmtTiempo(mins)} agregados — ${fmtFecha(fecha)}`);

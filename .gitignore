@@ -1,4 +1,8 @@
 tools/serviceAccountKey.json
+tools/backup.myministry
+tools/*.ziv.json
+tools/convert_myministry.js
+tools/import_myministry_predicacion.py
 .agents/
 .claude/
 skills-lock.json
