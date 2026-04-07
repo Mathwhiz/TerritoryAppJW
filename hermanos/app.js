@@ -119,6 +119,7 @@ let sheetsUrl       = null;
 let semanasEspeciales = {};
 let _modalSexo      = null; // 'H' | 'M' | null
 let listaVisible    = [];   // hermanos actualmente visibles en la lista (respetando filtros)
+let _gruposPubs     = [];
 
 // ─────────────────────────────────────────
 //   UTILIDADES
@@ -473,9 +474,9 @@ async function cargarVistaGrupos() {
 
   try {
     const snap = await getDocs(pubCol());
-    const pubs = snap.docs.map(d => ({ id: d.id, ...d.data(), roles: d.data().roles || [] }));
-    pubs.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
-    renderVistaGrupos(pubs);
+    _gruposPubs = snap.docs.map(d => ({ id: d.id, ...d.data(), roles: d.data().roles || [] }));
+    _gruposPubs.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+    renderVistaGrupos();
   } catch (e) {
     board.innerHTML = `<div class="empty-state">Error al cargar grupos: ${esc(e.message)}</div>`;
   } finally {
@@ -488,12 +489,12 @@ function labelGrupo(grupoId) {
   return found?.label || `Grupo ${grupoId}`;
 }
 
-function renderVistaGrupos(pubs) {
+function renderVistaGrupos() {
   const board = document.getElementById('grupos-board');
   if (!board) return;
 
   const grouped = new Map();
-  pubs.forEach(pub => {
+  _gruposPubs.forEach(pub => {
     const gid = pub.grupoId ? String(pub.grupoId) : '__sin_grupo__';
     if (!grouped.has(gid)) grouped.set(gid, []);
     grouped.get(gid).push(pub);
@@ -514,6 +515,9 @@ function renderVistaGrupos(pubs) {
       const items = grouped.get(id) || [];
       const title = id === '__sin_grupo__' ? 'Sin grupo' : labelGrupo(id);
       const cardClass = id === '__sin_grupo__' ? 'grupo-card grupo-card-empty' : 'grupo-card';
+      const addButton = id === '__sin_grupo__'
+        ? ''
+        : `<button class="grupo-add-btn" onclick="event.stopPropagation();agregarAGrupo('${id}')">+ Agregar</button>`;
       const listHtml = items.length
         ? `<div class="grupo-list">${items.map(pub => {
             const meta = [];
@@ -525,6 +529,12 @@ function renderVistaGrupos(pubs) {
                   <div class="grupo-item-name">${esc(pub.nombre)}</div>
                   <div class="grupo-item-meta">${esc(meta.join(' · ') || 'Sin datos extra')}</div>
                 </div>
+                <div class="grupo-item-actions">
+                  <button class="grupo-item-btn" onclick="event.stopPropagation();moverDeGrupo('${pub.id}')">Mover</button>
+                  ${id === '__sin_grupo__'
+                    ? ''
+                    : `<button class="grupo-item-btn grupo-item-btn-danger" onclick="event.stopPropagation();quitarDeGrupo('${pub.id}')">Quitar</button>`}
+                </div>
               </div>`;
           }).join('')}</div>`
         : '<div class="grupo-empty">Sin publicadores asignados.</div>';
@@ -532,13 +542,103 @@ function renderVistaGrupos(pubs) {
       return `
         <section class="${cardClass}">
           <div class="grupo-head">
-            <div class="grupo-title">${esc(title)}</div>
-            <div class="grupo-count">${items.length} publicador${items.length === 1 ? '' : 'es'}</div>
+            <div class="grupo-head-main">
+              <div class="grupo-title">${esc(title)}</div>
+              <div class="grupo-count">${items.length} publicador${items.length === 1 ? '' : 'es'}</div>
+            </div>
+            ${addButton}
           </div>
           ${listHtml}
         </section>`;
     }).join('');
 }
+
+function opcionesGrupoPicker(currentGroupId = null, includeSinGrupo = true) {
+  const groups = gruposGlobales.length
+    ? gruposGlobales.map(g => ({ id: String(g.id), label: labelGrupo(g.id) }))
+    : ['1', '2', '3', '4', '5', '6', '7'].map(id => ({ id, label: `Grupo ${id}` }));
+  const options = groups.filter(g => g.id !== String(currentGroupId)).map(g => g.label);
+  if (includeSinGrupo && currentGroupId !== '__sin_grupo__') options.unshift('— Sin grupo —');
+  return options;
+}
+
+function findGrupoIdByLabel(label) {
+  if (!label || label === '— Sin grupo —') return null;
+  const found = gruposGlobales.find(g => labelGrupo(g.id) === label);
+  if (found) return String(found.id);
+  const match = label.match(/(\d+)/);
+  return match ? match[1] : null;
+}
+
+async function actualizarGrupoPublicador(pubId, grupoId) {
+  await updateDoc(doc(pubCol(), pubId), { grupoId: grupoId || null });
+  const idx = _gruposPubs.findIndex(p => p.id === pubId);
+  if (idx >= 0) _gruposPubs[idx] = { ..._gruposPubs[idx], grupoId: grupoId || null };
+  renderVistaGrupos();
+}
+
+window.quitarDeGrupo = async function(pubId) {
+  const pub = _gruposPubs.find(p => p.id === pubId);
+  if (!pub) return;
+  const ok = await uiConfirm({
+    title: 'Quitar de grupo',
+    msg: `¿Quitar a ${pub.nombre} de su grupo actual?`,
+    confirmText: 'Quitar',
+    cancelText: 'Cancelar',
+    type: 'warn',
+  });
+  if (!ok) return;
+  try {
+    await actualizarGrupoPublicador(pubId, null);
+    uiToast('Grupo actualizado', 'success');
+  } catch (e) {
+    uiToast('Error: ' + e.message, 'error');
+  }
+};
+
+window.moverDeGrupo = async function(pubId) {
+  const pub = _gruposPubs.find(p => p.id === pubId);
+  if (!pub) return;
+  const current = pub.grupoId ? String(pub.grupoId) : '__sin_grupo__';
+  const result = await uiConductorPicker({
+    conductores: opcionesGrupoPicker(current),
+    value: '',
+    label: `Mover — ${pub.nombre}`,
+    color: '#4691FF',
+  });
+  if (result === null) return;
+  try {
+    await actualizarGrupoPublicador(pubId, findGrupoIdByLabel(result));
+    uiToast('Grupo actualizado', 'success');
+  } catch (e) {
+    uiToast('Error: ' + e.message, 'error');
+  }
+};
+
+window.agregarAGrupo = async function(grupoId) {
+  const disponibles = _gruposPubs
+    .filter(p => String(p.grupoId || '') !== String(grupoId))
+    .map(p => p.nombre);
+  if (!disponibles.length) {
+    await uiAlert('No hay publicadores disponibles para mover a este grupo.');
+    return;
+  }
+  const result = await uiConductorPicker({
+    conductores: disponibles,
+    value: '',
+    label: `Agregar a ${labelGrupo(grupoId)}`,
+    color: '#4691FF',
+  });
+  if (!result) return;
+  const pub = _gruposPubs.find(p => p.nombre === result);
+  if (!pub) return;
+  try {
+    await actualizarGrupoPublicador(pub.id, String(grupoId));
+    uiToast('Grupo actualizado', 'success');
+  } catch (e) {
+    uiToast('Error: ' + e.message, 'error');
+  }
+};
 
 // ─────────────────────────────────────────
 //   RENDER LISTA

@@ -488,6 +488,9 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   gap: 10px;
   margin-bottom: 10px;
 }
+.grupo-head-main {
+  min-width: 0;
+}
 .grupo-title {
   font-size: 15px;
   font-weight: 700;
@@ -516,6 +519,35 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .grupo-item-main {
   min-width: 0;
+  flex: 1;
+}
+.grupo-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.grupo-add-btn,
+.grupo-item-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  border-radius: 9px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.grupo-add-btn:hover,
+.grupo-item-btn:hover {
+  background: var(--bg-hover);
+  border-color: rgba(70,145,255,0.45);
+  color: var(--text-primary);
+}
+.grupo-item-btn-danger:hover {
+  border-color: rgba(216,90,48,0.45);
+  color: #D85A30;
 }
 .grupo-item-name {
   font-size: 14px;
