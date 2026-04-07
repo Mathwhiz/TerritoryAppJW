@@ -41,6 +41,10 @@ function fmtFecha(iso) {
   return `${d} de ${MESES_CORTOS[m - 1]}`;
 }
 
+function compareMes(a, b) {
+  return a.localeCompare(b);
+}
+
 function fmtTiempo(mins) {
   if (!mins || mins <= 0) return '0 min';
   const h = Math.floor(mins / 60), m = mins % 60;
@@ -56,6 +60,20 @@ function fmtTiempoSoloHoras(mins) {
   return `${rounded} h`;
 }
 
+function fmtHorasInformadas(mins) {
+  return `${Math.floor((mins || 0) / 60)} h`;
+}
+
+function listMesesEntre(desde, hasta) {
+  const meses = [];
+  let actual = desde;
+  while (compareMes(actual, hasta) <= 0) {
+    meses.push(actual);
+    actual = navearMes(actual, 1);
+  }
+  return meses;
+}
+
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -69,13 +87,84 @@ function toast(msg, type = 'success') {
   if (window.uiToast) window.uiToast(msg, type);
 }
 
+function getRawMesData(iso) {
+  if (iso === _mesMostrado) {
+    return {
+      minutos: _dataMes.rawMinutos || 0,
+      ldcMinutos: _dataMes.rawLdcMinutos || 0,
+      revisitas: _dataMes.revisitas || 0,
+      estudios: _dataMes.estudios || 0,
+    };
+  }
+  const mes = _historialMeses.find(item => item.id === iso);
+  return {
+    minutos: mes?.minutos || 0,
+    ldcMinutos: mes?.ldcMinutos || 0,
+    revisitas: mes?.revisitas || 0,
+    estudios: mes?.estudios || 0,
+  };
+}
+
+function calcularMesesConArrastre() {
+  const ids = _historialMeses.map(m => m.id);
+  const maxMes = ids.length ? ids.reduce((max, id) => compareMes(id, max) > 0 ? id : max, _mesMostrado) : _mesMostrado;
+  const minMes = ids.length ? ids.reduce((min, id) => compareMes(id, min) < 0 ? id : min, _mesMostrado) : _mesMostrado;
+  const meses = listMesesEntre(minMes, compareMes(maxMes, _mesMostrado) > 0 ? maxMes : _mesMostrado);
+  const calculados = new Map();
+
+  let arrastrePred = 0;
+  let arrastreLdc = 0;
+
+  meses.forEach(mes => {
+    const raw = getRawMesData(mes);
+    const totalPred = (raw.minutos || 0) + arrastrePred;
+    const totalLdc = (raw.ldcMinutos || 0) + arrastreLdc;
+    const cerrado = compareMes(mes, mesHoy()) < 0;
+    const minutosMostrados = cerrado ? totalPred - (totalPred % 60) : totalPred;
+    const ldcMostrados = cerrado ? totalLdc - (totalLdc % 60) : totalLdc;
+
+    calculados.set(mes, {
+      id: mes,
+      minutos: minutosMostrados,
+      ldcMinutos: ldcMostrados,
+      rawMinutos: raw.minutos || 0,
+      rawLdcMinutos: raw.ldcMinutos || 0,
+      revisitas: raw.revisitas || 0,
+      estudios: raw.estudios || 0,
+      arrastreEntradaMinutos: arrastrePred,
+      arrastreEntradaLdcMinutos: arrastreLdc,
+      cerrado,
+    });
+
+    arrastrePred = totalPred % 60;
+    arrastreLdc = totalLdc % 60;
+  });
+
+  return calculados;
+}
+
+function getMesCalculado(iso) {
+  return calcularMesesConArrastre().get(iso) || {
+    id: iso,
+    minutos: 0,
+    ldcMinutos: 0,
+    rawMinutos: 0,
+    rawLdcMinutos: 0,
+    revisitas: 0,
+    estudios: 0,
+    arrastreEntradaMinutos: 0,
+    arrastreEntradaLdcMinutos: 0,
+    cerrado: compareMes(iso, mesHoy()) < 0,
+  };
+}
+
 // ─────────────────────────────────────────
 //   ESTADO — declarado antes del await
 // ─────────────────────────────────────────
 let _uid         = '';
 let _mesMostrado = mesHoy();
 let _diasMes     = [];   // [{ id, fecha, minutos }] del mes actual, ordenado por fecha desc
-let _dataMes     = { minutos: 0, ldcMinutos: 0, revisitas: 0, estudios: 0 };
+let _dataMes     = { minutos: 0, ldcMinutos: 0, rawMinutos: 0, rawLdcMinutos: 0, revisitas: 0, estudios: 0 };
 let _mesExiste   = false;
 let _historialMeses = [];
 
@@ -148,11 +237,12 @@ async function init(uid) {
   _uid = uid;
   showView('view-app');
   renderMonthLabel();
+  await cargarHistorial(false);
   await cargarMes();
-  await cargarHistorial();
+  renderHistorial();
+  renderMetas();
   cargarContactos('revisita');
   cargarContactos('estudio');
-  renderMetas();
 }
 
 // ─────────────────────────────────────────
@@ -201,8 +291,11 @@ async function cargarMes() {
   const totalDias = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
   const totalLdcDias = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
   // Si hay días individuales usamos su suma; si no, usamos el total cacheado del doc padre (datos legacy)
-  _dataMes.minutos = _diasMes.length > 0 ? totalDias : (parentData.minutos || 0);
-  _dataMes.ldcMinutos = _diasMes.length > 0 ? totalLdcDias : (parentData.ldcMinutos || 0);
+  _dataMes.rawMinutos = _diasMes.length > 0 ? totalDias : (parentData.minutos || 0);
+  _dataMes.rawLdcMinutos = _diasMes.length > 0 ? totalLdcDias : (parentData.ldcMinutos || 0);
+  const mesCalculado = getMesCalculado(_mesMostrado);
+  _dataMes.minutos = mesCalculado.minutos;
+  _dataMes.ldcMinutos = mesCalculado.ldcMinutos;
   _mesExiste = parentSnap.exists() || _diasMes.length > 0;
 
   renderStats();
@@ -225,14 +318,17 @@ async function guardarDia(fecha, minutos, extras = {}) {
   // Actualiza estado local sin refetch
   _diasMes.push({ id: newRef.id, fecha, minutos, ldcMinutos });
   _diasMes.sort((a, b) => b.fecha.localeCompare(a.fecha));
-  _dataMes.minutos = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
-  _dataMes.ldcMinutos = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
+  _dataMes.rawMinutos = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+  _dataMes.rawLdcMinutos = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
+  const mesCalculado = getMesCalculado(_mesMostrado);
+  _dataMes.minutos = mesCalculado.minutos;
+  _dataMes.ldcMinutos = mesCalculado.ldcMinutos;
   _mesExiste = true;
 
   // Actualiza el total en el doc padre (para que el historial lo lea rápido)
   await setDoc(mesRef(_mesMostrado), {
-    minutos:   _dataMes.minutos,
-    ldcMinutos: _dataMes.ldcMinutos,
+    minutos:   _dataMes.rawMinutos,
+    ldcMinutos: _dataMes.rawLdcMinutos,
     revisitas: _dataMes.revisitas || 0,
     estudios:  _dataMes.estudios  || 0,
     updatedAt: serverTimestamp(),
@@ -243,8 +339,8 @@ async function guardarDia(fecha, minutos, extras = {}) {
 async function guardarContadores() {
   _mesExiste = true;
   await setDoc(mesRef(_mesMostrado), {
-    minutos:   _dataMes.minutos,
-    ldcMinutos: _dataMes.ldcMinutos || 0,
+    minutos:   _dataMes.rawMinutos || 0,
+    ldcMinutos: _dataMes.rawLdcMinutos || 0,
     revisitas: _dataMes.revisitas || 0,
     estudios:  _dataMes.estudios  || 0,
     updatedAt: serverTimestamp(),
@@ -263,14 +359,17 @@ window.eliminarDia = async function(id) {
 
   await deleteDoc(diaRef(_mesMostrado, id));
   _diasMes = _diasMes.filter(d => d.id !== id);
-  _dataMes.minutos = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
-  _dataMes.ldcMinutos = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
+  _dataMes.rawMinutos = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+  _dataMes.rawLdcMinutos = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
+  const mesCalculado = getMesCalculado(_mesMostrado);
+  _dataMes.minutos = mesCalculado.minutos;
+  _dataMes.ldcMinutos = mesCalculado.ldcMinutos;
   renderStats();
 
   // Actualiza total en padre
   await setDoc(mesRef(_mesMostrado), {
-    minutos:   _dataMes.minutos,
-    ldcMinutos: _dataMes.ldcMinutos || 0,
+    minutos:   _dataMes.rawMinutos || 0,
+    ldcMinutos: _dataMes.rawLdcMinutos || 0,
     updatedAt: serverTimestamp(),
   }, { merge: true });
 
@@ -281,15 +380,21 @@ window.eliminarDia = async function(id) {
 // ─────────────────────────────────────────
 //   HISTORIAL
 // ─────────────────────────────────────────
-async function cargarHistorial() {
+async function cargarHistorial(render = true) {
   const cont = document.getElementById('hist-container');
   try {
     const snap = await getDocs(collection(db, 'usuarios', _uid, 'predicacion'));
     _historialMeses = [];
     snap.forEach(d => _historialMeses.push({ id: d.id, ...d.data() }));
     _historialMeses.sort((a, b) => b.id.localeCompare(a.id));
-    renderHistorial();
-    renderMetas();
+    if (render) {
+      const mesCalculado = getMesCalculado(_mesMostrado);
+      _dataMes.minutos = mesCalculado.minutos;
+      _dataMes.ldcMinutos = mesCalculado.ldcMinutos;
+      renderHistorial();
+      renderMetas();
+      renderStats();
+    }
   } catch {
     cont.innerHTML = '<div class="hist-empty">Error al cargar el historial</div>';
   }
@@ -326,12 +431,19 @@ function renderMonthLabel() {
   document.getElementById('month-label').textContent = fmtMes(_mesMostrado);
   document.getElementById('month-next-btn').disabled = (_mesMostrado >= mesHoy());
   const histSub = document.getElementById('hist-section-sub');
-  if (histSub) histSub.textContent = `Mes seleccionado: ${fmtMes(_mesMostrado)}`;
+  if (histSub) histSub.textContent = `Movimientos de ${fmtMes(_mesMostrado)}`;
 }
 
 function renderStats() {
-  const sinActividad = !_mesExiste ||
-    ((_dataMes.minutos || 0) === 0 && (_dataMes.revisitas || 0) === 0 && (_dataMes.estudios || 0) === 0);
+  const mesCalculado = getMesCalculado(_mesMostrado);
+  _dataMes.minutos = mesCalculado.minutos;
+  _dataMes.ldcMinutos = mesCalculado.ldcMinutos;
+
+  const sinActividad =
+    (_dataMes.minutos || 0) === 0 &&
+    (_dataMes.ldcMinutos || 0) === 0 &&
+    (_dataMes.revisitas || 0) === 0 &&
+    (_dataMes.estudios || 0) === 0;
 
   document.getElementById('mes-vacio').style.display = sinActividad ? ''     : 'none';
   document.getElementById('mes-stats').style.display = sinActividad ? 'none' : '';
@@ -341,53 +453,50 @@ function renderStats() {
     document.getElementById('stat-ldc').textContent       = fmtTiempo(_dataMes.ldcMinutos || 0);
     document.getElementById('stat-revisitas').textContent = _dataMes.revisitas || 0;
     document.getElementById('stat-estudios').textContent  = _dataMes.estudios  || 0;
-    renderDias();
   }
   renderMetas();
 }
 
-function renderDias() {
-  const cont = document.getElementById('dias-list');
-  if (!_diasMes.length) {
-    cont.innerHTML = '';
-    return;
+function renderDiasMes() {
+  const mesCalculado = getMesCalculado(_mesMostrado);
+  const filas = [];
+
+  if (mesCalculado.arrastreEntradaMinutos > 0) {
+    filas.push(`
+      <div class="hist-day-row hist-day-row-carry">
+        <div class="hist-day-main">
+          <span class="hist-day-date">Arrastre del mes anterior</span>
+        </div>
+        <span class="hist-day-time">${fmtTiempo(mesCalculado.arrastreEntradaMinutos)}</span>
+      </div>
+    `);
   }
-  cont.innerHTML = _diasMes.map(d => `
-    <div class="dia-row">
-      <span class="dia-fecha">${fmtFecha(d.fecha)}${d.ldcMinutos ? ' <span class="dia-badge">LDC</span>' : ''}</span>
-      <span class="dia-tiempo">${fmtTiempo(d.minutos)}</span>
-      <button class="dia-del" onclick="eliminarDia('${d.id}')" title="Eliminar">×</button>
+
+  filas.push(..._diasMes.map(d => `
+    <div class="hist-day-row">
+      <div class="hist-day-main">
+        <span class="hist-day-date">${fmtFecha(d.fecha)}</span>
+        ${d.ldcMinutos ? '<span class="hist-day-badge">LDC</span>' : ''}
+      </div>
+      <span class="hist-day-time">${fmtTiempo(d.minutos)}</span>
+      <button class="hist-day-del" onclick="eliminarDia('${d.id}')" title="Eliminar">×</button>
     </div>
-  `).join('');
+  `));
+
+  return filas.join('');
 }
 
 function renderHistorial() {
   const cont = document.getElementById('hist-container');
-  const meses = _historialMeses;
-  if (!meses.length) {
-    cont.innerHTML = '<div class="hist-empty">Sin meses registrados</div>';
+  if (!renderDiasMes()) {
+    cont.innerHTML = '<div class="hist-empty">Todavía no agregaste movimientos en este mes</div>';
     return;
   }
-  const filas = meses.map(m => `
-    <div class="hist-row ${m.id === _mesMostrado ? 'hist-row-active' : ''}"
-         data-mes="${m.id}" onclick="irAMes('${m.id}')">
-      <span class="hist-mes">${fmtMes(m.id)}${m.id === mesHoy() ? ' <span class="hist-badge-hoy">este mes</span>' : ''}</span>
-      <span class="hist-val">${fmtTiempo(m.minutos || 0)}</span>
-      <span class="hist-val">${fmtTiempo(m.ldcMinutos || 0)} <span class="hist-val-dim">ldc</span></span>
-      <span class="hist-val">${m.revisitas || 0} <span class="hist-val-dim">rev</span></span>
-      <span class="hist-val">${m.estudios  || 0} <span class="hist-val-dim">est</span></span>
-    </div>
-  `).join('');
   cont.innerHTML = `
     <div class="hist-card">
-      <div class="hist-header">
-        <span class="hist-header-cell">Mes</span>
-        <span class="hist-header-cell">Tiempo</span>
-        <span class="hist-header-cell">LDC</span>
-        <span class="hist-header-cell">Rev</span>
-        <span class="hist-header-cell">Est</span>
+      <div class="hist-day-list">
+        ${renderDiasMes()}
       </div>
-      ${filas}
     </div>`;
 }
 
@@ -419,15 +528,64 @@ function fmtServicioRango(servicioDesde) {
   return `Sep ${servicioDesde} → Ago ${servicioDesde + 1}`;
 }
 
+function renderHistorialMesesAnteriores(meses) {
+  if (!meses.length) {
+    return `
+      <div class="meta-history-empty">
+        Sin meses anteriores registrados en este año de servicio.
+      </div>`;
+  }
+
+  return `
+    <div class="hist-card meta-history-card">
+      <div class="hist-header">
+        <span class="hist-header-cell">Mes</span>
+        <span class="hist-header-cell">Tiempo</span>
+        <span class="hist-header-cell">LDC</span>
+        <span class="hist-header-cell">Rev</span>
+        <span class="hist-header-cell">Est</span>
+      </div>
+      ${meses.map(m => `
+        <div class="hist-row" data-mes="${m.id}" onclick="irAMes('${m.id}')">
+          <span class="hist-mes">${fmtMes(m.id)}</span>
+          <span class="hist-val">${fmtTiempo(m.minutos || 0)}</span>
+          <span class="hist-val">${fmtTiempo(m.ldcMinutos || 0)} <span class="hist-val-dim">ldc</span></span>
+          <span class="hist-val">${m.revisitas || 0} <span class="hist-val-dim">rev</span></span>
+          <span class="hist-val">${m.estudios || 0} <span class="hist-val-dim">est</span></span>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
 function renderMetas() {
   const cont = document.getElementById('metas-container');
   if (!cont) return;
 
+  const servicioDesde = getServicioDesdeMes(_mesMostrado);
+  const mesesServicio = listMesesServicio(servicioDesde);
+  const mesesCalculados = calcularMesesConArrastre();
+  const mesesAnteriores = mesesServicio
+    .filter(mes => compareMes(mes, _mesMostrado) < 0)
+    .map(mes => mesesCalculados.get(mes))
+    .filter(Boolean)
+    .filter(m => (m.minutos || 0) > 0 || (m.ldcMinutos || 0) > 0 || (m.revisitas || 0) > 0 || (m.estudios || 0) > 0)
+    .sort((a, b) => b.id.localeCompare(a.id));
+
   if (!_esPrecursorRegular) {
     cont.innerHTML = `
-      <div class="meta-empty">
-        Las metas se muestran para precursores regulares.<br>
-        Si más adelante querés, podemos agregar metas para otros roles.
+      <div class="metas-grid">
+        <div class="meta-empty">
+          Las metas se muestran para precursores regulares.<br>
+          Si más adelante querés, podemos agregar metas para otros roles.
+        </div>
+
+        <div class="meta-card">
+          <div class="meta-head">
+            <div class="meta-title">Historial anterior</div>
+            <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
+          </div>
+          ${renderHistorialMesesAnteriores(mesesAnteriores)}
+        </div>
       </div>`;
     return;
   }
@@ -435,9 +593,7 @@ function renderMetas() {
   const metaMensual = 50 * 60;
   const metaAnual = 600 * 60;
   const actualMes = _dataMes.minutos || 0;
-  const servicioDesde = getServicioDesdeMes(_mesMostrado);
-  const mesesServicio = listMesesServicio(servicioDesde);
-  const actualAnual = mesesServicio.reduce((sum, mes) => sum + (findHistMes(mes)?.minutos || 0), 0);
+  const actualAnual = mesesServicio.reduce((sum, mes) => sum + (mesesCalculados.get(mes)?.minutos || 0), 0);
   const faltanteMes = Math.max(0, metaMensual - actualMes);
   const faltanteAnual = Math.max(0, metaAnual - actualAnual);
 
@@ -475,6 +631,14 @@ function renderMetas() {
         <div class="meta-foot">
           ${faltanteAnual > 0 ? `Te faltan ${fmtTiempo(faltanteAnual)} para completar el año de servicio.` : 'Meta anual cumplida.'}
         </div>
+      </div>
+
+      <div class="meta-card">
+        <div class="meta-head">
+          <div class="meta-title">Historial anterior</div>
+          <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
+        </div>
+        ${renderHistorialMesesAnteriores(mesesAnteriores)}
       </div>
     </div>`;
 }
@@ -544,8 +708,8 @@ window.cambiarContador = function(campo, delta) {
 window.exportarResumenWhatsApp = function() {
   const texto = [
     `Resumen de predicación — ${fmtMes(_mesMostrado)}`,
-    `Horas: ${fmtTiempoSoloHoras(_dataMes.minutos || 0)}`,
-    `LDC: ${fmtTiempoSoloHoras(_dataMes.ldcMinutos || 0)}`,
+    `Horas: ${fmtHorasInformadas(_dataMes.minutos || 0)}`,
+    `LDC: ${fmtHorasInformadas(_dataMes.ldcMinutos || 0)}`,
     `Estudios: ${_dataMes.estudios || 0}`,
   ].join('\n');
   const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;

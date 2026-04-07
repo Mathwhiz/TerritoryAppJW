@@ -59,7 +59,7 @@
   <div class="tabs-bar">
     <button class="tab-btn active" id="tab-btn-tiempo" onclick="switchTab('tiempo')">Tiempo</button>
     <button class="tab-btn" id="tab-btn-contactos" onclick="switchTab('contactos')">Revisitas y estudios</button>
-    <button class="tab-btn" id="tab-btn-metas" onclick="switchTab('metas')">Metas</button>
+    <button class="tab-btn" id="tab-btn-metas" onclick="switchTab('metas')">Metas e Historial</button>
   </div>
 
   <!-- ── Tab: Tiempo ── -->
@@ -118,7 +118,6 @@
             <span class="stat-label-text">LDC</span>
             <span class="stat-value-text" id="stat-ldc">0 min</span>
           </div>
-          <div id="dias-list"></div>
           <div class="stat-row">
             <span class="stat-label-text">Revisitas</span>
             <div class="stat-counter-wrap">
@@ -146,7 +145,7 @@
       <!-- Historial -->
       <div class="hist-section-head">
         <div class="hist-section-title">Historial</div>
-        <div class="hist-section-sub" id="hist-section-sub">Mes seleccionado: —</div>
+        <div class="hist-section-sub" id="hist-section-sub">Movimientos de —</div>
       </div>
       <div id="hist-container">
         <div class="loading-wrap"><div class="spinner"></div></div>

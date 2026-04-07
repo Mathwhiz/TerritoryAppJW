@@ -467,3 +467,70 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .resp-chip:hover { background: rgba(216,90,48,0.18); border-color: rgba(216,90,48,0.45); }
 .resp-chip-x { color: #D85A30; font-size: 13px; line-height: 1; }
 .resp-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 2px 0; }
+
+.grupos-board {
+  display: grid;
+  gap: 12px;
+}
+.grupo-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.grupo-card-empty {
+  border-style: dashed;
+}
+.grupo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.grupo-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.grupo-count {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.grupo-list {
+  display: grid;
+  gap: 8px;
+}
+.grupo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+}
+.grupo-item-main {
+  min-width: 0;
+}
+.grupo-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.grupo-item-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.grupo-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+}

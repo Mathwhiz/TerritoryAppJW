@@ -278,6 +278,36 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   gap: 10px; margin-bottom: 10px;
 }
 .hist-section-sub { font-size: 11px; color: var(--text-muted); text-align: right; }
+.hist-day-list { padding: 4px 0; }
+.hist-day-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border-primary);
+}
+.hist-day-row-carry {
+  background: rgba(224,82,119,0.06);
+}
+.hist-day-row:last-child { border-bottom: none; }
+.hist-day-main {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.hist-day-date { font-size: 14px; color: var(--text-primary); font-weight: 600; }
+.hist-day-badge {
+  display: inline-flex; align-items: center;
+  padding: 1px 7px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; color: #A0492A;
+  background: rgba(224, 154, 88, 0.16);
+  border: 1px solid rgba(224, 154, 88, 0.3);
+}
+.hist-day-time { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.hist-day-del {
+  width: 28px; height: 28px; border-radius: 8px; background: none;
+  border: none; cursor: pointer; color: var(--text-muted); font-size: 18px;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  transition: background 0.1s, color 0.1s; flex-shrink: 0;
+}
+.hist-day-del:hover { background: rgba(224,82,119,0.1); color: #E05277; }
 
 /* ─────────────────────────────────────────
    CONTACTS TAB (revisitas & estudios)
@@ -357,6 +387,13 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: 16px; padding: 22px 18px; text-align: center;
   font-size: 14px; color: var(--text-muted); line-height: 1.6;
+}
+.meta-history-card { margin-top: 4px; }
+.meta-history-empty {
+  padding: 14px 0 2px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 /* ─────────────────────────────────────────

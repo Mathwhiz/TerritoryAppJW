@@ -1,4 +1,7 @@
 tools/serviceAccountKey.json
+tools/*.csv
+tools/__pycache__/
+tools/*.pyc
 tools/backup.myministry
 tools/*.ziv.json
 tools/convert_myministry.js
@@ -14,3 +17,6 @@ tools/NWS Desktop Personas (157).csv
 .aidesigner/*
 !.aidesigner/.gitkeep
 node_modules/
+
+tools/grupos.jpeg
+tools/import_publicadores_nw_csv.py

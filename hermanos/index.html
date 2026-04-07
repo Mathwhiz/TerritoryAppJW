@@ -97,6 +97,19 @@
         </div>
       </button>
 
+      <button class="cs-module-card" style="--card-hover-border:rgba(70,145,255,0.55);--card-hover-bg:#101a2b;--card-hover-shadow:0 6px 24px rgba(0,0,0,0.35),0 0 0 1px rgba(70,145,255,0.55),0 4px 20px rgba(70,145,255,0.12);" onclick="goToGrupos()">
+        <div class="cs-module-card-icon" style="background:rgba(70,145,255,0.14);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M4 7h16M4 12h10M4 17h16" stroke="#4691FF" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="18" cy="12" r="2.5" stroke="#4691FF" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="cs-module-card-title" style="color:#76abff;">Grupos</div>
+          <div class="cs-module-card-sub">Ver publicadores por grupo</div>
+        </div>
+      </button>
+
       <a href="../index.html#menu" class="cs-back-btn">← Volver al módulo</a>
 
     </div>
@@ -137,6 +150,26 @@
 
     <a href="#" class="cs-back-btn" onclick="showView('view-menu');return false;">← Volver</a>
     <div style="height:4rem;"></div>
+  </div>
+
+  <!-- ── GRUPOS ── -->
+  <div id="view-grupos" class="view">
+    <div class="main-header">
+      <div>
+        <div class="main-title" style="color:#76abff;">Grupos</div>
+        <div class="main-sub js-congre">—</div>
+      </div>
+    </div>
+
+    <div id="grupos-loading" class="loading-wrap" style="display:none;">
+      <div class="spinner"></div>
+      <div class="loading-txt">Cargando grupos…</div>
+    </div>
+
+    <div id="grupos-board"></div>
+
+    <a href="#" class="cs-back-btn" onclick="showView('view-menu');return false;">← Volver</a>
+    <div style="height:2rem;"></div>
   </div>
 
   <!-- ── MAIN: LISTA ── -->

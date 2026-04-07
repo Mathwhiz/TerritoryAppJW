@@ -261,6 +261,11 @@ window.goToResponsabilidades = async function() {
   await cargarResponsabilidades();
 };
 
+window.goToGrupos = async function() {
+  showView('view-grupos');
+  await cargarVistaGrupos();
+};
+
 // ─────────────────────────────────────────
 //   RESPONSABILIDADES
 // ─────────────────────────────────────────
@@ -457,6 +462,83 @@ window.goToEspeciales = function() {
   showView('view-especiales');
   cargarEspeciales();
 };
+
+async function cargarVistaGrupos() {
+  const loading = document.getElementById('grupos-loading');
+  const board = document.getElementById('grupos-board');
+  if (!loading || !board) return;
+
+  loading.style.display = '';
+  board.innerHTML = '';
+
+  try {
+    const snap = await getDocs(pubCol());
+    const pubs = snap.docs.map(d => ({ id: d.id, ...d.data(), roles: d.data().roles || [] }));
+    pubs.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+    renderVistaGrupos(pubs);
+  } catch (e) {
+    board.innerHTML = `<div class="empty-state">Error al cargar grupos: ${esc(e.message)}</div>`;
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+function labelGrupo(grupoId) {
+  const found = gruposGlobales.find(g => String(g.id) === String(grupoId));
+  return found?.label || `Grupo ${grupoId}`;
+}
+
+function renderVistaGrupos(pubs) {
+  const board = document.getElementById('grupos-board');
+  if (!board) return;
+
+  const grouped = new Map();
+  pubs.forEach(pub => {
+    const gid = pub.grupoId ? String(pub.grupoId) : '__sin_grupo__';
+    if (!grouped.has(gid)) grouped.set(gid, []);
+    grouped.get(gid).push(pub);
+  });
+
+  const orderedIds = [
+    ...new Set([
+      ...gruposGlobales.map(g => String(g.id)).filter(id => id && id !== 'C'),
+      ...[...grouped.keys()].filter(id => id !== '__sin_grupo__').sort((a, b) => Number(a) - Number(b)),
+    ]),
+    '__sin_grupo__',
+  ];
+
+  board.className = 'grupos-board';
+  board.innerHTML = orderedIds
+    .filter(id => grouped.has(id) || id === '__sin_grupo__')
+    .map(id => {
+      const items = grouped.get(id) || [];
+      const title = id === '__sin_grupo__' ? 'Sin grupo' : labelGrupo(id);
+      const cardClass = id === '__sin_grupo__' ? 'grupo-card grupo-card-empty' : 'grupo-card';
+      const listHtml = items.length
+        ? `<div class="grupo-list">${items.map(pub => {
+            const meta = [];
+            if (pub.roles?.length) meta.push(`${pub.roles.length} rol${pub.roles.length === 1 ? '' : 'es'}`);
+            if (pub.direccion) meta.push(pub.direccion);
+            return `
+              <div class="grupo-item">
+                <div class="grupo-item-main">
+                  <div class="grupo-item-name">${esc(pub.nombre)}</div>
+                  <div class="grupo-item-meta">${esc(meta.join(' · ') || 'Sin datos extra')}</div>
+                </div>
+              </div>`;
+          }).join('')}</div>`
+        : '<div class="grupo-empty">Sin publicadores asignados.</div>';
+
+      return `
+        <section class="${cardClass}">
+          <div class="grupo-head">
+            <div class="grupo-title">${esc(title)}</div>
+            <div class="grupo-count">${items.length} publicador${items.length === 1 ? '' : 'es'}</div>
+          </div>
+          ${listHtml}
+        </section>`;
+    }).join('');
+}
 
 // ─────────────────────────────────────────
 //   RENDER LISTA
