@@ -55,6 +55,7 @@ let pinVM       = null;
 let publicadores = [];
 let semanaData  = null;  // programa de la semana actualmente cargada/editada
 let modoEncargado = false;
+let vmInitReady = false;
 let tieneAuxiliar = false;
 let presidenteEsOradorFinal = false;
 let semanasLista      = [];  // cache para navegación encargado (orden desc)
@@ -377,6 +378,7 @@ function _canBypassVMPin() {
 }
 
 window.goToPin = function() {
+  if (!vmInitReady) return;
   if (_canBypassVMPin()) {
     modoEncargado = true;
     document.getElementById('pin-modal-vm').style.display = 'none';
@@ -396,6 +398,7 @@ window.pinCancel = function() {
 };
 
 window.goToVerPrograma = async function() {
+  if (!vmInitReady) return;
   pubFecha = lunesDeHoy();
   showView('view-programa-pub');
   await cargarProgramaPublico();
@@ -1935,13 +1938,12 @@ window.exportarMesASheets = async function() {
   document.getElementById('cover-congre').textContent = congreNombre || '—';
   showView('view-cover');
 
-  uiLoading.show('Cargando…');
   try {
     const [snap, privateSnap] = await Promise.all([
       getDoc(doc(db, 'congregaciones', congreId)),
       getDoc(privateModuleConfigRef()).catch(() => null),
     ]);
-    if (!snap.exists()) { uiLoading.hide(); window.location.href = '../index.html'; return; }
+    if (!snap.exists()) { window.location.href = '../index.html'; return; }
     const data = snap.data();
     const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
     const mergedConfig = { ...data, ...privateData };
@@ -1953,8 +1955,254 @@ window.exportarMesASheets = async function() {
     await cargarPublicadores();
     await cargarVmEspeciales();
     await syncVmProgramaCompleto();
+    vmInitReady = true;
   } catch(e) {
     console.error('Error al inicializar:', e);
   }
-  uiLoading.hide();
 })();
+
+// ─────────────────────────────────────────
+//   LISTA DE HERMANOS (VM)
+// ─────────────────────────────────────────
+
+const LH_ROLES_ASIGN = [
+  { id: 'LECTOR', label: 'Lector' }, { id: 'SONIDO', label: 'Sonido' },
+  { id: 'PLATAFORMA', label: 'Plataforma' }, { id: 'MICROFONISTAS', label: 'Micrófonos' },
+  { id: 'ACOMODADOR_AUDITORIO', label: 'Acod. Auditorio' }, { id: 'ACOMODADOR_ENTRADA', label: 'Acod. Entrada' },
+  { id: 'PRESIDENTE', label: 'Pres. Reunión' }, { id: 'REVISTAS', label: 'Revistas' },
+  { id: 'PUBLICACIONES', label: 'Publicaciones' },
+];
+const LH_ROLES_VM = [
+  { id: 'VM_PRESIDENTE', label: 'Presidente' }, { id: 'VM_ORACION', label: 'Oración' },
+  { id: 'VM_TESOROS', label: 'Disc. Tesoros' }, { id: 'VM_JOYAS', label: 'Perlas escondidas' },
+  { id: 'VM_LECTURA', label: 'Lectura Bíblica' },
+  { id: 'VM_MINISTERIO_CONVERSACION', label: 'Min. Conversación' },
+  { id: 'VM_MINISTERIO_REVISITA', label: 'Min. Revisita' },
+  { id: 'VM_MINISTERIO_ESCENIFICACION', label: 'Min. Escenificación' },
+  { id: 'VM_MINISTERIO_DISCURSO', label: 'Min. Discurso' },
+  { id: 'VM_VIDA_CRISTIANA', label: 'Vida Cristiana' },
+  { id: 'VM_ESTUDIO_CONDUCTOR', label: 'Conductor Estudio' },
+];
+const LH_TODOS_ROLES = [...LH_ROLES_ASIGN, ...LH_ROLES_VM];
+
+let _lhListaVisible = [];
+let _lhEditandoId   = null;
+let _lhModalSexo    = null;
+
+function _lhRolLabel(id) {
+  return LH_TODOS_ROLES.find(r => r.id === id)?.label || id;
+}
+
+function _lhPubCol() {
+  return collection(db, 'congregaciones', congreId, 'publicadores');
+}
+
+window.goToListaHermanos = function() {
+  document.getElementById('lista-hermanos-sub').textContent = congreNombre || '—';
+  document.getElementById('lh-search').value = '';
+  document.getElementById('lh-rol').value = '';
+  // Construir checkboxes de asignaciones (sin grupos, simplificado)
+  const grid = document.getElementById('lh-modal-roles-asign-grid');
+  if (grid && !grid.children.length) {
+    grid.innerHTML = LH_ROLES_ASIGN.map(r =>
+      `<label class="rol-checkbox"><input type="checkbox" id="lhcb-${r.id}"><span>${r.label}</span></label>`
+    ).join('');
+  }
+  _lhFiltrar();
+  showView('view-lista-hermanos');
+};
+
+function _lhRenderLista(lista) {
+  _lhListaVisible = lista;
+  const el = document.getElementById('lh-list');
+  if (!lista.length) {
+    el.innerHTML = '<div class="empty-state">No hay hermanos cargados.</div>';
+    return;
+  }
+  el.innerHTML = lista.map(h => {
+    const asignChips = (h.roles || []).filter(r => !r.startsWith('VM_'))
+      .map(r => `<span class="vm-rol-chip" style="background:rgba(90,163,217,0.12);color:#5BA3D9;border-color:rgba(90,163,217,0.3);">${esc(_lhRolLabel(r))}</span>`).join('');
+    const vmChips = (h.roles || []).filter(r => r.startsWith('VM_'))
+      .map(r => `<span class="vm-rol-chip">${esc(_lhRolLabel(r))}</span>`).join('');
+    const chips = (asignChips + vmChips) || '<span style="font-size:11px;color:var(--text-muted);">Sin roles</span>';
+    const sexoChip = h.sexo === 'H'
+      ? `<span class="chip-sexo chip-sexo-h" onclick="event.stopPropagation();toggleSexoVM('${h.id}','H')" title="Hombre — clic para cambiar">♂</span>`
+      : h.sexo === 'M'
+        ? `<span class="chip-sexo chip-sexo-m" onclick="event.stopPropagation();toggleSexoVM('${h.id}','M')" title="Mujer — clic para cambiar">♀</span>`
+        : `<span class="chip-sexo chip-sexo-none" onclick="event.stopPropagation();toggleSexoVM('${h.id}',null)" title="Sin género — clic para asignar">·</span>`;
+    return `<div class="vm-hermano-row" onclick="abrirEditarVM('${h.id}')">
+      <div class="vm-hermano-info">
+        <div class="hermano-nombre-row" style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          ${sexoChip}
+          <div class="vm-hermano-nombre">${esc(h.nombre)}</div>
+        </div>
+        <div class="vm-hermano-roles">${chips}</div>
+      </div>
+      <div class="vm-hermano-actions">
+        <button class="btn-del-hermano-vm" onclick="event.stopPropagation();confirmarEliminarVM('${h.id}','${(h.nombre || '').replace(/'/g, "\\'")}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _lhFiltrar() {
+  const q   = norm(document.getElementById('lh-search')?.value || '');
+  const rol = document.getElementById('lh-rol')?.value || '';
+  _lhRenderLista(publicadores.filter(h =>
+    h.activo !== false &&
+    (!q   || norm(h.nombre).includes(q)) &&
+    (!rol || (rol === '__sin_roles__'
+      ? (h.roles || []).length === 0
+      : (h.roles || []).includes(rol)))
+  ));
+}
+
+window.filtrarListaHermanosVM = _lhFiltrar;
+
+function _lhActualizarNavModal(id) {
+  const idx   = _lhListaVisible.findIndex(p => p.id === id);
+  const total = _lhListaVisible.length;
+  const visible = idx !== -1 && total > 1;
+  document.getElementById('lh-modal-nav-row').style.display  = visible ? 'flex' : 'none';
+  document.getElementById('lh-modal-nav-counter').textContent = visible ? `${idx + 1} de ${total}` : '';
+  document.getElementById('lh-modal-nav-prev').disabled = idx <= 0;
+  document.getElementById('lh-modal-nav-next').disabled = idx >= total - 1;
+}
+
+function _lhRenderSexoBtns() {
+  ['H', 'M'].forEach(s => {
+    document.getElementById('lh-btn-sexo-' + s)
+      ?.classList.toggle('btn-sexo-active', _lhModalSexo === s);
+  });
+}
+
+window.selectSexoVM = function(s) {
+  _lhModalSexo = (_lhModalSexo === s) ? null : s;
+  _lhRenderSexoBtns();
+};
+
+window.abrirNuevoVM = function() {
+  _lhEditandoId = null;
+  _lhModalSexo  = null;
+  document.getElementById('lh-modal-titulo').textContent = 'Nuevo hermano';
+  document.getElementById('lh-modal-nombre').value = '';
+  document.getElementById('lh-modal-status').textContent = '';
+  LH_TODOS_ROLES.forEach(r => {
+    const cb = document.getElementById('lhcb-' + r.id);
+    if (cb) cb.checked = false;
+  });
+  _lhRenderSexoBtns();
+  document.getElementById('lh-modal-nav-row').style.display = 'none';
+  document.getElementById('modal-hermano-vm').style.display = 'flex';
+  document.getElementById('lh-modal-nombre').focus();
+};
+
+window.abrirEditarVM = function(id) {
+  const h = publicadores.find(p => p.id === id);
+  if (!h) return;
+  _lhEditandoId = id;
+  _lhModalSexo  = h.sexo || null;
+  document.getElementById('lh-modal-titulo').textContent = esc(h.nombre);
+  document.getElementById('lh-modal-nombre').value = h.nombre;
+  document.getElementById('lh-modal-status').textContent = '';
+  LH_TODOS_ROLES.forEach(r => {
+    const cb = document.getElementById('lhcb-' + r.id);
+    if (cb) cb.checked = (h.roles || []).includes(r.id);
+  });
+  _lhRenderSexoBtns();
+  _lhActualizarNavModal(id);
+  document.getElementById('modal-hermano-vm').style.display = 'flex';
+};
+
+window.cerrarModalHermanoVM = function() {
+  document.getElementById('modal-hermano-vm').style.display = 'none';
+  _lhEditandoId = null;
+};
+
+async function _lhGuardarSilencioso() {
+  if (!_lhEditandoId) return true;
+  const nombre = document.getElementById('lh-modal-nombre').value.trim();
+  if (!nombre) return false;
+  const roles = LH_TODOS_ROLES
+    .filter(r => document.getElementById('lhcb-' + r.id)?.checked)
+    .map(r => r.id);
+  const data = { nombre, roles };
+  if (_lhModalSexo) data.sexo = _lhModalSexo;
+  else {
+    const existing = publicadores.find(p => p.id === _lhEditandoId);
+    if (existing?.sexo) data.sexo = null;
+  }
+  try {
+    await updateDoc(doc(db, 'congregaciones', congreId, 'publicadores', _lhEditandoId), data);
+    const idx = publicadores.findIndex(p => p.id === _lhEditandoId);
+    if (idx >= 0) publicadores[idx] = { ...publicadores[idx], ...data };
+    publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+    return true;
+  } catch(e) { return false; }
+}
+
+window.navHermanoVM = async function(dir) {
+  const idx = _lhListaVisible.findIndex(p => p.id === _lhEditandoId);
+  if (idx === -1) return;
+  const next = _lhListaVisible[idx + dir];
+  if (!next) return;
+  if (_lhEditandoId) {
+    const ok = await _lhGuardarSilencioso();
+    if (ok) { _lhFiltrar(); uiToast('Guardado', 'success'); }
+    else       uiToast('No se pudo guardar', 'error');
+  }
+  abrirEditarVM(next.id);
+};
+
+window.guardarHermanoVM = async function() {
+  const nombre = document.getElementById('lh-modal-nombre').value.trim();
+  if (!nombre) { uiToast('Ingresá un nombre', 'error'); return; }
+  const status = document.getElementById('lh-modal-status');
+  status.style.color = '#888'; status.textContent = 'Guardando…';
+  if (!_lhEditandoId) {
+    const roles = LH_TODOS_ROLES
+      .filter(r => document.getElementById('lhcb-' + r.id)?.checked)
+      .map(r => r.id);
+    const data = { nombre, roles, activo: true };
+    if (_lhModalSexo) data.sexo = _lhModalSexo;
+    try {
+      const ref = await addDoc(_lhPubCol(), data);
+      publicadores.push({ id: ref.id, ...data });
+      publicadores.sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+      cerrarModalHermanoVM();
+      _lhFiltrar();
+      uiToast('Hermano agregado', 'success');
+    } catch(e) {
+      status.style.color = '#F09595'; status.textContent = 'Error: ' + e.message;
+    }
+    return;
+  }
+  const ok = await _lhGuardarSilencioso();
+  if (ok) { cerrarModalHermanoVM(); _lhFiltrar(); uiToast('Guardado', 'success'); }
+  else     { status.style.color = '#F09595'; status.textContent = 'Error al guardar'; }
+};
+
+window.confirmarEliminarVM = async function(id, nombre) {
+  const ok = await uiConfirm({
+    title: 'Eliminar hermano',
+    msg: `¿Eliminar a ${nombre}? Esta acción no se puede deshacer.`,
+    confirmText: 'Eliminar', cancelText: 'Cancelar', type: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, 'congregaciones', congreId, 'publicadores', id));
+    publicadores = publicadores.filter(p => p.id !== id);
+    _lhFiltrar();
+    uiToast('Eliminado', 'success');
+  } catch(e) { uiToast('Error: ' + e.message, 'error'); }
+};
+
+window.toggleSexoVM = async function(id, currentSexo) {
+  const nextSexo = currentSexo === 'H' ? 'M' : currentSexo === 'M' ? null : 'H';
+  try {
+    await updateDoc(doc(db, 'congregaciones', congreId, 'publicadores', id), { sexo: nextSexo });
+    const idx = publicadores.findIndex(p => p.id === id);
+    if (idx >= 0) publicadores[idx] = { ...publicadores[idx], sexo: nextSexo };
+    _lhFiltrar();
+  } catch(e) { uiToast('Error: ' + e.message, 'error'); }
+};

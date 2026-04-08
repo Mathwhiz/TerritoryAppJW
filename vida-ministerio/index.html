@@ -159,7 +159,21 @@
           </div>
         </button>
 
-<button class="btn-secondary" onclick="cerrarSesionVM()" style="width:100%;border-color:#A32D2D;color:#F09595;">Cerrar sesión</button>
+        <button class="cs-module-card" style="--card-hover-border:rgba(127,119,221,0.55);--card-hover-bg:#1c1a2e;--card-hover-shadow:0 6px 24px rgba(0,0,0,0.35),0 0 0 1px rgba(127,119,221,0.55),0 4px 20px rgba(127,119,221,0.12);" onclick="goToListaHermanos()">
+          <div class="cs-module-card-icon" style="background:rgba(127,119,221,0.15);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="9" cy="7" r="4" stroke="#7F77DD" stroke-width="1.8"/>
+              <path d="M3 21v-1a6 6 0 0112 0v1" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M16 11l2 2 4-4" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="cs-module-card-title">Lista de Hermanos</div>
+            <div class="cs-module-card-sub">Publicadores y roles VM</div>
+          </div>
+        </button>
+
+        <button class="btn-secondary" onclick="cerrarSesionVM()" style="width:100%;border-color:#A32D2D;color:#F09595;">Cerrar sesión</button>
       </div>
     </div>
   </div>
@@ -294,6 +308,108 @@
       </div>
       <button class="btn-primary" onclick="guardarConfig()">Guardar</button>
       <div style="height:2rem;"></div>
+    </div>
+  </div>
+
+  <!-- ── LISTA DE HERMANOS ── -->
+  <div id="view-lista-hermanos" class="view">
+    <div style="padding-top:4px;">
+      <div class="view-header">
+        <button class="btn-back" onclick="goToMenuEnc()">‹</button>
+        <div style="flex:1">
+          <div class="view-title">Lista de Hermanos</div>
+          <div class="view-sub" id="lista-hermanos-sub">—</div>
+        </div>
+        <button class="btn-nuevo" onclick="abrirNuevoVM()">+ Nuevo</button>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#666" stroke-width="1.8"/><path d="m21 21-4.35-4.35" stroke="#666" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input type="text" id="lh-search" placeholder="Buscar hermano…" oninput="filtrarListaHermanosVM()" autocomplete="off">
+        </div>
+      </div>
+      <select id="lh-rol" class="rol-filter" onchange="filtrarListaHermanosVM()">
+        <option value="">— Todos los roles —</option>
+        <option value="__sin_roles__">Sin asignación</option>
+        <optgroup label="Asignaciones">
+          <option value="LECTOR">Lector</option>
+          <option value="SONIDO">Sonido</option>
+          <option value="PLATAFORMA">Plataforma</option>
+          <option value="MICROFONISTAS">Micrófonos</option>
+          <option value="ACOMODADOR_AUDITORIO">Acod. Auditorio</option>
+          <option value="ACOMODADOR_ENTRADA">Acod. Entrada</option>
+          <option value="PRESIDENTE">Pres. Reunión</option>
+          <option value="REVISTAS">Revistas</option>
+          <option value="PUBLICACIONES">Publicaciones</option>
+        </optgroup>
+        <optgroup label="Vida y Ministerio">
+          <option value="VM_PRESIDENTE">Presidente VM</option>
+          <option value="VM_ORACION">Oración</option>
+          <option value="VM_TESOROS">Discurso Tesoros</option>
+          <option value="VM_JOYAS">Perlas escondidas</option>
+          <option value="VM_LECTURA">Lectura Bíblica</option>
+          <option value="VM_MINISTERIO_CONVERSACION">Min. Conversación</option>
+          <option value="VM_MINISTERIO_REVISITA">Min. Revisita</option>
+          <option value="VM_MINISTERIO_ESCENIFICACION">Min. Escenificación</option>
+          <option value="VM_MINISTERIO_DISCURSO">Min. Discurso</option>
+          <option value="VM_VIDA_CRISTIANA">Vida Cristiana</option>
+          <option value="VM_ESTUDIO_CONDUCTOR">Conductor Estudio</option>
+        </optgroup>
+      </select>
+      <div id="lh-list" style="margin-top:12px;">
+        <div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div>
+      </div>
+      <div style="height:5rem;"></div>
+    </div>
+  </div>
+
+  <!-- ── MODAL HERMANO (VM) ── -->
+  <div id="modal-hermano-vm" class="modal-overlay" style="display:none;" onclick="if(event.target===this)cerrarModalHermanoVM()">
+    <div class="modal-card">
+      <div id="lh-modal-nav-row" class="modal-nav-row" style="display:none;">
+        <button class="modal-nav-btn" id="lh-modal-nav-prev" onclick="navHermanoVM(-1)">‹</button>
+        <span class="modal-nav-counter" id="lh-modal-nav-counter"></span>
+        <button class="modal-nav-btn" id="lh-modal-nav-next" onclick="navHermanoVM(1)">›</button>
+      </div>
+      <div class="modal-titulo" id="lh-modal-titulo">Hermano</div>
+
+      <label class="modal-campo-label">Nombre</label>
+      <input type="text" id="lh-modal-nombre" class="modal-nombre-input" placeholder="Ej: Flores Daniel"
+        onkeydown="if(event.key==='Enter')guardarHermanoVM()">
+
+      <label class="modal-campo-label" style="margin-top:10px;">Sexo</label>
+      <div class="sexo-row">
+        <button type="button" id="lh-btn-sexo-H" class="btn-sexo btn-sexo-h" onclick="selectSexoVM('H')">♂ Hombre</button>
+        <button type="button" id="lh-btn-sexo-M" class="btn-sexo btn-sexo-m" onclick="selectSexoVM('M')">♀ Mujer</button>
+      </div>
+
+      <div style="margin-bottom:8px;margin-top:14px;">
+        <span class="roles-section-titulo roles-titulo-asign">Asignaciones</span>
+      </div>
+      <div class="roles-grid" id="lh-modal-roles-asign-grid" style="margin-bottom:18px;"></div>
+
+      <div style="margin-bottom:8px;">
+        <span class="roles-section-titulo roles-titulo-vm">Vida y Ministerio</span>
+      </div>
+      <div class="roles-grid" style="margin-bottom:8px;">
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_PRESIDENTE"><span>Presidente</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_ORACION"><span>Oración</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_TESOROS"><span>Disc. Tesoros</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_JOYAS"><span>Perlas escondidas</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_LECTURA"><span>Lectura Bíblica</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_MINISTERIO_CONVERSACION"><span>Min. Conversación</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_MINISTERIO_REVISITA"><span>Min. Revisita</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_MINISTERIO_ESCENIFICACION"><span>Min. Escenificación</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_MINISTERIO_DISCURSO"><span>Min. Discurso</span></label>
+        <label class="rol-checkbox"><input type="checkbox" id="lhcb-VM_VIDA_CRISTIANA"><span>Vida Cristiana</span></label>
+        <label class="rol-checkbox" style="grid-column:span 2"><input type="checkbox" id="lhcb-VM_ESTUDIO_CONDUCTOR"><span>Conductor Estudio</span></label>
+      </div>
+
+      <div class="modal-status" id="lh-modal-status"></div>
+      <div class="modal-btns">
+        <button class="btn-secondary" onclick="cerrarModalHermanoVM()">Cancelar</button>
+        <button class="btn-primary" onclick="guardarHermanoVM()">Guardar</button>
+      </div>
     </div>
   </div>
 
