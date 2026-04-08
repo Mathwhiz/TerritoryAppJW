@@ -226,51 +226,119 @@ window.navMes = function(delta) {
 };
 
 // ─────────────────────────────────────────
-//   COMPARTIR MES
+//   COMPARTIR MES — IMAGEN
 // ─────────────────────────────────────────
-window.compartirMes = function() {
-  const sabados = getSabadosDelMes(_mes);
-  const [, m] = _mes.split('-').map(Number);
-  let txt = `📅 Conferencias — ${fmtMesLargo(_mes)}\n\n`;
+window.compartirMes = async function() {
+  if (typeof html2canvas === 'undefined') {
+    window.uiToast('Generando imagen…', 'success');
+    return;
+  }
 
-  for (const sab of sabados) {
+  const sabados = getSabadosDelMes(_mes);
+  const [, mesNum] = _mes.split('-').map(Number);
+
+  // ── Construir HTML del afiche ──
+  const filas = sabados.map(sab => {
     const [, , d]  = sab.split('-').map(Number);
     const especial = _semanasEsp[lunesDeISO(sab)];
     const confs    = Object.values(_conferencias).filter(c => c.fecha === sab);
 
-    txt += `Sáb ${d} ${MESES_C[m-1]}:\n`;
+    let contenido = '';
 
     if (especial) {
-      const labels = { conmemoracion: '⭐ Conmemoración', superintendente: '⭐ Sem. del Superintendente', asamblea: especial.subtipo === 'regional' ? '⭐ Asamblea Regional' : '⭐ Asamblea de Circuito' };
-      txt += `  ${labels[especial.tipo] || '⭐ Semana especial'}\n`;
+      const labels = {
+        conmemoracion:   'Conmemoración',
+        superintendente: 'Semana del Superintendente',
+        asamblea: especial.subtipo === 'regional' ? 'Asamblea Regional' : 'Asamblea de Circuito',
+      };
+      contenido = `<div style="font-size:13px;color:#E8C94A;font-weight:600;">★ ${labels[especial.tipo] || 'Semana especial'}</div>`;
+
     } else if (confs.length) {
-      for (const c of confs) {
+      contenido = confs.map(c => {
         if (c.tipo === 'entrada') {
-          txt += `  🏠 ${c.nombreOrador || '—'}`;
-          if (c.congregacionNombre) txt += ` (${c.congregacionNombre})`;
-          if (c.discursoNumero) txt += ` — N°${c.discursoNumero}`;
-          if (c.discursoTitulo) txt += ` "${c.discursoTitulo}"`;
+          const nombre = esc(c.nombreOrador || '—');
+          const congre = c.congregacionNombre ? `<div style="font-size:11px;color:#888;margin-top:1px;">${esc(c.congregacionNombre)}</div>` : '';
+          const disc   = (c.discursoNumero || c.discursoTitulo)
+            ? `<div style="font-size:11px;color:#0DB6CC;margin-top:2px;">N°${c.discursoNumero || '?'}${c.discursoTitulo ? ' — ' + esc(c.discursoTitulo) : ''}</div>` : '';
+          return `<div style="margin-bottom:4px;">
+            <div style="font-size:10px;font-weight:700;color:#1D9E75;letter-spacing:0.05em;margin-bottom:2px;">ENTRADA</div>
+            <div style="font-size:13px;font-weight:700;color:#f0f0f0;">${nombre}</div>
+            ${congre}${disc}
+          </div>`;
         } else {
-          const nombre = c.pubId ? (_publicadores.find(p => p.id === c.pubId)?.nombre || '—') : (c.nombreOrador || '—');
-          txt += `  ✈️ ${nombre}`;
-          if (c.congregacionNombre) txt += ` → ${c.congregacionNombre}`;
-          if (c.discursoNumero) txt += ` — N°${c.discursoNumero}`;
-          if (c.discursoTitulo) txt += ` "${c.discursoTitulo}"`;
+          const nombre = c.pubId
+            ? esc(_publicadores.find(p => p.id === c.pubId)?.nombre || '—')
+            : esc(c.nombreOrador || '—');
+          const destino = c.congregacionNombre ? `<div style="font-size:11px;color:#888;margin-top:1px;">→ ${esc(c.congregacionNombre)}</div>` : '';
+          const disc    = (c.discursoNumero || c.discursoTitulo)
+            ? `<div style="font-size:11px;color:#378ADD;margin-top:2px;">N°${c.discursoNumero || '?'}${c.discursoTitulo ? ' — ' + esc(c.discursoTitulo) : ''}</div>` : '';
+          return `<div style="margin-bottom:4px;">
+            <div style="font-size:10px;font-weight:700;color:#378ADD;letter-spacing:0.05em;margin-bottom:2px;">SALIDA</div>
+            <div style="font-size:13px;font-weight:700;color:#f0f0f0;">${nombre}</div>
+            ${destino}${disc}
+          </div>`;
         }
-        txt += '\n';
-      }
+      }).join('');
+
     } else {
-      txt += `  Sin confirmar\n`;
+      contenido = `<div style="font-size:12px;color:#555;font-style:italic;">Sin confirmar</div>`;
     }
-    txt += '\n';
-  }
 
-  txt += `Ziv — ${CONGRE_NOMBRE}`;
+    return `
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:0.5px solid #272a2e;">
+        <div style="flex-shrink:0;width:38px;text-align:center;padding-top:2px;">
+          <div style="font-size:20px;font-weight:800;color:#e8e8e8;line-height:1;">${d}</div>
+          <div style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">sáb</div>
+        </div>
+        <div style="flex:1;min-width:0;">${contenido}</div>
+      </div>`;
+  }).join('');
 
-  if (navigator.share) {
-    navigator.share({ text: txt }).catch(() => {});
-  } else {
-    navigator.clipboard.writeText(txt).then(() => window.uiToast('Texto copiado', 'success'));
+  const html = `
+    <div style="background:#1a1c1f;border-radius:18px;padding:22px 18px 16px;width:320px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;box-sizing:border-box;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:800;color:#0DB6CC;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px;">Conferencias</div>
+        <div style="font-size:26px;font-weight:800;color:#f2f2f2;line-height:1.1;">${fmtMesLargo(_mes)}</div>
+        <div style="font-size:12px;color:#555;margin-top:3px;">${esc(CONGRE_NOMBRE)}</div>
+      </div>
+      <div style="height:1px;background:#272a2e;margin-bottom:4px;"></div>
+      ${filas}
+      <div style="margin-top:12px;text-align:center;font-size:10px;color:#3a3d42;font-weight:600;letter-spacing:0.06em;">ZIV</div>
+    </div>`;
+
+  // Render off-screen
+  const printEl = document.getElementById('conf-print-view');
+  printEl.innerHTML = html;
+
+  try {
+    window.uiLoading && window.uiLoading.show('Generando imagen…');
+    const canvas = await html2canvas(printEl.firstElementChild, {
+      backgroundColor: '#1a1c1f',
+      scale: 2.5,
+      logging: false,
+      useCORS: true,
+    });
+    window.uiLoading && window.uiLoading.hide();
+
+    canvas.toBlob(async blob => {
+      const file = new File([blob], `conferencias-${_mes}.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Conferencias ${fmtMesLargo(_mes)}` }).catch(() => {});
+      } else {
+        // Fallback: descargar
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `conferencias-${_mes}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      }
+    }, 'image/png');
+  } catch(e) {
+    window.uiLoading && window.uiLoading.hide();
+    await window.uiAlert('No se pudo generar la imagen: ' + e.message);
+  } finally {
+    printEl.innerHTML = '';
   }
 };
 

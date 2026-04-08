@@ -271,13 +271,11 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .btn-save:hover { background: #09a0b5; }
 
-/* Theme toggle (copiado del patrón general) */
-.theme-toggle {
-  position: fixed; top: 12px; right: 52px; z-index: 100;
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--bg-card); border: 0.5px solid var(--border-input);
-  color: var(--text-secondary); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s, color 0.15s;
+/* ── Print / imagen compartir ── */
+#conf-print-view {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  pointer-events: none;
+  z-index: -1;
 }
-.theme-toggle:hover { background: var(--bg-hover); color: var(--text-primary); }
