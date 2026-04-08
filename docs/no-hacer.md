@@ -19,6 +19,9 @@
 - No usar `querySelector('[style*="texto"]')` para buscar elementos por su contenido de texto — el atributo `style` contiene CSS, no texto. Siempre usar `id` o una clase semántica
 - No cambiar `appRol: 'pendiente'` al crear un usuario con `sin_match` — `sin_match` debe dar `'publicador'` (acceso base). Solo `matchEstado: 'pendiente'` (ambiguo) justifica bloquear el acceso hasta que el admin confirme
 - No usar el evento `authStateChanged` como mecanismo primario de render en páginas que usan `waitForAuth()` — el evento puede perderse si llega antes de que el listener esté registrado; `waitForAuth()` es siempre más fiable
+- No usar `calcularIndicesVM()` en VM — fue reemplazado por `calcularColasVM()` que es democrático (ordena por última fecha asignada en historial completo, no solo por índice de ronda)
+- No asignar ayudante de sexo distinto al principal en VM — `autoAsignarSemana` lo evita filtrando la cola por `sexoDePub()`; si se edita manualmente, respetar la misma regla
+- No omitir `_marcarModificada()` en funciones que muten `semanaData` en VM — el dirty state del botón Guardar depende de que se llame en todos los puntos de mutación
 
 ### Estilos — NO hacer (ver `docs/UI-STYLE.md` para el sistema completo)
 - No usar Inter, Geist ni Google Fonts — el proyecto usa `system-ui`

@@ -941,7 +941,7 @@ function renderEspecialesList() {
   const el = document.getElementById('especiales-lista');
   const resumenEl = document.getElementById('especiales-resumen');
   if (!el) return;
-  const entries = Object.entries(semanasEspeciales).sort(([a],[b]) => a.localeCompare(b));
+  const entries = Object.entries(semanasEspeciales).sort(([a],[b]) => b.localeCompare(a));
   const hoy = hoyISO();
   const lunesActual = lunesISO(new Date(hoy + 'T12:00:00'));
   const actual = entries.find(([lunes]) => lunes === lunesActual) || null;
@@ -985,7 +985,7 @@ function renderEspecialesList() {
     const label = especialLabel(e);
     const extra = (e.tipo === 'conmemoracion' && e.fechaEvento !== lunes)
       ? `Evento: ${fmtFechaCorta(e.fechaEvento)}`
-      : (e.tipo === 'asamblea' && e.fechaEvento ? `Fecha cargada: ${fmtFechaCorta(e.fechaEvento)}` : '');
+      : (e.fechaEvento ? `Fecha cargada: ${fmtFechaCorta(e.fechaEvento)}` : '');
     const isCurrent = lunes === lunesActual;
     const isNext = proximo && proximo[0] === lunes;
     return `<div class="especial-item${isCurrent ? ' is-current' : ''}${isNext ? ' is-next' : ''}">

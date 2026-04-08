@@ -3,10 +3,10 @@
 Módulo para el **presidente de la reunión VM**: importar programa de WOL, asignar partes,
 gestionar publicadores por rol VM, sala auxiliar.
 
-**Estado al 2026-03-31:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI+generador),
+**Estado al 2026-04-08:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI+generador),
 PIN VM, navegación, vista mensual, editar títulos, duración visible, export/compartir, visor público,
-menú Encargado centrado, filtros en vista Hermanos — todos ✅.
-**Fase 4 auto-asignación:** ✅ implementada.
+menú Encargado centrado, filtros en vista Hermanos, Lista de Hermanos en encargado VM, dirty state con aviso de guardado — todos ✅.
+**Fase 4 auto-asignación:** ✅ implementada (colas democráticas por historial completo + restricción de género en ayudantes).
 
 ### Visor público (`programa.html`)
 Página standalone sin PIN. URL: `vida-ministerio/programa.html?congre=sur&semana=2026-04-07`.
@@ -44,6 +44,7 @@ de botones con **`min-width:320px` inline** (no en clase CSS — evita problemas
 
 - Botón "Programa" → `goToTabsSemanas()` (tabs: Semanas / Generar Semanas)
 - Botón "Hermanos" → `goToHermanos()` (lista con filtros de rol y búsqueda)
+- Botón "Lista de Hermanos" → `goToListaHermanos()` (CRUD completo, igual al módulo Administrador — ver sección abajo)
 - Botón "Cerrar sesión" → `cerrarSesionVM()` (resetea `modoEncargado`, vuelve a cover)
 
 **Importante:** el layout del enc-menu usa `style` inline en el HTML, **no clases CSS**,
@@ -95,8 +96,39 @@ La lista renderizada por `renderHermanosVM()` muestra chips de rol por publicado
 `VM_MINISTERIO_CONVERSACION`, `VM_MINISTERIO_REVISITA`, `VM_MINISTERIO_ESCENIFICACION`,
 `VM_MINISTERIO_DISCURSO`, `VM_VIDA_CRISTIANA`, `VM_ESTUDIO_CONDUCTOR`
 
-Solo hermanos: `VM_PRESIDENTE`, `VM_ORACION`, `VM_TESOROS`, `VM_JOYAS`, `VM_LECTURA`, `VM_VIDA_CRISTIANA`, `VM_ESTUDIO_CONDUCTOR`.
-Hermanos y hermanas: `VM_MINISTERIO_*`.
+**Restricciones de género y privilegio** (aplicadas en la UI de Lista de Hermanos):
+
+| Condición | Roles disponibles |
+|-----------|-------------------|
+| Mujer | Solo `VM_MINISTERIO_CONVERSACION`, `VM_MINISTERIO_REVISITA`, `VM_MINISTERIO_ESCENIFICACION`. Sin roles de Asignaciones. |
+| Varón sin privilegio (sin `ANCIANO` ni `SIERVO_MINISTERIAL`) | `VM_LECTURA` + los tres ministerio de mujer. |
+| Varón anciano o siervo ministerial | Todos los roles VM + todos los de Asignaciones. |
+
+La visibilidad de checkboxes se actualiza en `_lhActualizarRolesSegunSexo()` llamada al abrir el modal y al cambiar el botón de sexo. El estado de privilegio (`_lhModalPrivilegiado`) se lee de `h.roles` al abrir; no cambia dentro del modal (se gestiona desde Administrador).
+
+### Lista de Hermanos en VM (`#view-lista-hermanos`)
+
+CRUD completo de publicadores accesible desde el menú del encargado VM, con la misma funcionalidad que el módulo Administrador. Usa el mismo array `publicadores` ya cargado en memoria.
+
+**Funciones globales:** `goToListaHermanos`, `filtrarListaHermanosVM`, `abrirEditarVM`, `abrirNuevoVM`, `cerrarModalHermanoVM`, `guardarHermanoVM`, `confirmarEliminarVM`, `toggleSexoVM`, `selectSexoVM`, `navHermanoVM`
+
+**Estado interno:** `_lhListaVisible`, `_lhEditandoId`, `_lhModalSexo`, `_lhModalPrivilegiado`
+
+**Modal `#modal-hermano-vm`:** nombre, sexo (H/M), roles VM en grid 2 col, sección `#lh-seccion-asign` con roles de Asignaciones (oculta para mujeres), navegación prev/next entre hermanos, botón eliminar.
+
+### Aviso de cambios sin guardar (dirty state)
+
+`_semanaModificada` (boolean) se activa con cualquier cambio en la semana abierta.
+
+| Evento que activa | Función |
+|-------------------|---------|
+| Asignar/quitar hermano | `setSlotPubId` |
+| Editar título, canción, instrucción | `onTituloChange`, `onInstruccionChange` |
+| Agregar/quitar parte | `agregarParte`, `quitarParte` |
+| Auto-asignar | `autocompletarHermanos` |
+| Importar WOL | `reimportarDeWOL` → `aplicarWOLaSemana` |
+
+Al navegar (`navSemana`, `goToSemanas`, `goToMenuEnc`) se llama `_confirmarSiModificada()`: muestra `uiConfirm` con opciones "Guardar" y "Descartar". El botón Guardar muestra un asterisco (`"Guardar *"`) como indicador visual mientras hay cambios pendientes. Al guardar o cargar una semana nueva, el flag se resetea.
 
 ### Importación WOL (✅)
 URL: `https://wol.jw.org/es/wol/dt/r4/lp-s/{año}/{mes}/{día}` via Cloudflare Worker propio.
@@ -108,15 +140,17 @@ Parser usa `h3/h4` numerados — **no usar IDs `#pN`** (varían cada semana).
 ### Detección de tipo de parte ministerio
 
 ```js
-function tipoMinisterioDesdeWOL(titulo) {
-  const t = titulo.toLowerCase();
-  if (t.includes('conversación'))  return 'conversacion';
+function tipoMinisterioDesdeWOL(titulo, instruccion) {
+  const t = (titulo + ' ' + (instruccion || '')).toLowerCase();
+  if (t.includes('conversación') || t.includes('conversacion')) return 'conversacion';
   if (t.includes('revisita'))      return 'revisita';
   if (t.includes('escenificación') || t.includes('escenificacion')) return 'escenificacion';
-  if (t.includes('discurso'))      return 'discurso'; // varón, sin ayudante
+  if (t.includes('discurso'))      return 'discurso'; // varón anciano/SM, sin ayudante
   return 'conversacion';
 }
 // tipo === 'discurso' → sin ayudante. Los demás → tienen ayudante.
+// Se pasa también `instruccion` (texto de instrucción de WOL) porque la palabra "Discurso"
+// puede aparecer ahí y no en el h3 del título.
 ```
 
 ### Semanas especiales (`tipoEspecial`)
@@ -139,9 +173,10 @@ justo antes de `window.autocompletarHermanos`.
 | `construirSlotsOrdenados(semana)` | Retorna `[{key, rolRequerido, esAyudante?, esSalaAux?}]` en orden canónico para una semana dada |
 | `getSlotPubIdFromSemana(semana, key)` | Lee un pubId de un objeto semana arbitrario (mismo switch que `getSlotPubId` pero sin usar el global) |
 | `setSlotPubIdOnSemana(semana, key, pubId)` | Escribe un pubId en un objeto semana arbitrario (mismo switch que `setSlotPubId` pero sin usar el global) |
-| `calcularIndicesVM()` | Lee `semanasLista` (cache en memoria, asc) y calcula el índice inicial por rol según el último pubId asignado en el historial |
-| `autoAsignarSemana(semana, indices)` | Loop principal. Modifica `semana` in-place, `indices` se actualiza in-place para generación masiva |
+| `calcularColasVM()` | Lee todo `semanasLista` (historial completo, orden asc) y retorna `{rolId: [pubId, ...]}` ordenado por "menos usado recientemente" — democrático real |
+| `autoAsignarSemana(semana, colas, {soloVacios})` | Loop principal. Modifica `semana` in-place, `colas` se actualiza in-place para generación masiva. Opción `soloVacios` respeta slots ya asignados. |
 | `debeSkipAutoAsignar(fecha)` | Retorna `true` si la semana debe saltarse: `asamblea` siempre, `conmemoracion` solo si es entre semana |
+| `sexoDePub(pubId)` | Retorna `'H'`, `'M'` o `null` leyendo `publicadores` en memoria |
 
 #### Orden de slots en `construirSlotsOrdenados`
 
@@ -161,22 +196,22 @@ justo antes de `window.autocompletarHermanos`.
 - `VM_ORACION` apertura ≠ cierre (mismo rol, el segundo saltea al primero automáticamente)
 - Presidente ≠ oración (presidente se asigna primero; ya está en el Set cuando llegan las oraciones)
 - Sala auxiliar ≠ sala principal (el pubId de salaAux va después del principal)
+- **Ayudante mismo sexo que principal**: antes de asignar un slot `esAyudante`, se lee el sexo del principal con `sexoDePub()` y se filtra la cola para que coincida. Si no hay nadie del mismo sexo disponible, el slot queda en `null`.
 
 #### Invariante anti-loop
 
 El `while` del diseño original se reemplazó por `for (intentos < lista.length + 1)` — si todos
 están en `enEstaSemana`, deja el slot en `null` y avanza el índice. Evita loop infinito con listas de 1 persona.
 
-#### Índices: sin persistencia separada
+#### Colas: sin persistencia separada
 
-Los índices **no se guardan en Firestore**. Se recalculan siempre desde `semanasLista` (historial en memoria).
-Esto es correcto: en generación masiva, `indicesAA` se calcula una vez antes del loop y se pasa
-mutable a cada llamada de `autoAsignarSemana`, acumulando el avance semana a semana.
+Las colas **no se guardan en Firestore**. Se recalculan siempre desde `semanasLista` (historial completo en memoria).
+En generación masiva, `colasAA` se calcula una vez antes del loop y se pasa mutable a cada llamada de `autoAsignarSemana`, acumulando el avance semana a semana.
 
 #### Entrada al usuario
 
-- **Botón "✦ Auto"** en `view-semana` → `autocompletarHermanos()` → pide confirmación (`uiConfirm purple`), luego `calcularIndicesVM()` + `autoAsignarSemana(semanaData, ...)` + `renderSemanaEdit()`. **No guarda automáticamente** — el encargado revisa y presiona "Guardar".
-- **Checkbox `#nueva-auto-asignar`** en tab "Generar Semanas" → al generar N semanas, si está activo y la semana no debe saltarse, llama `autoAsignarSemana(semanaData, indicesAA)` antes del `setDoc`.
+- **Botón "✦ Auto"** en `view-semana` → `autocompletarHermanos()` → pide confirmación (`uiConfirm purple`), luego `calcularColasVM()` + `autoAsignarSemana(semanaData, colas, { soloVacios: true })` + `renderSemanaEdit()`. **No guarda automáticamente** — el encargado revisa y presiona "Guardar".
+- **Checkbox `#nueva-auto-asignar`** en tab "Generar Semanas" → al generar N semanas, si está activo y la semana no debe saltarse, llama `autoAsignarSemana(semanaData, colasAA)` antes del `setDoc`.
 
 #### Para modificar en el futuro
 
