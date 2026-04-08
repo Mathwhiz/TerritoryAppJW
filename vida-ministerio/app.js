@@ -61,6 +61,10 @@ let pubFecha          = null; // fecha activa en vista pública
 let vmEspeciales      = {};   // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
 let vmScriptUrl       = null; // Apps Script URL para exportar a Sheets
 
+function privateModuleConfigRef() {
+  return doc(db, 'congregaciones', congreId, 'config_privada', 'modulos');
+}
+
 function vmPublicConfigRef() {
   return doc(db, 'congregaciones', congreId, 'vm_config', 'publico');
 }
@@ -625,22 +629,16 @@ async function cargarProgramaPublico() {
 //   RENDER — LISTA DE SEMANAS
 // ─────────────────────────────────────────
 function calcCompletitud(s) {
-  let total = 0, filled = 0;
-  const check = id => { total++; if (id) filled++; };
-
-  check(s.presidente);
-  check(s.oracionApertura);
-  check(s.oracionCierre);
-  check(s.tesoros?.discurso?.pubId);
-  check(s.tesoros?.joyas?.pubId);
-  check(s.tesoros?.lecturaBiblica?.pubId);
-  (s.ministerio || []).forEach(p => check(p.pubId));
-  (s.vidaCristiana || []).forEach(p => check(p.pubId));
-  check(s.estudioBiblico?.conductor);
-  // lector del estudio lo asigna el módulo de Asignaciones, no cuenta aquí
-
+  // Usa los mismos slots que el auto-assign → siempre en sintonía con la realidad
+  // (incluye ayudantes, sala auxiliar, y respeta tipo discurso vs otros)
+  const slots = construirSlotsOrdenados(s);
+  let filled = 0;
+  for (const slot of slots) {
+    if (getSlotPubIdFromSemana(s, slot.key)) filled++;
+  }
+  const total = slots.length;
   if (filled === 0) return { clase: 'vacia', texto: 'Sin asignaciones' };
-  if (filled === total) return { clase: 'completa', texto: `Completa ✓` };
+  if (filled === total) return { clase: 'completa', texto: 'Completa ✓' };
   return { clase: 'parcial', texto: `${filled}/${total} asignados` };
 }
 
@@ -1909,12 +1907,17 @@ window.exportarMesASheets = async function() {
 
   uiLoading.show('Cargando…');
   try {
-    const snap = await getDoc(doc(db, 'congregaciones', congreId));
+    const [snap, privateSnap] = await Promise.all([
+      getDoc(doc(db, 'congregaciones', congreId)),
+      getDoc(privateModuleConfigRef()).catch(() => null),
+    ]);
     if (!snap.exists()) { uiLoading.hide(); window.location.href = '../index.html'; return; }
     const data = snap.data();
-    pinVM = data.pinVidaMinisterio || '1234';
+    const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
+    const mergedConfig = { ...data, ...privateData };
+    pinVM = mergedConfig.pinVidaMinisterio || data.pinVidaMinisterio || '1234';
     tieneAuxiliar = data.tieneAuxiliar === true;
-    vmScriptUrl = data.scriptUrl || null;
+    vmScriptUrl = mergedConfig.scriptUrl || data.scriptUrl || null;
     await syncVmPublicConfig();
     await cargarPublicadores();
     await cargarVmEspeciales();
