@@ -520,6 +520,91 @@ function metaPct(actual, target) {
   return Math.max(0, Math.min(100, (actual / target) * 100));
 }
 
+function renderAnimacionRitmo(servicioDesde, mesesServicio, actualAnual, metaAnual) {
+  const mesIdx = mesesServicio.indexOf(_mesMostrado);
+  const mesesElapsados = mesIdx >= 0 ? mesIdx + 1 : mesesServicio.length;
+  const mesesRestantes = mesIdx >= 0 ? mesesServicio.length - mesIdx : 1;
+
+  const expectedMinutos = (mesesElapsados / 12) * metaAnual;
+  const faltanteAnual = Math.max(0, metaAnual - actualAnual);
+
+  const actualPct = Math.min(100, Math.round((actualAnual / metaAnual) * 100));
+  const expectedPct = Math.min(100, Math.round((expectedMinutos / metaAnual) * 100));
+
+  const horasXMesNum = faltanteAnual > 0 && mesesRestantes > 0
+    ? faltanteAnual / (mesesRestantes * 60)
+    : 0;
+  const horasXMes = Math.ceil(horasXMesNum * 2) / 2; // redondea hacia arriba al 0.5 más cercano
+
+  let estado, badge, badgeClass, msg;
+  if (actualAnual >= metaAnual) {
+    estado = 'cumplida';
+    badge = '¡Meta cumplida!';
+    badgeClass = 'ritmo-badge-cumplida';
+    msg = 'Completaste las 600 horas anuales.';
+  } else if (expectedMinutos <= 0) {
+    estado = 'normal';
+    badge = 'Inicio del año';
+    badgeClass = 'ritmo-badge-normal';
+    msg = 'Comenzó el año de servicio.';
+  } else {
+    const ratio = actualAnual / expectedMinutos;
+    if (ratio >= 1.1) {
+      estado = 'liebre';
+      badge = 'Adelantada';
+      badgeClass = 'ritmo-badge-liebre';
+      const extra = Math.round((actualAnual - expectedMinutos) / 60 * 10) / 10;
+      msg = `Llevás ${extra > 0 ? extra + '\u00a0h' : 'algo'} más que el ritmo esperado.`;
+    } else if (ratio >= 0.85) {
+      estado = 'normal';
+      badge = 'Al ritmo';
+      badgeClass = 'ritmo-badge-normal';
+      msg = 'Vas siguiendo el ritmo esperado.';
+    } else {
+      estado = 'tortuga';
+      badge = 'Atrasada';
+      badgeClass = 'ritmo-badge-tortuga';
+      const faltan = Math.round((expectedMinutos - actualAnual) / 60 * 10) / 10;
+      msg = `Llevás ${faltan > 0 ? faltan + '\u00a0h' : 'algo'} menos que el ritmo esperado.`;
+    }
+  }
+
+  const emoji = estado === 'liebre' ? '🐇' : estado === 'tortuga' ? '🐢' : estado === 'cumplida' ? '🏆' : '🐇';
+  const animClass = estado === 'liebre' ? 'anim-liebre' : estado === 'tortuga' ? 'anim-tortuga' : '';
+  const animalLeft = Math.max(4, Math.min(94, actualPct));
+
+  const needMsg = faltanteAnual > 0 && mesesRestantes > 0
+    ? `<div class="ritmo-need-msg">Para alcanzar las 600\u00a0h necesitás <strong>${horasXMes}\u00a0h/mes</strong> en los próximos <strong>${mesesRestantes}\u00a0mes${mesesRestantes > 1 ? 'es' : ''}</strong>.</div>`
+    : '';
+
+  return `
+    <div class="meta-card meta-ritmo-card estado-${estado}">
+      <div class="meta-head">
+        <div class="meta-title">Ritmo de servicio</div>
+        <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
+      </div>
+      <div class="ritmo-track-wrap">
+        <div class="ritmo-track">
+          <div class="ritmo-fill" style="width:${actualPct}%;"></div>
+          ${expectedPct > 2 && expectedPct < 98 ? `<div class="ritmo-pace-marker" style="left:${expectedPct}%;"></div>` : ''}
+          <div class="ritmo-animal ${animClass}" style="left:${animalLeft}%;">
+            <span>${emoji}</span>
+          </div>
+        </div>
+        <div class="ritmo-labels">
+          <span>0 h</span>
+          ${expectedPct > 8 && expectedPct < 92 ? `<span class="ritmo-pace-label" style="left:${expectedPct}%;">ritmo</span>` : ''}
+          <span>600 h</span>
+        </div>
+      </div>
+      <div class="ritmo-status-row">
+        <span class="ritmo-badge ${badgeClass}">${badge}</span>
+        <span class="ritmo-msg">${msg}</span>
+      </div>
+      ${needMsg}
+    </div>`;
+}
+
 function findHistMes(iso) {
   return _historialMeses.find(m => m.id === iso) || null;
 }
@@ -632,6 +717,8 @@ function renderMetas() {
           ${faltanteAnual > 0 ? `Te faltan ${fmtTiempo(faltanteAnual)} para completar el año de servicio.` : 'Meta anual cumplida.'}
         </div>
       </div>
+
+      ${renderAnimacionRitmo(servicioDesde, mesesServicio, actualAnual, metaAnual)}
 
       <div class="meta-card">
         <div class="meta-head">

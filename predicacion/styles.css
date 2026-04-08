@@ -465,6 +465,96 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .modal-textarea:focus { border-color: #E05277; }
 
+/* ── Ritmo de servicio ── */
+.meta-ritmo-card { overflow: visible; }
+.ritmo-track-wrap { margin: 4px 0 12px; }
+.ritmo-track {
+  position: relative;
+  height: 26px;
+  background: var(--bg-primary);
+  border-radius: 999px;
+  overflow: visible;
+  margin-bottom: 18px;
+}
+.ritmo-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #E05277 0%, #ff7e9b 100%);
+  min-width: 0;
+  transition: width 0.5s ease;
+}
+.estado-liebre  .ritmo-fill { background: linear-gradient(90deg, #1D9E75 0%, #5DCAA5 100%); }
+.estado-tortuga .ritmo-fill { background: linear-gradient(90deg, #EF9F27 0%, #f5c56a 100%); }
+.estado-cumplida .ritmo-fill { background: linear-gradient(90deg, #7F77DD 0%, #b7b2ff 100%); }
+
+.ritmo-pace-marker {
+  position: absolute; top: -5px; bottom: -5px;
+  width: 2px; background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+.ritmo-animal {
+  position: absolute; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px; line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  z-index: 2;
+  transition: left 0.5s ease;
+}
+.ritmo-animal.anim-liebre span {
+  display: inline-block;
+  animation: bunnyHop 0.45s ease-in-out infinite;
+}
+.ritmo-animal.anim-tortuga span {
+  display: inline-block;
+  animation: turtleWaddle 1.5s ease-in-out infinite;
+}
+@keyframes bunnyHop {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  35%       { transform: translateY(-6px) rotate(-6deg); }
+  65%       { transform: translateY(-2px) rotate(3deg); }
+}
+@keyframes turtleWaddle {
+  0%, 100% { transform: rotate(0deg); }
+  25%       { transform: rotate(-5deg) translateX(-2px); }
+  75%       { transform: rotate(5deg) translateX(2px); }
+}
+.ritmo-labels {
+  position: relative;
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text-muted);
+  padding: 0 2px;
+}
+.ritmo-pace-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 9px; color: rgba(255,255,255,0.25);
+  pointer-events: none;
+}
+.ritmo-status-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.ritmo-badge {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  padding: 3px 10px; border-radius: 999px; border: 1px solid transparent;
+  white-space: nowrap; flex-shrink: 0;
+}
+.ritmo-badge-liebre  { background: rgba(29,158,117,0.12); color: #1D9E75; border-color: rgba(29,158,117,0.25); }
+.ritmo-badge-tortuga { background: rgba(239,159,39,0.12); color: #EF9F27; border-color: rgba(239,159,39,0.25); }
+.ritmo-badge-normal  { background: rgba(127,119,221,0.12); color: #9b93ee; border-color: rgba(127,119,221,0.25); }
+.ritmo-badge-cumplida { background: rgba(127,119,221,0.15); color: #b7b2ff; border-color: rgba(127,119,221,0.3); }
+.ritmo-msg { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.ritmo-need-msg {
+  font-size: 12px; color: var(--text-muted); line-height: 1.5;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  margin-top: 4px;
+}
+.ritmo-need-msg strong { color: var(--text-secondary); }
+
 @media (max-width: 420px) {
   .hist-section-head {
     flex-direction: column;

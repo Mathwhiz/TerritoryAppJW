@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="Ziv">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="stylesheet" href="../shared/styles-base.css">
-  <link rel="stylesheet" href="/hermanos/styles.css?v=2.0">
+  <link rel="stylesheet" href="/hermanos/styles.css?v=2.1">
 </head>
 <body>
 
@@ -256,35 +256,11 @@
         <div class="main-title" style="color:#9b93ee;">Semanas especiales</div>
         <div class="main-sub js-congre">—</div>
       </div>
-      <button class="btn-esp-add" onclick="toggleFormEspecial()" style="width:36px;height:36px;font-size:22px;">+</button>
+      <button class="btn-esp-add" onclick="toggleFormEspecial()" title="Agregar">+</button>
     </div>
 
     <div id="especiales-resumen"></div>
     <div id="especiales-lista"><div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div></div>
-
-    <div id="especiales-form" class="especiales-form-card" style="display:none;">
-      <div id="esp-form-title" class="esp-form-title">Nuevo evento especial</div>
-      <select id="esp-tipo" onchange="actualizarLabelFechaEsp()" class="esp-select">
-        <option value="conmemoracion">Conmemoración</option>
-        <option value="superintendente">Visita superintendente</option>
-        <option value="asamblea">Asamblea</option>
-      </select>
-      <div id="esp-subtipo-wrap" class="esp-field" style="display:none;">
-        <label class="esp-label">Tipo de asamblea</label>
-        <select id="esp-subtipo" class="esp-select" style="margin-bottom:0;">
-          <option value="circuito">Asamblea de Circuito</option>
-          <option value="regional">Asamblea Regional</option>
-        </select>
-      </div>
-      <div class="esp-field">
-        <label id="esp-fecha-label" class="esp-label">Fecha exacta del evento</label>
-        <input type="date" id="esp-fecha" class="esp-date-input">
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn-secondary" onclick="toggleFormEspecial()" style="flex:1;">Cancelar</button>
-        <button id="btn-guardar-especial" class="btn-save" onclick="guardarEspecial()" style="flex:2;">Guardar</button>
-      </div>
-    </div>
 
     <div style="height:2rem;"></div>
   </div>
@@ -412,6 +388,32 @@
       </div>
       <div class="pin-error" id="pin-error"></div>
       <button class="pin-cancel" onclick="goToCover()">← Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ── MODAL: SEMANA ESPECIAL ── -->
+  <div id="especiales-modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)cerrarFormEspecial()">
+    <div class="modal-card">
+      <div id="esp-form-title" class="modal-titulo">Nuevo evento especial</div>
+      <label class="modal-campo-label" style="margin-top:4px;">Tipo de evento</label>
+      <select id="esp-tipo" onchange="actualizarLabelFechaEsp()" class="esp-select">
+        <option value="conmemoracion">Conmemoración</option>
+        <option value="superintendente">Visita superintendente</option>
+        <option value="asamblea">Asamblea</option>
+      </select>
+      <div id="esp-subtipo-wrap" style="display:none;">
+        <label class="modal-campo-label" style="margin-top:12px;">Tipo de asamblea</label>
+        <select id="esp-subtipo" class="esp-select" style="margin-bottom:0;">
+          <option value="circuito">Asamblea de Circuito</option>
+          <option value="regional">Asamblea Regional</option>
+        </select>
+      </div>
+      <label id="esp-fecha-label" class="modal-campo-label" style="margin-top:14px;">Fecha exacta del evento</label>
+      <input type="date" id="esp-fecha" class="esp-date-input" style="margin-bottom:0;">
+      <div class="modal-btns" style="margin-top:16px;">
+        <button class="btn-secondary" onclick="cerrarFormEspecial()">Cancelar</button>
+        <button id="btn-guardar-especial" class="btn-save" onclick="guardarEspecial()">Guardar</button>
+      </div>
     </div>
   </div>
 

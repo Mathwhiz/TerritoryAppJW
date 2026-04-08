@@ -293,12 +293,13 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   text-transform: uppercase; color: var(--text-muted);
 }
 .btn-esp-add {
-  width: 26px; height: 26px; border-radius: 8px;
-  background: var(--bg-card); border: 1px solid var(--border-input); color: var(--text-secondary);
-  font-size: 18px; line-height: 1; cursor: pointer; display: flex;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(127,119,221,0.10); border: 1px solid rgba(127,119,221,0.3); color: #9b93ee;
+  font-size: 22px; line-height: 1; cursor: pointer; display: flex;
   align-items: center; justify-content: center; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
 }
-.btn-esp-add:hover { background: var(--bg-hover); color: var(--text-primary); }
+.btn-esp-add:hover { background: rgba(127,119,221,0.18); border-color: rgba(127,119,221,0.5); color: #bdb8ff; }
 .especiales-form-card {
   background: linear-gradient(180deg, rgba(127,119,221,0.12), rgba(30,32,35,0.96));
   border: 1px solid rgba(127,119,221,0.22);

@@ -1029,34 +1029,38 @@ function renderEspecialesList() {
 }
 
 window.toggleFormEspecial = function() {
-  const f = document.getElementById('especiales-form');
-  if (!f) return;
-  const visible = f.style.display !== 'none';
-  f.style.display = visible ? 'none' : '';
-  if (visible) {
-    _especialEditLunes = null;
-    const title = document.getElementById('esp-form-title');
-    const saveBtn = document.getElementById('btn-guardar-especial');
-    if (title) title.textContent = 'Nuevo evento especial';
-    if (saveBtn) saveBtn.textContent = 'Guardar';
+  const overlay = document.getElementById('especiales-modal-overlay');
+  if (!overlay) return;
+  if (overlay.style.display !== 'none') {
+    window.cerrarFormEspecial();
   } else {
+    _especialEditLunes = null;
     document.getElementById('esp-tipo').value = 'conmemoracion';
     document.getElementById('esp-subtipo').value = 'circuito';
     document.getElementById('esp-fecha').value = '';
     const title = document.getElementById('esp-form-title');
     const saveBtn = document.getElementById('btn-guardar-especial');
-    if (title) title.textContent = _especialEditLunes ? 'Editar evento especial' : 'Nuevo evento especial';
-    if (saveBtn) saveBtn.textContent = _especialEditLunes ? 'Guardar cambios' : 'Guardar';
+    if (title) title.textContent = 'Nuevo evento especial';
+    if (saveBtn) saveBtn.textContent = 'Guardar';
     window.actualizarLabelFechaEsp();
+    overlay.style.display = 'flex';
   }
+};
+
+window.cerrarFormEspecial = function() {
+  const overlay = document.getElementById('especiales-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+  _especialEditLunes = null;
+  const title = document.getElementById('esp-form-title');
+  const saveBtn = document.getElementById('btn-guardar-especial');
+  if (title) title.textContent = 'Nuevo evento especial';
+  if (saveBtn) saveBtn.textContent = 'Guardar';
 };
 
 window.editarEspecial = function(lunes) {
   const item = semanasEspeciales[lunes];
   if (!item) return;
   _especialEditLunes = lunes;
-  const f = document.getElementById('especiales-form');
-  if (f) f.style.display = '';
   document.getElementById('esp-tipo').value = item.tipo || 'conmemoracion';
   document.getElementById('esp-subtipo').value = item.subtipo || 'circuito';
   document.getElementById('esp-fecha').value = item.fechaEvento || lunes;
@@ -1065,6 +1069,8 @@ window.editarEspecial = function(lunes) {
   if (title) title.textContent = 'Editar evento especial';
   if (saveBtn) saveBtn.textContent = 'Guardar cambios';
   window.actualizarLabelFechaEsp();
+  const overlay = document.getElementById('especiales-modal-overlay');
+  if (overlay) overlay.style.display = 'flex';
 };
 
 window.actualizarLabelFechaEsp = function() {
@@ -1093,7 +1099,7 @@ window.guardarEspecial = async function() {
     semanasEspeciales[lunes] = data;
     _especialEditLunes = null;
     renderEspecialesList();
-    window.toggleFormEspecial();
+    window.cerrarFormEspecial();
     uiToast(`${especialLabel(data)} guardada`, 'success');
   } catch(e) { await uiAlert('Error al guardar: ' + e.message); }
 };
