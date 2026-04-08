@@ -25,13 +25,13 @@ Cada mensaje guarda: `autor` (nombre del grupo), `texto`, `createdAt`, `canal`, 
 
 ### Grupos (vienen de Firestore en runtime)
 
-| Grupo | Color | PIN (default) |
-|-------|-------|---------------|
-| 1 | `#378ADD` | 1111 |
-| 2 | `#EF9F27` | 2222 |
-| 3 | `#97C459` | 3333 |
-| 4 | `#D85A30` | 4444 |
-| Congregación | `#7F77DD` | 5555 |
+| Grupo | Color | PIN |
+|-------|-------|-----|
+| 1 | `#378ADD` | configurado por admin |
+| 2 | `#EF9F27` | configurado por admin |
+| 3 | `#97C459` | configurado por admin |
+| 4 | `#D85A30` | configurado por admin |
+| Congregación | `#7F77DD` | configurado por admin |
 
 ### Territorios especiales
 - Tipo `no_predica`: territorio 131

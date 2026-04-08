@@ -88,28 +88,37 @@ let PIN_ENCARGADO = null;
 let SCRIPT_URL    = null;
 let SHEETS_URL    = null;
 
+function privateModuleConfigRef() {
+  return doc(db, 'congregaciones', CONGRE_ID, 'config_privada', 'modulos');
+}
+
 (async function cargarConfig() {
   try {
-    const snap = await getDoc(congreRef());
+    const [snap, privateSnap] = await Promise.all([
+      getDoc(congreRef()),
+      getDoc(privateModuleConfigRef()).catch(() => null),
+    ]);
     if (snap.exists()) {
       const data = snap.data();
+      const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
+      const mergedConfig = { ...data, ...privateData };
       await syncAsigPublicConfig(data.nombre || CONGRE_NOMBRE || CONGRE_ID);
       const rowsActuales = await getProgramacion();
       todasLasFilas = rowsActuales;
       await replaceAsigPublicPrograma(rowsActuales);
       await cargarEspeciales();
-      if (data.pinEncargado) {
-        PIN_ENCARGADO = data.pinEncargado;
+      if (mergedConfig.pinEncargado) {
+        PIN_ENCARGADO = mergedConfig.pinEncargado;
       } else {
         await uiAlert('No se encontró el PIN del encargado en la base de datos.', 'Error de configuración');
       }
-      if (data.scriptUrl) {
-        SCRIPT_URL = data.scriptUrl;
+      if (mergedConfig.scriptUrl) {
+        SCRIPT_URL = mergedConfig.scriptUrl;
         const btn = document.getElementById('btn-guardar-planilla');
         if (btn) btn.style.display = '';
       }
-      if (data.sheetsUrl) {
-        SHEETS_URL = data.sheetsUrl;
+      if (mergedConfig.sheetsUrl) {
+        SHEETS_URL = mergedConfig.sheetsUrl;
         const btn = document.getElementById('btn-ver-planilla');
         if (btn) btn.style.display = '';
       }

@@ -121,6 +121,10 @@ let _modalSexo      = null; // 'H' | 'M' | null
 let listaVisible    = [];   // hermanos actualmente visibles en la lista (respetando filtros)
 let _gruposPubs     = [];
 
+function privateModuleConfigRef() {
+  return doc(db, 'congregaciones', CONGRE_ID, 'config_privada', 'modulos');
+}
+
 // ─────────────────────────────────────────
 //   UTILIDADES
 // ─────────────────────────────────────────
@@ -169,15 +173,18 @@ function _canBypassHermanosPin() {
 
 (async function init() {
   try {
-    const [congreSnap, gruposSnap] = await Promise.all([
+    const [congreSnap, gruposSnap, privateSnap] = await Promise.all([
       getDoc(doc(db, 'congregaciones', CONGRE_ID)),
       getDocs(collection(db, 'congregaciones', CONGRE_ID, 'grupos')),
+      getDoc(privateModuleConfigRef()).catch(() => null),
     ]);
     if (congreSnap.exists()) {
       const d = congreSnap.data();
-      pinEncargado = String(d.pinEncargado || '1234');
-      if (d.sheetsUrl) {
-        sheetsUrl = d.sheetsUrl;
+      const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
+      const mergedConfig = { ...d, ...privateData };
+      pinEncargado = String(mergedConfig.pinEncargado || d.pinEncargado || '1234');
+      if (mergedConfig.sheetsUrl) {
+        sheetsUrl = mergedConfig.sheetsUrl;
         const btn = document.getElementById('btn-ver-planilla');
         if (btn) btn.style.display = '';
       }

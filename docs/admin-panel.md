@@ -1,6 +1,12 @@
 ## Panel de Admin (`admin.html`)
 
-Acceso: URL directa → PIN (desde `config/superadmin → { pin }` en Firestore).
+Acceso: URL directa → login Google con rol admin + PIN (desde `config/superadmin → { pin }` en Firestore).
+
+### Endurecimiento actual
+
+- Los PINs nuevos de módulo se guardan en `congregaciones/{congreId}/config_privada/modulos`
+- El frontend mantiene fallback al esquema viejo para no romper congregaciones existentes
+- El doc principal de congregación se deja para datos no sensibles y espejos públicos
 
 **Funcionalidades:**
 - Listar congregaciones existentes

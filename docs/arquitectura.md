@@ -2,9 +2,9 @@
 
 ```
 congregaciones/{congreId}/
-  ├── (doc: nombre, pinEncargado, color, creadoEn, scriptUrl?, sheetsUrl?,
-  │         pinVidaMinisterio?, tieneAuxiliar?,
+  ├── (doc: nombre, color, creadoEn, tieneAuxiliar?,
   │         ciudadPrincipal?, ciudadesExtras?)
+  ├── config_privada/modulos   → pinEncargado, pinVidaMinisterio, scriptUrl?, sheetsUrl?
   ├── grupos/{grupoId}         → id, label, color, pin
   ├── territorios/{terrId}     → id, nombre, tipo, grupoId, punto, poligonos, ciudad?, notas?
   │   └── historial/{entryId} → conductor, fechaInicio, fechaFin
@@ -26,12 +26,18 @@ usuarios/{uid}                 → perfil de usuario (ver sección Auth)
 | Campo | Descripción |
 |-------|-------------|
 | `color` | Hex del color de la card en index.html. Si no existe, se deriva por hash del ID. |
-| `scriptUrl` | URL del Apps Script de asignaciones. Activa "Guardar también en planilla". |
-| `sheetsUrl` | URL del Google Sheets. Activa "Ver planilla" en Administrador. |
-| `pinVidaMinisterio` | PIN del módulo VM (default `"1234"`). |
 | `tieneAuxiliar` | `bool` — activa la sala auxiliar en el módulo VM. |
 | `ciudadPrincipal` | Nombre de la ciudad principal (ej: `"Santa Rosa"`). |
 | `ciudadesExtras` | Array `[{ nombre, offset }]` — ciudades extra con su offset de IDs (+1000, +2000…). |
+
+### Configuración privada por congregación
+
+| Campo | Descripción |
+|-------|-------------|
+| `pinEncargado` | PIN del encargado para módulos que todavía dependen de PIN. |
+| `pinVidaMinisterio` | PIN del módulo VM. |
+| `scriptUrl` | URL del Apps Script de asignaciones / VM. |
+| `sheetsUrl` | URL de Google Sheets para accesos rápidos internos. |
 
 ### Navegación
 

@@ -1,7 +1,7 @@
 import { db } from './shared/firebase.js';
 import './shared/auth.js';
 import {
-  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp,
+  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, deleteField,
   query, where,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
@@ -209,11 +209,11 @@ function selectCongreColor(hex) {
 }
 
 const GRUPOS_DEFAULT = [
-  { id: '1', label: 'Grupo 1',      color: '#378ADD', pin: '1111' },
-  { id: '2', label: 'Grupo 2',      color: '#EF9F27', pin: '2222' },
-  { id: '3', label: 'Grupo 3',      color: '#97C459', pin: '3333' },
-  { id: '4', label: 'Grupo 4',      color: '#D85A30', pin: '4444' },
-  { id: 'C', label: 'Congregación', color: '#7F77DD', pin: '5555' },
+  { id: '1', label: 'Grupo 1',      color: '#378ADD', pin: '' },
+  { id: '2', label: 'Grupo 2',      color: '#EF9F27', pin: '' },
+  { id: '3', label: 'Grupo 3',      color: '#97C459', pin: '' },
+  { id: '4', label: 'Grupo 4',      color: '#D85A30', pin: '' },
+  { id: 'C', label: 'Congregación', color: '#7F77DD', pin: '' },
 ];
 
 let wizardStep        = 0;
@@ -296,19 +296,21 @@ async function editCongre(id) {
   editingCongreId = id;
   uiLoading.show('Cargando datos...');
   try {
-    const [congreSnap, gruposSnap] = await Promise.all([
+    const [congreSnap, gruposSnap, privateSnap] = await Promise.all([
       getDoc(doc(db, 'congregaciones', id)),
       getDocs(collection(db, 'congregaciones', id, 'grupos')),
+      getDoc(privateModuleConfigRef(id)).catch(() => null),
     ]);
     uiLoading.hide();
     const data   = congreSnap.data();
+    const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
     const grupos = [];
     gruposSnap.forEach(d => grupos.push(d.data()));
     grupos.sort((a, b) => String(a.id) < String(b.id) ? -1 : 1);
     startWizard({
       nombre:            data.nombre,
-      pinEncargado:      data.pinEncargado,
-      pinVidaMinisterio: data.pinVidaMinisterio || '',
+      pinEncargado:      privateData.pinEncargado ?? data.pinEncargado ?? '',
+      pinVidaMinisterio: privateData.pinVidaMinisterio ?? data.pinVidaMinisterio ?? '',
       color:             data.color || null,
       ciudadPrincipal:   data.ciudadPrincipal || '',
       ciudadesExtras:    data.ciudadesExtras || [],
@@ -332,7 +334,7 @@ async function deleteCongre(id, nombre) {
 
   uiLoading.show('Eliminando...');
   try {
-    const subcols = ['grupos', 'territorios', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio', 'mapa_grupos', 'mapa_territorios'];
+    const subcols = ['grupos', 'territorios', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio', 'mapa_grupos', 'mapa_territorios', 'config_privada', 'vm_programa', 'vm_publicadores', 'vm_especiales', 'asig_programa', 'asig_especiales'];
     for (const sub of subcols) {
       const snap = await getDocs(collection(db, 'congregaciones', id, sub));
       if (snap.empty) continue;
@@ -364,6 +366,7 @@ function wizardNext() {
     const nombre = document.getElementById('w-nombre').value.trim();
     const id     = document.getElementById('w-id').value.trim();
     const pin    = document.getElementById('w-pin').value.trim();
+    const pinVm  = document.getElementById('w-pin-vm').value.trim();
     if (!nombre)                             { uiAlert('Ingresá el nombre de la congregación.'); return; }
     if (!id)                                 { uiAlert('Ingresá un ID para la congregación.'); return; }
     if (!/^[a-z0-9][a-z0-9-]*$/.test(id))  {
@@ -371,6 +374,7 @@ function wizardNext() {
       return;
     }
     if (!/^\d{4}$/.test(pin))               { uiAlert('El PIN del encargado debe ser 4 dígitos numéricos.'); return; }
+    if (!/^\d{4}$/.test(pinVm))             { uiAlert('El PIN de Vida y Ministerio debe ser 4 dígitos numéricos.'); return; }
   }
   if (wizardStep === 1) {
     syncGruposFromDOM();
@@ -541,6 +545,10 @@ function publicConfigRef(congreId) {
   return doc(db, 'congregaciones', congreId, 'mapa_config', 'publico');
 }
 
+function privateModuleConfigRef(congreId) {
+  return doc(db, 'congregaciones', congreId, 'config_privada', 'modulos');
+}
+
 function publicGruposCol(congreId) {
   return collection(db, 'congregaciones', congreId, 'mapa_grupos');
 }
@@ -634,7 +642,7 @@ async function renameCongre(oldId, newId) {
   const oldSnap = await getDoc(doc(db, 'congregaciones', oldId));
   await setDoc(doc(db, 'congregaciones', newId), oldSnap.data());
 
-  const subcols = ['grupos', 'territorios', 'historial', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio', 'mapa_grupos', 'mapa_territorios'];
+  const subcols = ['grupos', 'territorios', 'historial', 'salidas', 'publicadores', 'asignaciones', 'vidaministerio', 'mapa_grupos', 'mapa_territorios', 'config_privada', 'vm_programa', 'vm_publicadores', 'vm_especiales', 'asig_programa', 'asig_especiales'];
   for (const sub of subcols) {
     const snap = await getDocs(collection(db, 'congregaciones', oldId, sub));
     if (snap.empty) continue;
@@ -676,7 +684,7 @@ async function crearCongregacion(skipKml) {
 
   const nombre            = document.getElementById('w-nombre').value.trim();
   const pinEncargado      = document.getElementById('w-pin').value.trim();
-  const pinVidaMinisterio = document.getElementById('w-pin-vm').value.trim() || '1234';
+  const pinVidaMinisterio = document.getElementById('w-pin-vm').value.trim();
   const ciudadPrincipal   = document.getElementById('w-ciudad-principal').value.trim();
   const status       = document.getElementById('wizard-status');
   status.textContent = '';
@@ -704,11 +712,17 @@ async function crearCongregacion(skipKml) {
       }
       congreId = editingCongreId;
       const color = document.getElementById('w-color')?.value || null;
+      await setDoc(privateModuleConfigRef(congreId), {
+        pinEncargado,
+        pinVidaMinisterio,
+      }, { merge: true });
       await updateDoc(doc(db, 'congregaciones', congreId), {
-        nombre, pinEncargado, pinVidaMinisterio,
+        nombre,
         ciudadPrincipal: ciudadPrincipal || null,
         ciudadesExtras: ciudadesExtrasMetadata,
         ...(color && { color }),
+        pinEncargado: deleteField(),
+        pinVidaMinisterio: deleteField(),
       });
       await syncPublicMapConfig(congreId, {
         nombre,
@@ -734,12 +748,14 @@ async function crearCongregacion(skipKml) {
       const color = document.getElementById('w-color')?.value || PALETA_COLORES[0];
       await setDoc(doc(db, 'congregaciones', congreId), {
         nombre,
-        pinEncargado,
-        pinVidaMinisterio,
         ciudadPrincipal: ciudadPrincipal || null,
         ciudadesExtras: ciudadesExtrasMetadata,
         color,
         creadoEn: Timestamp.now(),
+      });
+      await setDoc(privateModuleConfigRef(congreId), {
+        pinEncargado,
+        pinVidaMinisterio,
       });
       await syncPublicMapConfig(congreId, {
         nombre,

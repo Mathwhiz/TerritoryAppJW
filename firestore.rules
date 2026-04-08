@@ -180,10 +180,16 @@ service cloud.firestore {
       reglas por congregación/rol.
     */
     match /congregaciones/{congreId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if signedIn();
+
+      match /config_privada/{docId} {
+        allow read, write: if signedIn();
+      }
 
       match /{document=**} {
-        allow read, write: if true;
+        allow read: if true;
+        allow write: if signedIn();
       }
     }
   }

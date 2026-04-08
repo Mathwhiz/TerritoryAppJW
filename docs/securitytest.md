@@ -6,8 +6,8 @@ Este documento resume el análisis práctico inicial del proyecto pensando en un
 
 Importante:
 
-- En este repo no apareció un archivo de reglas de Firestore (`firestore.rules`, `firebase.json`, `.firebaserc`).
-- Por eso no fue posible auditar todavía las reglas reales del backend.
+- Este repo ya tiene `firestore.rules`.
+- Las reglas siguen siendo transicionales: `config/superadmin` y `usuarios/{uid}` están bastante más cerrados, pero `congregaciones/**` todavía prioriza compatibilidad.
 - Sí fue posible revisar el frontend, la estructura de datos usada por el cliente y varios riesgos concretos que existen si las reglas no están bien cerradas.
 
 ## Qué se analizó realmente
@@ -23,7 +23,7 @@ Se revisó:
 - selección de congregación desde `sessionStorage`
 - acciones manualmente ejecutables desde la consola
 
-Lo que no se pudo confirmar todavía fue el comportamiento exacto de las Firestore Security Rules, porque ese archivo no está en el repo.
+Lo que todavía falta confirmar es si lo desplegado en Firebase coincide exactamente con el archivo versionado del repo.
 
 ## Qué son las Firestore Security Rules
 
@@ -350,6 +350,46 @@ Solo convendría ignorarlo si fueras a poner secretos reales, exploits sensibles
 ### Endurecimiento transicional ya desplegado
 
 Se aplicó una primera capa de seguridad sin romper el flujo actual de invitados + PIN.
+
+### Despliegue de rules realizado
+
+Fecha de despliegue: `2026-04-08`
+
+Proyecto Firebase: `appjw-3697e`
+
+Comando usado:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Resultado:
+
+- `firestore.rules` compiló correctamente
+- las rules quedaron publicadas en Cloud Firestore
+
+Impacto esperado:
+
+- las lecturas de `congregaciones/**` siguen abiertas
+- las escrituras sobre `congregaciones/**` ahora requieren sesión Firebase
+- el flujo actual de invitado + PIN debería seguir funcionando porque el invitado entra con Auth anónima
+
+Rollback rápido si aparece una rotura:
+
+1. Restaurar la versión anterior de `firestore.rules` desde Git.
+2. Volver a desplegar solo las rules.
+
+Comandos:
+
+```bash
+git show HEAD~1:firestore.rules > firestore.rules
+firebase deploy --only firestore:rules
+```
+
+Nota:
+
+- antes de ejecutar rollback conviene verificar si la rotura realmente viene de rules y no de otro cambio local
+- si el cambio anterior a este despliegue no quedó en `HEAD~1`, usar el commit correcto que tuviera la versión previa de `firestore.rules`
 
 Cambios realizados:
 
