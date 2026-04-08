@@ -62,6 +62,9 @@ let semanasLista      = [];  // cache para navegación encargado (orden desc)
 let pubFecha          = null; // fecha activa en vista pública
 let vmEspeciales      = {};   // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
 let vmScriptUrl       = null; // Apps Script URL para exportar a Sheets
+let vmPublicadoresLoaded = false;
+let vmEspecialesLoaded = false;
+let vmMirrorSyncStarted = false;
 
 function privateModuleConfigRef() {
   return doc(db, 'congregaciones', congreId, 'config_privada', 'modulos');
@@ -399,8 +402,12 @@ window.pinCancel = function() {
 
 window.goToVerPrograma = async function() {
   if (!vmInitReady) return;
+  uiLoading.show('Cargando…');
+  await ensureVmLookupsLoaded();
+  uiLoading.hide();
   pubFecha = lunesDeHoy();
   showView('view-programa-pub');
+  scheduleVmMirrorSync();
   await cargarProgramaPublico();
 };
 
@@ -444,6 +451,8 @@ window.cerrarSesionVM = function() {
 };
 
 window.goToSemanas = async function() {
+  uiLoading.show('Cargando…');
+  await ensureVmLookupsLoaded();
   document.getElementById('semanas-congre-sub').textContent = congreNombre || '—';
   const btnCfg = document.getElementById('btn-config-vm');
   if (btnCfg) btnCfg.style.display = modoEncargado ? '' : 'none';
@@ -457,6 +466,8 @@ window.goToSemanas = async function() {
     }
   }
   showView('view-semanas');
+  uiLoading.hide();
+  scheduleVmMirrorSync();
   await cargarSemanas();
 };
 
@@ -578,7 +589,7 @@ function checkPin() {
 // ─────────────────────────────────────────
 //   CARGA DE DATOS
 // ─────────────────────────────────────────
-async function cargarPublicadores() {
+async function cargarPublicadores(syncMirror = true) {
   try {
     const snap = await getDocs(collection(db, 'congregaciones', congreId, 'publicadores'));
     publicadores = [];
@@ -586,7 +597,8 @@ async function cargarPublicadores() {
     publicadores.sort((a, b) =>
       (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
     );
-    await replaceVmPublicadores();
+    vmPublicadoresLoaded = true;
+    if (syncMirror) await replaceVmPublicadores();
   } catch(e) {
     console.error('Error al cargar publicadores:', e);
   }
@@ -652,15 +664,40 @@ function calcCompletitud(s) {
   return { clase: 'parcial', texto: `${filled}/${total} asignados` };
 }
 
-async function cargarVmEspeciales() {
+async function cargarVmEspeciales(syncMirror = true) {
   try {
     const snap = await getDocs(collection(db, 'congregaciones', congreId, 'semanasEspeciales'));
     vmEspeciales = {};
     snap.forEach(d => { vmEspeciales[d.id] = d.data(); });
-    await replaceVmEspecialesPublicos();
+    vmEspecialesLoaded = true;
+    if (syncMirror) await replaceVmEspecialesPublicos();
   } catch(e) {
     console.error('Error cargando especiales VM:', e);
   }
+}
+
+async function ensureVmLookupsLoaded() {
+  const tasks = [];
+  if (!vmPublicadoresLoaded) tasks.push(cargarPublicadores(false));
+  if (!vmEspecialesLoaded) tasks.push(cargarVmEspeciales(false));
+  if (tasks.length) await Promise.all(tasks);
+}
+
+function scheduleVmMirrorSync() {
+  if (vmMirrorSyncStarted || !vmInitReady) return;
+  vmMirrorSyncStarted = true;
+  window.setTimeout(async () => {
+    try {
+      await syncVmPublicConfig();
+      await Promise.all([
+        replaceVmPublicadores(),
+        replaceVmEspecialesPublicos(),
+        syncVmProgramaCompleto(),
+      ]);
+    } catch (e) {
+      console.error('Error sincronizando espejo público VM:', e);
+    }
+  }, 0);
 }
 
 function vmBannerHtml(fecha) {
@@ -1951,10 +1988,6 @@ window.exportarMesASheets = async function() {
     tieneAuxiliar           = data.tieneAuxiliar === true;
     presidenteEsOradorFinal = data.presidenteEsOradorFinal === true;
     vmScriptUrl = mergedConfig.scriptUrl || data.scriptUrl || null;
-    await syncVmPublicConfig();
-    await cargarPublicadores();
-    await cargarVmEspeciales();
-    await syncVmProgramaCompleto();
     vmInitReady = true;
   } catch(e) {
     console.error('Error al inicializar:', e);
