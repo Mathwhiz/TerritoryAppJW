@@ -294,30 +294,33 @@ function diaRef(mes, id) {
 //   CARGAR MES
 // ─────────────────────────────────────────
 async function cargarMes() {
-  // Carga el doc padre (revisitas/estudios) y la subcolección de días en paralelo
-  const [parentSnap, diasSnap] = await Promise.all([
-    getDoc(mesRef(_mesMostrado)),
-    getDocs(diasRef(_mesMostrado)),
-  ]);
+  try {
+    // Carga el doc padre (revisitas/estudios) y la subcolección de días en paralelo
+    const [parentSnap, diasSnap] = await Promise.all([
+      getDoc(mesRef(_mesMostrado)),
+      getDocs(diasRef(_mesMostrado)),
+    ]);
 
-  const parentData = parentSnap.exists() ? parentSnap.data() : {};
-  _dataMes.revisitas = parentData.revisitas || 0;
-  _dataMes.estudios  = parentData.estudios  || 0;
+    const parentData = parentSnap.exists() ? parentSnap.data() : {};
+    _dataMes.revisitas = parentData.revisitas || 0;
+    _dataMes.estudios  = parentData.estudios  || 0;
 
-  _diasMes = [];
-  diasSnap.forEach(d => _diasMes.push({ id: d.id, ...d.data() }));
-  _diasMes.sort((a, b) => b.fecha.localeCompare(a.fecha)); // más reciente primero
+    _diasMes = [];
+    diasSnap.forEach(d => _diasMes.push({ id: d.id, ...d.data() }));
+    _diasMes.sort((a, b) => b.fecha.localeCompare(a.fecha)); // más reciente primero
 
-  const totalDias = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
-  const totalLdcDias = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
-  // Si hay días individuales usamos su suma; si no, usamos el total cacheado del doc padre (datos legacy)
-  _dataMes.rawMinutos = _diasMes.length > 0 ? totalDias : (parentData.minutos || 0);
-  _dataMes.rawLdcMinutos = _diasMes.length > 0 ? totalLdcDias : (parentData.ldcMinutos || 0);
-  const mesCalculado = getMesCalculado(_mesMostrado);
-  _dataMes.minutos = mesCalculado.minutos;
-  _dataMes.ldcMinutos = mesCalculado.ldcMinutos;
-  _mesExiste = parentSnap.exists() || _diasMes.length > 0;
-
+    const totalDias = _diasMes.reduce((s, d) => s + (d.minutos || 0), 0);
+    const totalLdcDias = _diasMes.reduce((s, d) => s + (d.ldcMinutos || 0), 0);
+    // Si hay días individuales usamos su suma; si no, usamos el total cacheado del doc padre (datos legacy)
+    _dataMes.rawMinutos = _diasMes.length > 0 ? totalDias : (parentData.minutos || 0);
+    _dataMes.rawLdcMinutos = _diasMes.length > 0 ? totalLdcDias : (parentData.ldcMinutos || 0);
+    const mesCalculado = getMesCalculado(_mesMostrado);
+    _dataMes.minutos = mesCalculado.minutos;
+    _dataMes.ldcMinutos = mesCalculado.ldcMinutos;
+    _mesExiste = parentSnap.exists() || _diasMes.length > 0;
+  } catch (err) {
+    console.error('[predicacion] Error al cargar mes:', err);
+  }
   renderStats();
 }
 
