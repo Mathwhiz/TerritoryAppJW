@@ -903,15 +903,21 @@ function renderParteItem(key, label, parte, opts = {}) {
        ${renderAsigBtn(key + '.salaAux', parte?.salaAux?.pubId, 'Asignar hermano')}`
     : '';
 
+  // Para ministerio: input editable muestra la instrucción (referencia de WOL).
+  // Para tesoros/vidaCristiana: muestra el título.
+  const inputValue   = esMinisterio ? (parte?.instruccion || '') : (parte?.titulo || '');
+  const inputHandler = esMinisterio ? `onInstruccionChange('${key}', this.value)` : `onTituloChange('${key}', this.value)`;
+  const inputPlaceholder = esMinisterio ? 'Instrucciones…' : 'Título de la parte…';
+
   return `<div class="parte-item">
     <div class="parte-meta-row">
       <span class="parte-label-text">${label}</span>${dur}${quitar}
     </div>
     ${renderTipoInstruccionHtml(key, parte)}
     <input class="parte-titulo-input" type="text"
-           placeholder="Título de la parte…"
-           value="${esc(parte?.titulo || '')}"
-           oninput="onTituloChange('${key}', this.value)">
+           placeholder="${inputPlaceholder}"
+           value="${esc(inputValue)}"
+           oninput="${inputHandler}">
     ${spLabel}
     ${renderAsigBtn(key, parte?.pubId, 'Asignar hermano')}
     ${auxHtml}
@@ -950,9 +956,9 @@ function renderParteItemConAyudante(key, label, parte, opts = {}) {
     </div>
     ${renderTipoInstruccionHtml(key, parte)}
     <input class="parte-titulo-input" type="text"
-           placeholder="Título de la parte…"
-           value="${esc(parte?.titulo || '')}"
-           oninput="onTituloChange('${key}', this.value)">
+           placeholder="${isMinisterio ? 'Instrucciones…' : 'Título de la parte…'}"
+           value="${esc(isMinisterio ? (parte?.instruccion || '') : (parte?.titulo || ''))}"
+           oninput="${isMinisterio ? `onInstruccionChange('${key}', this.value)` : `onTituloChange('${key}', this.value)`}">
     ${spLabel}
     <div class="asig-double-row">
       ${renderAsigBtn(key, parte?.pubId, 'Asignar hermano')}
@@ -1089,6 +1095,15 @@ window.onTituloChange = function(key, value) {
   }
 };
 
+window.onInstruccionChange = function(key, value) {
+  if (!semanaData) return;
+  const parts = key.split('.');
+  if (parts[0] === 'ministerio') {
+    const idx = parseInt(parts[1]);
+    if (semanaData.ministerio?.[idx]) semanaData.ministerio[idx].instruccion = value;
+  }
+};
+
 window.asignarSlot = async function(key) {
   const rol = getRolParaSlot(key);
   const conductores = rol ? pubNombresConRol(rol) : publicadores.filter(p => p.activo !== false).map(p => p.nombre);
@@ -1173,13 +1188,13 @@ function renderTipoInstruccionHtml(key, parte) {
   if (!key.startsWith('ministerio.')) return '';
   const tipo  = parte?.tipo;
   const color = TIPO_MIN_COLORS[tipo] || '#888';
-  const chip  = tipo
-    ? `<span class="tipo-chip" style="background:${color}22;color:${color};border:1px solid ${color}44;">${TIPO_MIN_LABELS[tipo] || tipo}</span>`
+  // Chip muestra el nombre específico del WOL (h3), no el label genérico del tipo.
+  // El color sigue indicando el tipo (azul=conversacion, etc.)
+  const displayText = parte?.titulo || TIPO_MIN_LABELS[tipo] || tipo;
+  const chip = tipo
+    ? `<span class="tipo-chip" style="background:${color}22;color:${color};border:1px solid ${color}44;">${esc(displayText)}</span>`
     : '';
-  const inst = parte?.instruccion
-    ? `<div class="parte-instruccion">${esc(parte.instruccion)}</div>`
-    : '';
-  return (chip || inst) ? `<div class="parte-tipo-row">${chip}${inst}</div>` : '';
+  return chip ? `<div class="parte-tipo-row">${chip}</div>` : '';
 }
 
 function parseDur(text) {
