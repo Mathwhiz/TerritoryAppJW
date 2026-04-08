@@ -34,6 +34,7 @@ export const PERMISOS = {
     'acceso_hermanos',
     'acceso_predicacion',
     'acceso_conferencias',
+    'editar_conferencias',
     'editar_publicadores',
     'editar_congregacion',
     'ver_todas_congregaciones',
@@ -47,6 +48,7 @@ export const PERMISOS = {
     'acceso_hermanos',
     'acceso_predicacion',
     'acceso_conferencias',
+    'editar_conferencias',
     'editar_publicadores',
     'gestionar_usuarios',
   ],
@@ -55,21 +57,25 @@ export const PERMISOS = {
     'acceso_asignaciones',
     'acceso_hermanos',
     'acceso_predicacion',
+    'acceso_conferencias',
   ],
 
   encargado_vm: [
     'acceso_vm',
     'acceso_hermanos',
     'acceso_predicacion',
+    'acceso_conferencias',
   ],
 
   encargado_grupo: [
     'acceso_territorios',
     'acceso_predicacion',
+    'acceso_conferencias',
   ],
 
   encargado_conferencias: [
     'acceso_conferencias',
+    'editar_conferencias',
     'acceso_predicacion',
   ],
 
@@ -82,21 +88,25 @@ export const PERMISOS = {
 
   siervo_ministerial: [
     'acceso_territorios',
+    'acceso_conferencias',
     'acceso_predicacion',
   ],
 
   precursor_regular: [
     'acceso_territorios',
+    'acceso_conferencias',
     'acceso_predicacion',
   ],
 
   precursor_auxiliar: [
     'acceso_territorios',
+    'acceso_conferencias',
     'acceso_predicacion',
   ],
 
   publicador: [
     'acceso_territorios',
+    'acceso_conferencias',
     'acceso_predicacion',
   ],
 
