@@ -1985,9 +1985,10 @@ const LH_ROLES_VM = [
 ];
 const LH_TODOS_ROLES = [...LH_ROLES_ASIGN, ...LH_ROLES_VM];
 
-let _lhListaVisible = [];
-let _lhEditandoId   = null;
-let _lhModalSexo    = null;
+let _lhListaVisible      = [];
+let _lhEditandoId        = null;
+let _lhModalSexo         = null;
+let _lhModalPrivilegiado = false; // true si el pub tiene ANCIANO o SIERVO_MINISTERIAL
 
 function _lhRolLabel(id) {
   return LH_TODOS_ROLES.find(r => r.id === id)?.label || id;
@@ -2076,14 +2077,70 @@ function _lhRenderSexoBtns() {
   });
 }
 
+// Roles VM que requieren ser varón
+const LH_ROLES_SOLO_VARON = [
+  'VM_PRESIDENTE','VM_ORACION','VM_TESOROS','VM_JOYAS','VM_LECTURA',
+  'VM_MINISTERIO_DISCURSO','VM_VIDA_CRISTIANA','VM_ESTUDIO_CONDUCTOR'
+];
+// Roles VM que además requieren ser anciano o siervo ministerial
+const LH_ROLES_SOLO_PRIVILEGIADO = [
+  'VM_PRESIDENTE','VM_ORACION','VM_TESOROS','VM_JOYAS',
+  'VM_MINISTERIO_DISCURSO','VM_VIDA_CRISTIANA','VM_ESTUDIO_CONDUCTOR'
+];
+
+function _lhActualizarRolesSegunSexo() {
+  const esMujer = _lhModalSexo === 'M';
+  const esVaronNoPriv = _lhModalSexo === 'H' && !_lhModalPrivilegiado;
+
+  // Sección entera de Asignaciones (solo mujeres no pueden)
+  const seccionAsign = document.getElementById('lh-seccion-asign');
+  if (seccionAsign) seccionAsign.style.display = esMujer ? 'none' : '';
+  if (esMujer) {
+    LH_ROLES_ASIGN.forEach(r => {
+      const cb = document.getElementById('lhcb-' + r.id);
+      if (cb) cb.checked = false;
+    });
+  }
+
+  // Roles VM solo para varón
+  LH_ROLES_SOLO_VARON.forEach(rolId => {
+    const ocultar = esMujer;
+    const cb = document.getElementById('lhcb-' + rolId);
+    if (!cb) return;
+    const label = cb.closest('label');
+    if (ocultar) {
+      cb.checked = false;
+      if (label) label.style.display = 'none';
+    } else {
+      if (label) label.style.display = '';
+    }
+  });
+
+  // Roles VM solo para varón privilegiado (anciano o siervo ministerial)
+  LH_ROLES_SOLO_PRIVILEGIADO.forEach(rolId => {
+    if (esMujer) return; // ya oculto por el bloque anterior
+    const cb = document.getElementById('lhcb-' + rolId);
+    if (!cb) return;
+    const label = cb.closest('label');
+    if (esVaronNoPriv) {
+      cb.checked = false;
+      if (label) label.style.display = 'none';
+    } else {
+      if (label) label.style.display = '';
+    }
+  });
+}
+
 window.selectSexoVM = function(s) {
   _lhModalSexo = (_lhModalSexo === s) ? null : s;
   _lhRenderSexoBtns();
+  _lhActualizarRolesSegunSexo();
 };
 
 window.abrirNuevoVM = function() {
-  _lhEditandoId = null;
-  _lhModalSexo  = null;
+  _lhEditandoId        = null;
+  _lhModalSexo         = null;
+  _lhModalPrivilegiado = false;
   document.getElementById('lh-modal-titulo').textContent = 'Nuevo hermano';
   document.getElementById('lh-modal-nombre').value = '';
   document.getElementById('lh-modal-status').textContent = '';
@@ -2092,6 +2149,7 @@ window.abrirNuevoVM = function() {
     if (cb) cb.checked = false;
   });
   _lhRenderSexoBtns();
+  _lhActualizarRolesSegunSexo();
   document.getElementById('lh-modal-nav-row').style.display = 'none';
   document.getElementById('modal-hermano-vm').style.display = 'flex';
   document.getElementById('lh-modal-nombre').focus();
@@ -2100,8 +2158,9 @@ window.abrirNuevoVM = function() {
 window.abrirEditarVM = function(id) {
   const h = publicadores.find(p => p.id === id);
   if (!h) return;
-  _lhEditandoId = id;
-  _lhModalSexo  = h.sexo || null;
+  _lhEditandoId        = id;
+  _lhModalSexo         = h.sexo || null;
+  _lhModalPrivilegiado = (h.roles || []).some(r => r === 'ANCIANO' || r === 'SIERVO_MINISTERIAL');
   document.getElementById('lh-modal-titulo').textContent = esc(h.nombre);
   document.getElementById('lh-modal-nombre').value = h.nombre;
   document.getElementById('lh-modal-status').textContent = '';
@@ -2110,6 +2169,7 @@ window.abrirEditarVM = function(id) {
     if (cb) cb.checked = (h.roles || []).includes(r.id);
   });
   _lhRenderSexoBtns();
+  _lhActualizarRolesSegunSexo();
   _lhActualizarNavModal(id);
   document.getElementById('modal-hermano-vm').style.display = 'flex';
 };
