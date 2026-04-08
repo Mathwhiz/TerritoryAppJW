@@ -245,7 +245,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .btn-autocomplete {
   background: rgba(127,119,221,0.1); border: 1px solid rgba(127,119,221,0.28);
   border-radius: 10px; color: #7F77DD; font-size: 13px; font-weight: 600;
-  padding: 10px 8px; cursor: not-allowed; opacity: 0.6;
+  padding: 10px 8px; cursor: pointer;
 }
 
 /* ── Tipo chip + instruccion (partes de ministerio) ── */

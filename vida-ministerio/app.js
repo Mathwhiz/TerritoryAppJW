@@ -1460,67 +1460,104 @@ function setSlotPubIdOnSemana(semana, key, pubId) {
   }
 }
 
-// Calcula índice inicial por rol leyendo el historial de semanasLista (en memoria).
-// Recorre de más antigua a más reciente y registra el último pubId asignado por rol.
-function calcularIndicesVM() {
-  const indices = {};
-  ROLES_VM.forEach(r => { indices[r.id] = 0; });
+// Construye una cola de asignación por rol usando TODO el historial.
+// Ordena cada lista por fecha de última asignación (más antigua primero, nunca asignado primero).
+// Retorna { rolId → [pubId, ...] } — las colas se mutan in-place durante la asignación.
+function calcularColasVM() {
+  // Registrar la fecha más reciente de asignación por rol y pub
+  const ultimaFecha = {}; // { rolId → { pubId → 'YYYY-MM-DD' } }
+  ROLES_VM.forEach(r => { ultimaFecha[r.id] = {}; });
 
-  // Copia ordenada asc (semanasLista está desc)
   const ordenadas = [...semanasLista].sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  const ultimoPub = {}; // { rolId → pubId }
 
   for (const semana of ordenadas) {
     const slots = construirSlotsOrdenados(semana);
     for (const slot of slots) {
       const pubId = getSlotPubIdFromSemana(semana, slot.key);
-      if (pubId) ultimoPub[slot.rolRequerido] = pubId;
+      if (pubId) {
+        if (!ultimaFecha[slot.rolRequerido]) ultimaFecha[slot.rolRequerido] = {};
+        ultimaFecha[slot.rolRequerido][pubId] = semana.fecha;
+      }
     }
   }
 
-  // Convertir último pubId → siguiente índice en la lista de ese rol
-  for (const rolId of Object.keys(ultimoPub)) {
-    const lista = pubsConRol(rolId);
-    const idx = lista.findIndex(p => p.id === ultimoPub[rolId]);
-    if (idx >= 0 && lista.length > 0) {
-      indices[rolId] = (idx + 1) % lista.length;
-    }
-  }
+  // Para cada rol: ordenar por fecha de última asignación (más antigua → va primero)
+  const colas = {};
+  ROLES_VM.forEach(r => {
+    const lista = pubsConRol(r.id);
+    const fechas = ultimaFecha[r.id] || {};
+    const ordenada = [...lista].sort((a, b) => {
+      const fa = fechas[a.id] || '0000-00-00'; // nunca asignado → máxima prioridad
+      const fb = fechas[b.id] || '0000-00-00';
+      return fa.localeCompare(fb);
+    });
+    colas[r.id] = ordenada.map(p => p.id);
+  });
 
-  return indices;
+  return colas;
 }
 
-// Asigna publicadores en todos los slots de una semana usando round-robin.
-// Modifica `semana` in-place. `indices` se actualiza in-place (para generación masiva).
-function autoAsignarSemana(semana, indices) {
+function sexoDePub(pubId) {
+  if (!pubId) return null;
+  const p = publicadores.find(x => x.id === pubId);
+  return p ? (p.sexo || null) : null;
+}
+
+// Asigna publicadores en slots de una semana usando las colas de round-robin.
+// colas: { rolId → [pubId, ...] } — se mutan in-place (el asignado pasa al final).
+// soloVacios: si true, respeta los slots ya asignados y solo rellena los null.
+function autoAsignarSemana(semana, colas, { soloVacios = false } = {}) {
   const slots = construirSlotsOrdenados(semana);
   const enEstaSemana = new Set();
 
+  // Pre-cargar en el Set los ya asignados para no repetirlos en slots libres
+  if (soloVacios) {
+    for (const slot of slots) {
+      const actual = getSlotPubIdFromSemana(semana, slot.key);
+      if (actual) enEstaSemana.add(actual);
+    }
+  }
+
   for (const slot of slots) {
-    const lista = pubsConRol(slot.rolRequerido);
-    if (lista.length === 0) continue;
+    if (soloVacios && getSlotPubIdFromSemana(semana, slot.key)) continue;
 
-    let i = indices[slot.rolRequerido] || 0;
+    const rolId = slot.rolRequerido;
+    const cola = colas[rolId];
+    if (!cola || cola.length === 0) continue;
+
+    // Para ayudantes: el principal ya fue asignado en esta misma iteración,
+    // así que lo leemos desde semana y exigimos mismo sexo.
+    let sexoRequerido = null;
+    if (slot.esAyudante) {
+      const principalKey = slot.key.replace(/\.ayudante$/, '');
+      const principalId = getSlotPubIdFromSemana(semana, principalKey);
+      sexoRequerido = sexoDePub(principalId); // null si el principal no tiene sexo definido
+    }
+
+    // Buscar el primero de la cola que cumpla todas las restricciones
     let asignado = null;
-    const maxIntentos = lista.length + 1;
-
-    for (let intentos = 0; intentos < maxIntentos; intentos++) {
-      const candidato = lista[i % lista.length];
-      if (candidato && !enEstaSemana.has(candidato.id)) {
-        asignado = candidato.id;
-        i++;
-        break;
+    let posUsada = -1;
+    for (let i = 0; i < cola.length; i++) {
+      const candidato = cola[i];
+      if (enEstaSemana.has(candidato)) continue;
+      // Restricción de género: si el principal tiene sexo definido y el candidato también,
+      // deben coincidir. Si alguno no tiene sexo definido, se permite.
+      if (sexoRequerido) {
+        const sexoCandidato = sexoDePub(candidato);
+        if (sexoCandidato && sexoCandidato !== sexoRequerido) continue;
       }
-      i++;
+      asignado = candidato;
+      posUsada = i;
+      break;
     }
 
     if (asignado) {
       setSlotPubIdOnSemana(semana, slot.key, asignado);
       enEstaSemana.add(asignado);
+      // Mover al final → el siguiente en recibir ese rol será el próximo de la cola
+      cola.splice(posUsada, 1);
+      cola.push(asignado);
     }
-
-    indices[slot.rolRequerido] = i % (lista.length || 1);
   }
 }
 
@@ -1543,15 +1580,15 @@ window.autocompletarHermanos = async function() {
   if (!semanaData) return;
   const ok = await uiConfirm({
     title: 'Auto-asignar hermanos',
-    msg: 'Se van a auto-asignar hermanos en todos los slots de esta semana. Los slots ya asignados se sobreescribirán.',
+    msg: 'Se van a completar los slots vacíos de esta semana. Los hermanos ya asignados no se tocan.',
     confirmText: 'Auto-asignar',
     cancelText: 'Cancelar',
     type: 'purple',
   });
   if (!ok) return;
 
-  const indices = calcularIndicesVM();
-  autoAsignarSemana(semanaData, indices);
+  const colas = calcularColasVM();
+  autoAsignarSemana(semanaData, colas, { soloVacios: true });
   renderSemanaEdit();
   uiToast('Hermanos auto-asignados', 'success');
 };
@@ -1592,7 +1629,7 @@ window.crearSemana = async function() {
   const nSemanas      = parseInt(document.getElementById('nueva-n-semanas').value) || 1;
   const reemplazar    = document.getElementById('nueva-reemplazar').checked;
   const autoAsignar   = document.getElementById('nueva-auto-asignar').checked;
-  const indicesAA     = autoAsignar ? calcularIndicesVM() : null;
+  const colasAA       = autoAsignar ? calcularColasVM() : null;
 
   let primeraFecha = null;
 
@@ -1653,8 +1690,8 @@ window.crearSemana = async function() {
     }
 
     // Auto-asignar hermanos si está activo
-    if (autoAsignar && indicesAA && !debeSkipAutoAsignar(fecha)) {
-      autoAsignarSemana(semanaData, indicesAA);
+    if (autoAsignar && colasAA && !debeSkipAutoAsignar(fecha)) {
+      autoAsignarSemana(semanaData, colasAA);
     }
 
     // Guardar en Firestore
