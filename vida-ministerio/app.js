@@ -1,5 +1,6 @@
 import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
+import { logActividad } from '../shared/actividad.js';
 import {
   collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, updateDoc, query, orderBy, writeBatch
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
@@ -1236,6 +1237,7 @@ window.guardarSemana = async function() {
     _resetModificada();
     uiLoading.hide();
     uiToast('Programa guardado', 'success');
+    logActividad(congreId, 'vida-ministerio', 'guardado', 'Semana ' + semanaData.fecha);
   } catch(e) {
     uiLoading.hide();
     await uiAlert('Error al guardar: ' + e.message);
@@ -2011,6 +2013,7 @@ window.exportarMesASheets = async function() {
 
   congreId     = savedId;
   congreNombre = savedNombre;
+  logActividad(congreId, 'vida-ministerio', 'apertura');
   document.getElementById('cover-congre').textContent = congreNombre || '—';
   showView('view-cover');
 

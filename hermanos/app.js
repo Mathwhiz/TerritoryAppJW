@@ -1,5 +1,6 @@
 import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
+import { logActividad } from '../shared/actividad.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, orderBy, limit, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
@@ -202,6 +203,7 @@ function _canBypassHermanosPin() {
     console.error('Error cargando config:', e);
     buildConductorUI([]); // fallback: muestra grupos 1-4
   } finally {
+    logActividad(CONGRE_ID, 'hermanos', 'apertura');
     if (_canBypassHermanosPin()) {
       hidePinModal();
       showView('view-menu');
@@ -840,6 +842,7 @@ window.guardarHermano = async function() {
       cerrarModal();
       filtrarLista();
       uiToast('Hermano agregado', 'success');
+      logActividad(CONGRE_ID, 'hermanos', 'guardado', 'Hermano agregado: ' + nombre);
     } catch(e) {
       status.style.color = '#F09595'; status.textContent = 'Error: ' + e.message;
     }
@@ -852,6 +855,7 @@ window.guardarHermano = async function() {
     cerrarModal();
     filtrarLista();
     uiToast('Guardado', 'success');
+    logActividad(CONGRE_ID, 'hermanos', 'guardado', 'Hermano editado: ' + nombre);
   } else {
     status.style.color = '#F09595'; status.textContent = 'Error al guardar';
   }
@@ -1101,6 +1105,7 @@ window.guardarEspecial = async function() {
     renderEspecialesList();
     window.cerrarFormEspecial();
     uiToast(`${especialLabel(data)} guardada`, 'success');
+    logActividad(CONGRE_ID, 'hermanos', 'guardado', 'Semana especial: ' + especialLabel(data));
   } catch(e) { await uiAlert('Error al guardar: ' + e.message); }
 };
 

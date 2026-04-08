@@ -2,7 +2,7 @@ import { db } from './shared/firebase.js';
 import './shared/auth.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, deleteField,
-  query, where,
+  query, where, orderBy, limit,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 // ── Super-admin PIN ──
@@ -107,7 +107,7 @@ function checkPin() {
 //   NAVEGACIÓN
 // ─────────────────────────────────────────
 function showView(id) {
-  ['view-pin', 'view-dashboard', 'view-wizard', 'view-territorios', 'view-matches', 'view-usuarios'].forEach(v => {
+  ['view-pin', 'view-dashboard', 'view-wizard', 'view-territorios', 'view-matches', 'view-usuarios', 'view-actividad'].forEach(v => {
     document.getElementById(v).style.display = v === id ? '' : 'none';
   });
 }
@@ -160,6 +160,7 @@ async function loadDashboard() {
             <div style="display:flex;gap:6px;flex-shrink:0;">
               <button class="btn-card-action" onclick="openTerritorios('${d.id}','${nombreSafe}')" title="Territorios">📍</button>
               <button class="btn-card-action" onclick="openUsuarios('${d.id}','${nombreSafe}')" title="Usuarios">👥</button>
+              <button class="btn-card-action" onclick="openActividad('${d.id}','${nombreSafe}')" title="Actividad">📊</button>
               <button class="btn-card-action" onclick="editCongre('${d.id}')" title="Editar">✏️</button>
               <button class="btn-card-action btn-card-delete" onclick="deleteCongre('${d.id}','${nombreSafe}')" title="Eliminar">🗑️</button>
             </div>
@@ -1478,3 +1479,95 @@ window.abrirVincularModal  = abrirVincularModal;
 window.cerrarVincularModal = cerrarVincularModal;
 window.filtrarVincPubs     = filtrarVincPubs;
 window.confirmarVinculo    = confirmarVinculo;
+
+// ─────────────────────────────────────────
+//   ACTIVIDAD
+// ─────────────────────────────────────────
+const ACT_MODULOS = {
+  'territorios':     { label: 'Territorios',     icon: '🗺️',  color: '#378ADD' },
+  'asignaciones':    { label: 'Asignaciones',    icon: '📋',  color: '#EF9F27' },
+  'vida-ministerio': { label: 'Vida y Min.',     icon: '📖',  color: '#7F77DD' },
+  'hermanos':        { label: 'Administrador',   icon: '👥',  color: '#1D9E75' },
+  'conferencias':    { label: 'Conferencias',    icon: '🎤',  color: '#D85A30' },
+  'predicacion':     { label: 'Predicación',     icon: '📣',  color: '#97C459' },
+};
+const ACT_ACCIONES = { apertura: 'Abrió', guardado: 'Guardó', edicion: 'Editó' };
+
+async function openActividad(congreId, congreNombre) {
+  showView('view-actividad');
+  document.getElementById('act-title').textContent = congreNombre || congreId;
+  document.getElementById('act-sub').textContent   = 'Últimas 100 acciones registradas';
+  document.getElementById('act-stats').innerHTML   = '';
+  document.getElementById('act-loading').style.display = 'flex';
+  document.getElementById('act-list').style.display    = 'none';
+  await loadActividad(congreId);
+}
+
+async function loadActividad(congreId) {
+  const loading = document.getElementById('act-loading');
+  const list    = document.getElementById('act-list');
+  try {
+    const snap = await getDocs(
+      query(
+        collection(db, 'congregaciones', congreId, 'actividad'),
+        orderBy('timestamp', 'desc'),
+        limit(100)
+      )
+    );
+    const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Stats: personas únicas por deviceId (o uid si está)
+    const uniqueIds  = new Set(entries.map(e => e.deviceId || e.uid).filter(Boolean));
+    const guardados  = entries.filter(e => e.accion === 'guardado').length;
+    document.getElementById('act-stats').innerHTML = `
+      <div class="act-stat"><div class="act-stat-n">${entries.length}</div><div class="act-stat-l">acciones</div></div>
+      <div class="act-stat"><div class="act-stat-n">${uniqueIds.size}</div><div class="act-stat-l">personas</div></div>
+      <div class="act-stat"><div class="act-stat-n">${guardados}</div><div class="act-stat-l">guardados</div></div>
+    `;
+
+    if (!entries.length) {
+      list.innerHTML = '<p style="color:#666;font-size:14px;text-align:center;padding:24px 0;">Sin actividad registrada todavía.</p>';
+      loading.style.display = 'none';
+      list.style.display = '';
+      return;
+    }
+
+    let html = '';
+    let lastDayKey = '';
+    entries.forEach(e => {
+      const ts     = e.timestamp?.seconds ? new Date(e.timestamp.seconds * 1000) : null;
+      const dayKey = ts ? ts.toDateString() : '?';
+      if (dayKey !== lastDayKey) {
+        const dayLabel = ts
+          ? ts.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+          : 'Sin fecha';
+        html += `<div class="act-day-hdr">${dayLabel}</div>`;
+        lastDayKey = dayKey;
+      }
+      const mod     = ACT_MODULOS[e.modulo] || { label: e.modulo, icon: '📱', color: '#666' };
+      const accion  = ACT_ACCIONES[e.accion] || e.accion;
+      const hora    = ts ? ts.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '—';
+      const nombre  = e.nombre || (e.anonimo ? 'Invitado' : '—');
+      const anonBadge  = e.anonimo ? ' <span style="font-size:10px;color:#555;">(invitado)</span>' : '';
+      const detalleHtml = e.detalle ? `<div class="act-detalle">${e.detalle}</div>` : '';
+      html += `
+        <div class="act-entry">
+          <div class="act-icon" style="background:${mod.color}22;">${mod.icon}</div>
+          <div class="act-main">
+            <div class="act-nombre">${nombre}${anonBadge}</div>
+            <div class="act-meta">${accion} · ${mod.label}</div>
+            ${detalleHtml}
+          </div>
+          <div class="act-time">${hora}</div>
+        </div>`;
+    });
+
+    list.innerHTML = html;
+    loading.style.display = 'none';
+    list.style.display    = '';
+  } catch(err) {
+    loading.innerHTML = `<span style="color:#F09595;font-size:14px;">Error: ${err.message}</span>`;
+  }
+}
+
+window.openActividad = openActividad;

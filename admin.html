@@ -130,6 +130,20 @@
     .vincular-search { background:#1e1e1e; border:1px solid #444; border-radius:8px; padding:10px 12px; color:#eee; font-size:14px; font-family:inherit; outline:none; width:100%; }
     .vincular-search:focus { border-color:#7F77DD; }
     .vincular-pub-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px; }
+
+    /* Actividad */
+    .act-entry { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:#2a2a2a; border-radius:10px; margin-bottom:6px; }
+    .act-icon  { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+    .act-main  { flex:1; min-width:0; }
+    .act-nombre { font-size:14px; font-weight:600; color:#eee; }
+    .act-meta  { font-size:12px; color:#666; margin-top:2px; }
+    .act-detalle { font-size:12px; color:#888; margin-top:3px; font-style:italic; }
+    .act-time  { font-size:11px; color:#555; flex-shrink:0; white-space:nowrap; padding-top:2px; }
+    .act-day-hdr { font-size:11px; color:#555; text-transform:uppercase; letter-spacing:.5px; margin:16px 0 8px; padding-left:4px; }
+    .act-stats { display:flex; gap:8px; margin-bottom:16px; }
+    .act-stat  { background:#2a2a2a; border-radius:10px; padding:10px 14px; flex:1; text-align:center; }
+    .act-stat-n { font-size:22px; font-weight:700; color:#7F77DD; }
+    .act-stat-l { font-size:11px; color:#666; margin-top:2px; }
   </style>
 </head>
 <body>
@@ -309,6 +323,17 @@
     <p class="section-sub">Usuarios registrados sin publicador confirmado</p>
     <div id="matches-loading" class="loading-wrap" style="display:none"><div class="spinner"></div><div>Cargando...</div></div>
     <div id="matches-list"></div>
+  </div>
+
+  <!-- ── ACTIVIDAD ── -->
+  <div id="view-actividad" class="app" style="display:none">
+    <a href="#" onclick="showView('view-dashboard');return false;" style="position:fixed;top:16px;left:16px;z-index:100;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#aaa;text-decoration:none;padding:7px 13px;background:#252525;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">‹ Dashboard</a>
+    <div style="height:52px;"></div>
+    <p class="section-title" id="act-title">Actividad</p>
+    <p class="section-sub" id="act-sub">Últimas 100 acciones</p>
+    <div class="act-stats" id="act-stats"></div>
+    <div id="act-loading" class="loading-wrap"><div class="spinner"></div><div>Cargando...</div></div>
+    <div id="act-list" style="display:none"></div>
   </div>
 
   <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>

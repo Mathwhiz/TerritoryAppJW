@@ -858,6 +858,20 @@
       background: #fff0ea;
       box-shadow: 0 8px 26px rgba(174,76,41,0.16), 0 0 0 1px rgba(201,74,61,0.5);
     }
+    .cs-nav-icon-admin {
+      background: rgba(127,119,221,0.13);
+      border: 1px solid rgba(127,119,221,0.22);
+    }
+    .cs-nav-card-admin:hover {
+      border-color: rgba(127,119,221,0.55);
+      background: #1a1730;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(127,119,221,0.55), 0 4px 20px rgba(127,119,221,0.12);
+    }
+    body.light-mode .cs-nav-card-admin:hover {
+      border-color: rgba(127,119,221,0.52);
+      background: #f3f0ff;
+      box-shadow: 0 8px 26px rgba(127,119,221,0.16), 0 0 0 1px rgba(127,119,221,0.5);
+    }
     .cs-nav-title {
       font-size: 19px;
       font-weight: 600;
@@ -1410,7 +1424,7 @@
       <div class="dash-content">
         <p class="section-label">Módulos disponibles</p>
         <div class="module-grid">
-      <a class="cs-nav-card cs-nav-card-terr" href="territorios/index.html">
+      <a id="menu-card-terr" class="cs-nav-card cs-nav-card-terr" href="territorios/index.html">
         <div class="cs-nav-icon cs-nav-icon-terr">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"
@@ -1436,7 +1450,7 @@
         </div>
       </a>
 
-      <a class="cs-nav-card cs-nav-card-asign" href="asignaciones/index.html">
+      <a id="menu-card-asign" class="cs-nav-card cs-nav-card-asign" href="asignaciones/index.html">
         <div class="cs-nav-icon cs-nav-icon-asign">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
@@ -1449,7 +1463,7 @@
         </div>
       </a>
 
-      <a class="cs-nav-card cs-nav-card-herm" href="hermanos/index.html">
+      <a id="menu-card-herm" class="cs-nav-card cs-nav-card-herm" href="hermanos/index.html">
         <div class="cs-nav-icon cs-nav-icon-herm">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#D85A30" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1463,7 +1477,7 @@
         </div>
       </a>
 
-      <a class="cs-nav-card cs-nav-card-vm" href="vida-ministerio/index.html">
+      <a id="menu-card-vm" class="cs-nav-card cs-nav-card-vm" href="vida-ministerio/index.html">
         <div class="cs-nav-icon cs-nav-icon-vm">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1500,6 +1514,18 @@
         <div>
           <div class="cs-nav-title">Conferencias</div>
           <div class="cs-nav-sub">Arreglos de discursos del fin de semana</div>
+        </div>
+      </a>
+
+      <a id="menu-card-admin" class="cs-nav-card cs-nav-card-admin" href="/admin.html" style="display:none">
+        <div class="cs-nav-icon cs-nav-icon-admin">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#7F77DD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="cs-nav-title">Super Admin</div>
+          <div class="cs-nav-sub">Panel de administración global</div>
         </div>
       </a>
 
@@ -1966,6 +1992,7 @@
       document.getElementById('btn-google')?.blur();
       document.getElementById('btn-skip')?.blur();
       mostrarMenu(nombre, color);
+      syncMenuCards();
       authFlowInProgress = false;
     }
 
@@ -2008,6 +2035,39 @@
       finishAuthEntry(user);
     });
 
+    function syncMenuCards() {
+      const user = window.currentUser;
+
+      // Admin: solo admin_general
+      const cardAdmin = document.getElementById('menu-card-admin');
+      if (cardAdmin) cardAdmin.style.display = window.hasPermission?.('acceso_admin') ? '' : 'none';
+
+      // Hermana registrada: ocultar módulos no relevantes, redirigir VM al visor público
+      const esHermana = user && !user.isAnonymous && user.sexo === 'M';
+      if (esHermana) {
+        ['menu-card-terr', 'menu-card-asign', 'menu-card-herm'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+        const cardVm = document.getElementById('menu-card-vm');
+        if (cardVm) {
+          const congreId = sessionStorage.getItem('congreId') || '';
+          cardVm.href = `vida-ministerio/programa.html?congre=${encodeURIComponent(congreId)}`;
+          cardVm.querySelector('.cs-nav-sub').textContent = 'Programa de esta semana';
+        }
+      } else {
+        ['menu-card-terr', 'menu-card-asign', 'menu-card-herm'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = '';
+        });
+        const cardVm = document.getElementById('menu-card-vm');
+        if (cardVm) {
+          cardVm.href = 'vida-ministerio/index.html';
+          cardVm.querySelector('.cs-nav-sub').textContent = 'Programa de la reunión semanal';
+        }
+      }
+    }
+
     async function navegarDespuesDeAuth(nombre, color) {
       const user = await window.waitForAuth();
       if (!user) {
@@ -2019,6 +2079,7 @@
         return;
       }
       mostrarMenu(nombre, color, { skipIfVisible: true });
+      syncMenuCards();
     }
 
     async function cargarCongres() {

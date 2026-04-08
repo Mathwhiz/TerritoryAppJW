@@ -1,5 +1,6 @@
 import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
+import { logActividad } from '../shared/actividad.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, Timestamp,
@@ -12,6 +13,8 @@ await window.authGuard('acceso_territorios');
 if (!sessionStorage.getItem('congreId')) { window.location.href = '../index.html'; }
 const CONGRE_ID     = sessionStorage.getItem('congreId')     || 'sur';
 const CONGRE_NOMBRE = sessionStorage.getItem('congreNombre') || CONGRE_ID;
+
+logActividad(CONGRE_ID, 'territorios', 'apertura');
 
 const congreSubEl = document.getElementById('congre-sub');
 if (congreSubEl) congreSubEl.textContent = CONGRE_NOMBRE;
@@ -1272,6 +1275,7 @@ async function guardarRegistros() {
     status.style.color = '#5DCAA5';
     status.textContent = 'Guardado correctamente';
     btn.disabled = false;
+    logActividad(CONGRE_ID, 'territorios', 'guardado', 'Registros de salidas');
   } catch(err) {
     if (window.uiLoading) uiLoading.hide();
     status.style.color = '#F09595';

@@ -1,5 +1,6 @@
 import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
+import { logActividad } from '../shared/actividad.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
   setDoc, query, where, orderBy, writeBatch
@@ -11,6 +12,8 @@ await window.authGuard('acceso_asignaciones');
 if (!sessionStorage.getItem('congreId')) { window.location.href = '../index.html'; }
 const CONGRE_ID     = sessionStorage.getItem('congreId')     || 'sur';
 const CONGRE_NOMBRE = sessionStorage.getItem('congreNombre') || CONGRE_ID;
+
+logActividad(CONGRE_ID, 'asignaciones', 'apertura');
 
 const congreSubEl = document.getElementById('congre-sub');
 if (congreSubEl) congreSubEl.textContent = CONGRE_NOMBRE;
@@ -974,6 +977,7 @@ async function guardarEdicion() {
   try {
     await saveProgramacion(data);
     if (status) { status.style.color = '#5DCAA5'; status.textContent = '✓ Guardado correctamente'; }
+    logActividad(CONGRE_ID, 'asignaciones', 'guardado', 'Asignaciones editadas');
   } catch(err) {
     if (status) { status.style.color = '#F09595'; status.textContent = 'Error: ' + err.message; }
   }
@@ -1120,6 +1124,7 @@ async function guardarAutomatico() {
   try {
     await saveProgramacion(autoResult);
     if (status){status.style.color='#5DCAA5';status.textContent=`✓ ${autoResult.length} reuniones guardadas`;}
+    logActividad(CONGRE_ID, 'asignaciones', 'guardado', `Generó automático: ${autoResult.length} reuniones`);
   } catch(err) {
     if (status){status.style.color='#F09595';status.textContent='Error: '+err.message;}
   }

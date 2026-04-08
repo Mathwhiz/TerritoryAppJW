@@ -22,6 +22,7 @@ let _semanasEsp   = {};   // { lunesISO: data }
 let _publicadores = [];
 let _congregaciones = [];
 let _puedeEditar  = false;
+let _soloMesActual = false;  // true para hermanas registradas: sin nav de mes, sin tabs extra
 let _editandoId   = null;
 let _editandoFecha = null;
 let _editandoTipo = 'entrada';
@@ -221,6 +222,7 @@ function renderConfItem(c) {
 }
 
 window.navMes = function(delta) {
+  if (_soloMesActual) return;
   _mes = navMesIso(_mes, delta);
   renderMes();
 };
@@ -614,6 +616,17 @@ function poblarDatalistCirc() {
 async function init() {
   await window.waitForAuth();
   _puedeEditar = window.hasPermission('editar_conferencias');
+
+  const user = window.currentUser;
+  _soloMesActual = !!(user && !user.isAnonymous && user.sexo === 'M');
+
+  if (_soloMesActual) {
+    // Hermana: solo mes actual, sin navegación, sin tabs de oradores/circuito
+    _mes = mesHoy();
+    document.querySelector('.mes-nav')?.style.setProperty('display', 'none');
+    document.getElementById('tab-btn-oradores')?.style.setProperty('display', 'none');
+    document.getElementById('tab-btn-circuito')?.style.setProperty('display', 'none');
+  }
 
   // Render con loading mientras carga
   renderMes();
