@@ -320,19 +320,13 @@ window.compartirMes = async function() {
     });
     window.uiLoading && window.uiLoading.hide();
 
-    canvas.toBlob(async blob => {
-      const file = new File([blob], `conferencias-${_mes}.png`, { type: 'image/png' });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Conferencias ${fmtMesLargo(_mes)}` }).catch(() => {});
-      } else {
-        // Fallback: descargar
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `conferencias-${_mes}.png`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      }
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conferencias-${_mes}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     }, 'image/png');
   } catch(e) {
     window.uiLoading && window.uiLoading.hide();
