@@ -1,5 +1,6 @@
 import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
+import { logActividad } from '../shared/actividad.js';
 import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, orderBy
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
@@ -417,6 +418,7 @@ window.guardarConf = async function() {
     window.cerrarModalConf();
     renderMes();
     window.uiToast('Guardado', 'success');
+    logActividad(CONGRE_ID, 'conferencias', 'guardado', tipo === 'entrada' ? 'Entrada guardada' : 'Salida guardada');
   } catch(e) { await window.uiAlert('Error: ' + e.message); }
 };
 
@@ -511,6 +513,7 @@ window.guardarDiscursos = async function() {
     window.cerrarModalDisc();
     renderOradores();
     window.uiToast('Discursos guardados', 'success');
+    logActividad(CONGRE_ID, 'conferencias', 'guardado', 'Discursos de orador actualizados');
   } catch(e) { await window.uiAlert('Error: ' + e.message); }
 };
 
@@ -589,6 +592,7 @@ window.guardarCirc = async function() {
     // actualizar datalist del modal de conf
     poblarDatalistCirc();
     window.uiToast('Guardado', 'success');
+    logActividad(CONGRE_ID, 'conferencias', 'guardado', 'Congregación del circuito');
   } catch(e) { await window.uiAlert('Error: ' + e.message); }
 };
 
@@ -632,6 +636,7 @@ async function init() {
   renderMes();
 
   await cargarDatos();
+  logActividad(CONGRE_ID, 'conferencias', 'apertura');
 
   // Poblar select de oradores propios
   const sel = document.getElementById('conf-pub-select');
