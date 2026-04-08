@@ -388,6 +388,11 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   border-radius: 16px; padding: 22px 18px; text-align: center;
   font-size: 14px; color: var(--text-muted); line-height: 1.6;
 }
+.meta-action-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; color: var(--text-muted); padding: 0;
+}
+.meta-action-btn:hover { color: var(--text-secondary); }
 .meta-history-card { margin-top: 4px; }
 .meta-history-empty {
   padding: 14px 0 2px;

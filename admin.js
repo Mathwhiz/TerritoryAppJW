@@ -1017,6 +1017,23 @@ async function saveTerritorios() {
 }
 
 // ─────────────────────────────────────────
+//   HELPERS DE SINCRONIZACIÓN DE ROLES
+// ─────────────────────────────────────────
+const _ROL_PUB_A_APP = {
+  PRECURSOR_REGULAR:  'precursor_regular',
+  PRECURSOR_AUXILIAR: 'precursor_auxiliar',
+  ANCIANO:            'anciano',
+  SIERVO_MINISTERIAL: 'siervo_ministerial',
+};
+async function _rolesDesdePublicador(congreId, pubId) {
+  try {
+    const snap = await getDoc(doc(db, 'congregaciones', congreId, 'publicadores', pubId));
+    if (!snap.exists()) return [];
+    return (snap.data().roles || []).filter(r => _ROL_PUB_A_APP[r]).map(r => _ROL_PUB_A_APP[r]);
+  } catch { return []; }
+}
+
+// ─────────────────────────────────────────
 //   MATCHES PENDIENTES
 // ─────────────────────────────────────────
 let matchesList = [];
@@ -1092,7 +1109,7 @@ function renderMatchesList() {
               <div style="font-size:14px;color:#ddd;">${p.nombre}</div>
               ${rolesHtml(p.roles)}
             </div>
-            <button class="btn-match-sel" onclick="resolverMatch('${m.uid}','${p.id}','${p.nombre.replace(/'/g,"\\'")}')">Seleccionar</button>
+            <button class="btn-match-sel" onclick="resolverMatch('${m.uid}','${p.id}','${p.nombre.replace(/'/g,"\\'")}','${m.congregacionId||''}')">Seleccionar</button>
           </div>`).join('')
       : '<p style="font-size:13px;color:#666;margin:6px 0;">No se encontraron coincidencias en la base.</p>';
 
@@ -1108,11 +1125,13 @@ function renderMatchesList() {
   }).join('');
 }
 
-async function resolverMatch(uid, pubId, pubNombre) {
+async function resolverMatch(uid, pubId, pubNombre, congreId) {
   const ok = await uiConfirm({ title: 'Confirmar match', msg: `¿Vincular este usuario con "${pubNombre}"?`, confirmText: 'Confirmar', type: 'info' });
   if (!ok) return;
   try {
-    await updateDoc(doc(db, 'usuarios', uid), { matchedPublisherId: pubId, matchEstado: 'ok', appRol: 'publicador', appRoles: ['publicador'] });
+    const extraRoles = congreId ? await _rolesDesdePublicador(congreId, pubId) : [];
+    const appRoles = [...new Set(['publicador', ...extraRoles])];
+    await updateDoc(doc(db, 'usuarios', uid), { matchedPublisherId: pubId, matchEstado: 'ok', appRol: 'publicador', appRoles });
     matchesList = matchesList.filter(m => m.uid !== uid);
     renderMatchesList();
     uiToast('Match confirmado', 'success');
@@ -1313,7 +1332,9 @@ async function confirmarVinculo(pubId, pubNombre) {
   });
   if (!ok) return;
   try {
-    await updateDoc(doc(db, 'usuarios', _vincUid), { matchedPublisherId: pubId, matchEstado: 'ok' });
+    const extraRoles = _usuariosCongreId ? await _rolesDesdePublicador(_usuariosCongreId, pubId) : [];
+    const appRoles = [...new Set(['publicador', ...extraRoles])];
+    await updateDoc(doc(db, 'usuarios', _vincUid), { matchedPublisherId: pubId, matchEstado: 'ok', appRol: 'publicador', appRoles });
     cerrarVincularModal();
     uiToast('Vínculo guardado', 'success');
     openUsuarios(_usuariosCongreId, _usuariosCongreNombre);

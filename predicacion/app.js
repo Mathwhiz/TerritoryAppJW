@@ -185,7 +185,10 @@ function scheduleGuardarContadores() {
 let _contactoTipo = 'revisita';
 let _contactoId   = null;
 let _predicacionInitDone = false;
-let _esPrecursorRegular = false;
+let _esPrecursorRegular  = false;
+let _esPrecursorAuxiliar = false;
+let _metaMensualPersonal = null; // horas (number) | null
+let _editandoMeta        = false;
 
 // ─────────────────────────────────────────
 //   AUTH CHECK
@@ -198,7 +201,8 @@ const _user = await window.waitForAuth();
 const _rolesUsuario = Array.isArray(_user?.appRoles)
   ? _user.appRoles
   : (_user?.appRol ? [_user.appRol] : []);
-_esPrecursorRegular = _rolesUsuario.includes('precursor_regular');
+_esPrecursorRegular  = _rolesUsuario.includes('precursor_regular');
+_esPrecursorAuxiliar = _rolesUsuario.includes('precursor_auxiliar');
 
 if (!_user || _user.isAnonymous) {
   showView('view-noauth');
@@ -238,16 +242,20 @@ async function init(uid) {
   showView('view-app');
   renderMonthLabel();
 
-  // Si el publicador vinculado tiene PRECURSOR_REGULAR en sus roles, activar metas
-  if (!_esPrecursorRegular && _user?.matchedPublisherId && _user?.congregacionId) {
+  // Sincronizar roles del publicador vinculado (fallback si appRoles no está actualizado)
+  if ((!_esPrecursorRegular || !_esPrecursorAuxiliar) && _user?.matchedPublisherId && _user?.congregacionId) {
     try {
       const pubSnap = await getDoc(doc(db, 'congregaciones', _user.congregacionId, 'publicadores', _user.matchedPublisherId));
       if (pubSnap.exists()) {
         const pubRoles = pubSnap.data().roles || [];
-        if (pubRoles.includes('PRECURSOR_REGULAR')) _esPrecursorRegular = true;
+        if (pubRoles.includes('PRECURSOR_REGULAR'))  _esPrecursorRegular  = true;
+        if (pubRoles.includes('PRECURSOR_AUXILIAR'))  _esPrecursorAuxiliar = true;
       }
     } catch {}
   }
+
+  // Meta mensual personal (guardada en el doc del usuario)
+  _metaMensualPersonal = typeof _user?.metaMensualHoras === 'number' ? _user.metaMensualHoras : null;
 
   await cargarHistorial(false);
   await cargarMes();
@@ -654,12 +662,33 @@ function renderHistorialMesesAnteriores(meses) {
     </div>`;
 }
 
+function _metaMensualCard(actualMes, metaMensual, labelMes, extraHead = '') {
+  const faltante = Math.max(0, metaMensual - actualMes);
+  return `
+    <div class="meta-card">
+      <div class="meta-head">
+        <div class="meta-title">Meta mensual</div>
+        <div class="meta-sub" style="display:flex;gap:8px;align-items:center;">${labelMes}${extraHead}</div>
+      </div>
+      <div class="meta-main">
+        <div class="meta-current">${fmtTiempo(actualMes)}</div>
+        <div class="meta-target">de ${fmtTiempo(metaMensual)}</div>
+      </div>
+      <div class="meta-bar">
+        <div class="meta-bar-fill" style="width:${metaPct(actualMes, metaMensual)}%;"></div>
+      </div>
+      <div class="meta-foot">
+        ${faltante > 0 ? `Te faltan ${fmtTiempo(faltante)} para llegar a la meta.` : 'Meta mensual cumplida.'}
+      </div>
+    </div>`;
+}
+
 function renderMetas() {
   const cont = document.getElementById('metas-container');
   if (!cont) return;
 
-  const servicioDesde = getServicioDesdeMes(_mesMostrado);
-  const mesesServicio = listMesesServicio(servicioDesde);
+  const servicioDesde   = getServicioDesdeMes(_mesMostrado);
+  const mesesServicio   = listMesesServicio(servicioDesde);
   const mesesCalculados = calcularMesesConArrastre();
   const mesesAnteriores = mesesServicio
     .filter(mes => compareMes(mes, _mesMostrado) < 0)
@@ -668,77 +697,98 @@ function renderMetas() {
     .filter(m => (m.minutos || 0) > 0 || (m.ldcMinutos || 0) > 0 || (m.revisitas || 0) > 0 || (m.estudios || 0) > 0)
     .sort((a, b) => b.id.localeCompare(a.id));
 
-  if (!_esPrecursorRegular) {
+  const actualMes = _dataMes.minutos || 0;
+
+  const historialCard = `
+    <div class="meta-card">
+      <div class="meta-head">
+        <div class="meta-title">Historial anterior</div>
+        <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
+      </div>
+      ${renderHistorialMesesAnteriores(mesesAnteriores)}
+    </div>`;
+
+  // ── Precursor regular: 50 h/mes + 600 h/año + ritmo ────────────
+  if (_esPrecursorRegular) {
+    const metaMensual  = 50 * 60;
+    const metaAnual    = 600 * 60;
+    const actualAnual  = mesesServicio.reduce((s, mes) => s + (mesesCalculados.get(mes)?.minutos || 0), 0);
+    const faltanteAnual = Math.max(0, metaAnual - actualAnual);
+
     cont.innerHTML = `
       <div class="metas-grid">
-        <div class="meta-empty">
-          Las metas se muestran para precursores regulares.<br>
-          Si más adelante querés, podemos agregar metas para otros roles.
-        </div>
-
+        ${_metaMensualCard(actualMes, metaMensual, fmtMes(_mesMostrado))}
         <div class="meta-card">
           <div class="meta-head">
-            <div class="meta-title">Historial anterior</div>
+            <div class="meta-title">Meta anual</div>
             <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
           </div>
-          ${renderHistorialMesesAnteriores(mesesAnteriores)}
+          <div class="meta-main">
+            <div class="meta-current">${fmtTiempo(actualAnual)}</div>
+            <div class="meta-target">de ${fmtTiempo(metaAnual)}</div>
+          </div>
+          <div class="meta-bar">
+            <div class="meta-bar-fill" style="width:${metaPct(actualAnual, metaAnual)}%;"></div>
+          </div>
+          <div class="meta-foot">
+            ${faltanteAnual > 0 ? `Te faltan ${fmtTiempo(faltanteAnual)} para completar el año de servicio.` : 'Meta anual cumplida.'}
+          </div>
         </div>
+        ${renderAnimacionRitmo(servicioDesde, mesesServicio, actualAnual, metaAnual)}
+        ${historialCard}
       </div>`;
     return;
   }
 
-  const metaMensual = 50 * 60;
-  const metaAnual = 600 * 60;
-  const actualMes = _dataMes.minutos || 0;
-  const actualAnual = mesesServicio.reduce((sum, mes) => sum + (mesesCalculados.get(mes)?.minutos || 0), 0);
-  const faltanteMes = Math.max(0, metaMensual - actualMes);
-  const faltanteAnual = Math.max(0, metaAnual - actualAnual);
+  // ── Precursor auxiliar: 30 h/mes, sin anual ────────────────────
+  if (_esPrecursorAuxiliar) {
+    cont.innerHTML = `
+      <div class="metas-grid">
+        ${_metaMensualCard(actualMes, 30 * 60, `${fmtMes(_mesMostrado)} · Auxiliar`)}
+        ${historialCard}
+      </div>`;
+    return;
+  }
+
+  // ── Meta personal (publicador con meta propia) ──────────────────
+  if (_metaMensualPersonal) {
+    const extraHead = `
+      <button onclick="iniciarFijarMeta()" class="meta-action-btn">Editar</button>
+      <button onclick="quitarMetaPersonal()" class="meta-action-btn">Quitar</button>`;
+    cont.innerHTML = `
+      <div class="metas-grid">
+        ${_metaMensualCard(actualMes, _metaMensualPersonal * 60, fmtMes(_mesMostrado), extraHead)}
+        ${historialCard}
+      </div>`;
+    return;
+  }
+
+  // ── Sin meta: form inline o mensaje vacío ──────────────────────
+  const contenido = _editandoMeta ? `
+    <div class="meta-card">
+      <div class="meta-head"><div class="meta-title">Fijar meta mensual</div></div>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="number" id="meta-personal-input" min="1" max="200"
+            class="modal-input" style="width:80px;text-align:center;box-sizing:border-box;"
+            placeholder="hs" inputmode="numeric">
+          <span style="color:var(--text-secondary);font-size:14px;">horas / mes</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="pred-btn pred-btn-primary" onclick="guardarMetaPersonal()" style="flex:1;">Guardar</button>
+          <button class="pred-btn pred-btn-ghost"   onclick="cancelarFijarMeta()"   style="flex:1;">Cancelar</button>
+        </div>
+      </div>
+    </div>` : `
+    <div class="meta-empty" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <span>Sin metas configuradas.</span>
+      <button onclick="iniciarFijarMeta()" class="pred-btn pred-btn-ghost" style="font-size:13px;">+ Fijar meta mensual</button>
+    </div>`;
 
   cont.innerHTML = `
     <div class="metas-grid">
-      <div class="meta-card">
-        <div class="meta-head">
-          <div class="meta-title">Meta mensual</div>
-          <div class="meta-sub">${fmtMes(_mesMostrado)}</div>
-        </div>
-        <div class="meta-main">
-          <div class="meta-current">${fmtTiempo(actualMes)}</div>
-          <div class="meta-target">de ${fmtTiempo(metaMensual)}</div>
-        </div>
-        <div class="meta-bar">
-          <div class="meta-bar-fill" style="width:${metaPct(actualMes, metaMensual)}%;"></div>
-        </div>
-        <div class="meta-foot">
-          ${faltanteMes > 0 ? `Te faltan ${fmtTiempo(faltanteMes)} para llegar a la meta.` : 'Meta mensual cumplida.'}
-        </div>
-      </div>
-
-      <div class="meta-card">
-        <div class="meta-head">
-          <div class="meta-title">Meta anual</div>
-          <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
-        </div>
-        <div class="meta-main">
-          <div class="meta-current">${fmtTiempo(actualAnual)}</div>
-          <div class="meta-target">de ${fmtTiempo(metaAnual)}</div>
-        </div>
-        <div class="meta-bar">
-          <div class="meta-bar-fill" style="width:${metaPct(actualAnual, metaAnual)}%;"></div>
-        </div>
-        <div class="meta-foot">
-          ${faltanteAnual > 0 ? `Te faltan ${fmtTiempo(faltanteAnual)} para completar el año de servicio.` : 'Meta anual cumplida.'}
-        </div>
-      </div>
-
-      ${renderAnimacionRitmo(servicioDesde, mesesServicio, actualAnual, metaAnual)}
-
-      <div class="meta-card">
-        <div class="meta-head">
-          <div class="meta-title">Historial anterior</div>
-          <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
-        </div>
-        ${renderHistorialMesesAnteriores(mesesAnteriores)}
-      </div>
+      ${contenido}
+      ${historialCard}
     </div>`;
 }
 
@@ -767,6 +817,53 @@ function renderContactos(tipo, items) {
   `).join('');
   listEl.innerHTML = `<div class="contact-card">${filas}</div>`;
 }
+
+// ─────────────────────────────────────────
+//   META PERSONAL
+// ─────────────────────────────────────────
+window.iniciarFijarMeta = function() {
+  _editandoMeta = true;
+  renderMetas();
+  setTimeout(() => document.getElementById('meta-personal-input')?.focus(), 50);
+};
+
+window.cancelarFijarMeta = function() {
+  _editandoMeta = false;
+  renderMetas();
+};
+
+window.guardarMetaPersonal = async function() {
+  const val = parseInt(document.getElementById('meta-personal-input')?.value, 10);
+  if (!val || val < 1 || val > 200) {
+    uiToast('Ingresá un valor entre 1 y 200 horas', 'error');
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'usuarios', _uid), { metaMensualHoras: val });
+    _metaMensualPersonal = val;
+    _editandoMeta = false;
+    renderMetas();
+    uiToast('Meta guardada', 'success');
+  } catch {
+    uiToast('Error al guardar', 'error');
+  }
+};
+
+window.quitarMetaPersonal = async function() {
+  const ok = await uiConfirm({
+    title: 'Quitar meta', confirmText: 'Quitar', cancelText: 'Cancelar', type: 'warn',
+    msg: '¿Querés quitar tu meta mensual personal?',
+  });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, 'usuarios', _uid), { metaMensualHoras: null });
+    _metaMensualPersonal = null;
+    renderMetas();
+    uiToast('Meta eliminada', 'success');
+  } catch {
+    uiToast('Error al guardar', 'error');
+  }
+};
 
 // ─────────────────────────────────────────
 //   NAVEGACIÓN DE MES
