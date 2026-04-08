@@ -1,5 +1,98 @@
 ## Ideas pendientes (futuro)
 
+### Módulo Conferencias (PRÓXIMO — alta prioridad)
+Gestión de arreglos de discursos del fin de semana (sábados).
+
+**Contexto:**
+- Cada sábado (excepto semanas especiales) viene un orador de otra congregación
+- Ancianos y SM tienen discursos preparados con número de esquema
+- Los arreglos se coordinan entre congregaciones del circuito (hoy por WhatsApp/planillas)
+
+**Vistas necesarias:**
+- `view-salidas` — oradores de nuestra congregación que salen a otras (fecha, destino, discurso)
+- `view-entradas` — oradores que vienen a nuestra congregación (fecha, nombre, congregación origen, discurso)
+- `view-discursos` — lista de discursos preparados por publicador (anciano/SM con sus esquemas)
+- `view-congregaciones` — congregaciones del circuito (nombre, contacto)
+
+**Schema Firestore propuesto:**
+```
+congregaciones/{congreId}/
+  conferencias/{docId}
+    fecha: "YYYY-MM-DD" (sábado)
+    tipo: "entrada" | "salida"
+    pubId: null | "id"              ← si es de nuestra congregación
+    nombreExterno: null | "string"  ← si es de otra congregación (entrada)
+    congregacionId: null | "id"     ← ref a congregacionesCircuito
+    congregacionNombre: "string"    ← desnormalizado para display
+    discursoNumero: 123
+    discursoTitulo: "string"
+    notas: null | "string"
+  congregacionesCircuito/{circId}
+    nombre: "string"
+    contacto: null | "string"       ← nombre del encargado de conferencias
+  discursosPublicador/{pubId}
+    discursos: [{numero, titulo}]   ← subcolección o array
+```
+
+---
+
+### Geolocalización activa en predicación (ANOTAR — interesante)
+Ver en tiempo real dónde están los hermanos del grupo mientras predican.
+
+**Idea:**
+- Al salir a predicar, el hermano activa "Compartir ubicación" (opt-in explícito)
+- Su posición se escribe en Firestore en tiempo real
+- Los demás del grupo la ven como puntitos en `mapa.html`
+
+**Técnico:**
+- `navigator.geolocation.watchPosition()` → escribe en `congregaciones/{id}/sesiones/{salidaId}/ubicaciones/{uid}` con TTL
+- `mapa.html` escucha con `onSnapshot` y pinta markers dinámicos
+- Solo visible para tu grupo, solo mientras la sesión está activa
+- Se limpia automáticamente al cerrar (TTL en Firestore o cleanup en `beforeunload`)
+- Privacidad: completamente opt-in, desactivable en cualquier momento
+
+---
+
+### Asistencia a reuniones (ANOTAR — simple)
+Registrar asistencia por reunión en Administrador.
+
+- Un botón extra en Administrador → vista simple con lista de hermanos + checkbox por reunión
+- Firestore: `asistencias/{fechaISO}` con array de pubIds presentes
+- Útil internamente para detectar irregularidad (no se reporta a la sede)
+- Vista mensual con porcentajes por hermano
+
+---
+
+### Notificaciones push (ANOTAR — Firebase Messaging)
+Notificaciones automáticas para recordar responsabilidades próximas.
+
+**Casos de uso:**
+- Tenés una asignación en los próximos 7 días (lector, sonido, etc.)
+- Falta menos de 2 semanas para una semana especial (asamblea, conmemoración, etc.)
+- (Futuro) Te toca limpieza del Salón
+
+**Técnico:**
+- Firebase Cloud Messaging (FCM) — pide permiso de notificaciones al usuario
+- Service worker ya existe (`sw.js`) — agregar handler de mensajes push
+- Requiere backend ligero (Cloud Function) que corra periódicamente y detecte próximos eventos
+- Alternativa sin backend: recordatorio local con `Notification API` + `setTimeout` al abrir la app
+
+---
+
+### Limpieza del Salón del Reino (ANOTAR)
+- Registrar el esquema rotativo de limpieza por grupos
+- Ver quién le toca esta semana y la próxima
+- Notificación push días antes del turno (se integra con el sistema de notificaciones)
+- No requiere swapping, solo visibilidad del calendario
+
+---
+
+### Auditoría — log de cambios (ANOTAR)
+- ⬜ Registrar en Firestore quién hizo qué y cuándo en acciones importantes
+- Colección `congregaciones/{congreId}/auditoria/{entryId}` con `uid`, `accion`, `datos`, `fecha`
+- Acciones a auditar: crear/editar/eliminar hermano, cambiar asignación, modificar semana especial, cambiar rol de usuario
+- Vista en `admin.html` para revisar el log
+
 ### Dashboard de estadísticas (más adelante)
 - Territorios trabajados por mes/gráfico
 - Publicadores más activos

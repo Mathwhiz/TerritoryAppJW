@@ -237,6 +237,18 @@ async function init(uid) {
   _uid = uid;
   showView('view-app');
   renderMonthLabel();
+
+  // Si el publicador vinculado tiene PRECURSOR_REGULAR en sus roles, activar metas
+  if (!_esPrecursorRegular && _user?.matchedPublisherId && _user?.congregacionId) {
+    try {
+      const pubSnap = await getDoc(doc(db, 'congregaciones', _user.congregacionId, 'publicadores', _user.matchedPublisherId));
+      if (pubSnap.exists()) {
+        const pubRoles = pubSnap.data().roles || [];
+        if (pubRoles.includes('PRECURSOR_REGULAR')) _esPrecursorRegular = true;
+      }
+    } catch {}
+  }
+
   await cargarHistorial(false);
   await cargarMes();
   renderHistorial();
