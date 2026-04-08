@@ -54,6 +54,7 @@ let congreNombre = null;
 let pinVM       = null;
 let publicadores = [];
 let semanaData  = null;  // programa de la semana actualmente cargada/editada
+let _semanaModificada = false;
 let modoEncargado = false;
 let vmInitReady = false;
 let tieneAuxiliar = false;
@@ -306,6 +307,7 @@ function getSlotPubId(key) {
 
 function setSlotPubId(key, pubId) {
   if (!semanaData) return;
+  _marcarModificada();
   const parts = key.split('.');
   switch (parts[0]) {
     case 'presidente':      semanaData.presidente = pubId; break;
@@ -422,6 +424,7 @@ window.navSemanaPublico = async function(dir) {
 
 window.navSemana = async function(dir) {
   if (!semanasLista.length || !semanaData) return;
+  await _confirmarSiModificada();
   // semanasLista está en orden desc: dir=+1 (siguiente/más nueva) → índice menor
   const idx = semanasLista.findIndex(s => s.fecha === semanaData.fecha);
   if (idx === -1) return;
@@ -439,7 +442,8 @@ function updateNavBtnsSemana() {
   if (btnNext) btnNext.disabled = idx === -1 || idx <= 0;
 }
 
-window.goToMenuEnc = function() {
+window.goToMenuEnc = async function() {
+  await _confirmarSiModificada();
   const sub = document.getElementById('menu-enc-congre-sub');
   if (sub) sub.textContent = congreNombre || '—';
   showView('view-menu-enc');
@@ -451,6 +455,7 @@ window.cerrarSesionVM = function() {
 };
 
 window.goToSemanas = async function() {
+  await _confirmarSiModificada();
   uiLoading.show('Cargando…');
   await ensureVmLookupsLoaded();
   document.getElementById('semanas-congre-sub').textContent = congreNombre || '—';
@@ -518,6 +523,7 @@ window.goToSemana = async function(fecha) {
       return;
     }
   }
+  _semanaModificada = false;
   document.getElementById('semana-titulo-display').textContent = 'Semana del ' + fmtDisplay(semanaData.fecha);
   renderSemanaEdit();
   showView('view-semana');
@@ -1117,6 +1123,7 @@ function renderSemanaEdit() {
 // ─────────────────────────────────────────
 window.onTituloChange = function(key, value) {
   if (!semanaData) return;
+  _marcarModificada();
   const parts = key.split('.');
   if (parts[0] === 'cancion') {
     const campo = { apertura: 'cancionApertura', intermedia: 'cancionIntermedia', cierre: 'cancionCierre' }[parts[1]];
@@ -1137,6 +1144,7 @@ window.onTituloChange = function(key, value) {
 
 window.onInstruccionChange = function(key, value) {
   if (!semanaData) return;
+  _marcarModificada();
   const parts = key.split('.');
   if (parts[0] === 'ministerio') {
     const idx = parseInt(parts[1]);
@@ -1166,6 +1174,7 @@ window.asignarSlot = async function(key) {
 
 window.agregarParte = function(seccion) {
   if (!semanaData) return;
+  _marcarModificada();
   if (seccion === 'ministerio') {
     if ((semanaData.ministerio?.length || 0) >= 4) { uiToast('Máximo 4 partes en esta sección', 'error'); return; }
     semanaData.ministerio = semanaData.ministerio || [];
@@ -1180,6 +1189,7 @@ window.agregarParte = function(seccion) {
 
 window.quitarParte = function(seccion, idx) {
   if (!semanaData) return;
+  _marcarModificada();
   if (seccion === 'ministerio') {
     if ((semanaData.ministerio?.length || 0) <= 1) { uiToast('Debe haber al menos una parte', 'error'); return; }
     semanaData.ministerio.splice(idx, 1);
@@ -1190,6 +1200,32 @@ window.quitarParte = function(seccion, idx) {
   renderSemanaEdit();
 };
 
+function _marcarModificada() {
+  _semanaModificada = true;
+  const btn = document.querySelector('#vm-action-bar .btn-primary');
+  if (btn) btn.textContent = 'Guardar *';
+}
+
+function _resetModificada() {
+  _semanaModificada = false;
+  const btn = document.querySelector('#vm-action-bar .btn-primary');
+  if (btn) btn.textContent = 'Guardar';
+}
+
+async function _confirmarSiModificada() {
+  if (!_semanaModificada) return true;
+  const resp = await uiConfirm({
+    title: '¿Guardar cambios?',
+    msg: 'Hay cambios sin guardar en esta semana.',
+    confirmText: 'Guardar',
+    cancelText: 'Descartar',
+    type: 'warn',
+  });
+  if (resp) await window.guardarSemana();
+  _semanaModificada = false;
+  return true;
+}
+
 window.guardarSemana = async function() {
   if (!semanaData) return;
   uiLoading.show('Guardando…');
@@ -1197,6 +1233,7 @@ window.guardarSemana = async function() {
     const ref = doc(db, 'congregaciones', congreId, 'vidaministerio', semanaData.fecha);
     await setDoc(ref, semanaData);
     await setDoc(doc(db, 'congregaciones', congreId, 'vm_programa', semanaData.fecha), toPublicVmSemana(semanaData));
+    _resetModificada();
     uiLoading.hide();
     uiToast('Programa guardado', 'success');
   } catch(e) {
@@ -1674,6 +1711,7 @@ window.autocompletarHermanos = async function() {
 
   const colas = calcularColasVM();
   autoAsignarSemana(semanaData, colas, { soloVacios: true });
+  _marcarModificada();
   renderSemanaEdit();
   uiToast('Hermanos auto-asignados', 'success');
 };
@@ -1694,6 +1732,7 @@ window.reimportarDeWOL = async function() {
     const importado = parseWOL(html);
     if (!importado) throw new Error('No se reconoció el formato de la página.');
     aplicarWOLaSemana(importado);
+    _marcarModificada();
     uiLoading.hide();
     renderSemanaEdit();
     uiToast('Programa importado de WOL', 'success');

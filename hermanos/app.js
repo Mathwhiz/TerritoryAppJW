@@ -895,6 +895,26 @@ const TIPO_COLORS = {
   asamblea:        { color: '#F09595', bg: 'rgba(240,149,149,0.08)' },
 };
 
+function especialLabel(e) {
+  if (!e) return '';
+  if (e.tipo === 'asamblea') {
+    if (e.subtipo === 'regional') return 'Asamblea Regional';
+    if (e.subtipo === 'circuito') return 'Asamblea de Circuito';
+  }
+  return TIPO_LABELS[e.tipo] || e.tipo;
+}
+
+function hoyISO() {
+  return fmtDateLocal(new Date());
+}
+
+function addDaysIso(iso, days) {
+  const d = isoToDate(iso);
+  if (!d) return iso;
+  d.setDate(d.getDate() + days);
+  return fmtDateLocal(d);
+}
+
 function fmtFechaCorta(iso) {
   if (!iso) return '';
   const [y,m,d] = iso.split('-');
@@ -919,8 +939,40 @@ async function cargarEspeciales() {
 
 function renderEspecialesList() {
   const el = document.getElementById('especiales-lista');
+  const resumenEl = document.getElementById('especiales-resumen');
   if (!el) return;
   const entries = Object.entries(semanasEspeciales).sort(([a],[b]) => a.localeCompare(b));
+  const hoy = hoyISO();
+  const lunesActual = lunesISO(new Date(hoy + 'T12:00:00'));
+  const actual = entries.find(([lunes]) => lunes === lunesActual) || null;
+  const proximo = entries.find(([lunes]) => lunes > lunesActual) || (!actual ? entries.find(([lunes]) => lunes >= lunesActual) : null) || null;
+
+  if (resumenEl) {
+    const bloques = [];
+    if (actual) {
+      const [lunes, e] = actual;
+      bloques.push(`
+        <div class="especiales-summary-card">
+          <div class="especiales-summary-kicker">Esta semana</div>
+          <div class="especiales-summary-title">${especialLabel(e)}</div>
+          <div class="especiales-summary-sub">Semana del ${fmtFechaCorta(lunes)} al ${fmtFechaCorta(addDaysIso(lunes, 6))}</div>
+        </div>
+      `);
+    }
+    if (proximo) {
+      const [lunes, e] = proximo;
+      bloques.push(`
+        <div class="especiales-summary-card">
+          <div class="especiales-summary-kicker">Próximo evento</div>
+          <div class="especiales-summary-title">${especialLabel(e)}</div>
+          <div class="especiales-summary-sub">Semana del ${fmtFechaCorta(lunes)} al ${fmtFechaCorta(addDaysIso(lunes, 6))}</div>
+        </div>
+      `);
+    }
+    resumenEl.className = 'especiales-resumen';
+    resumenEl.innerHTML = bloques.join('');
+  }
+
   if (!entries.length) {
     el.innerHTML = '<div class="especiales-empty">Sin semanas especiales configuradas.</div>';
     return;
@@ -930,14 +982,22 @@ function renderEspecialesList() {
     const lunesDate   = isoToDate(lunes);
     const domingoDate = new Date(lunesDate); domingoDate.setDate(lunesDate.getDate() + 6);
     const rango = `${fmtFechaCorta(lunes)} – ${fmtFechaCorta(fmtDateLocal(domingoDate))}`;
-    const label = TIPO_LABELS[e.tipo] || e.tipo;
+    const label = especialLabel(e);
     const extra = (e.tipo === 'conmemoracion' && e.fechaEvento !== lunes)
-      ? `  ·  evento: ${fmtFechaCorta(e.fechaEvento)}` : '';
-    return `<div class="especial-item">
+      ? `Evento: ${fmtFechaCorta(e.fechaEvento)}`
+      : (e.tipo === 'asamblea' && e.fechaEvento ? `Fecha cargada: ${fmtFechaCorta(e.fechaEvento)}` : '');
+    const isCurrent = lunes === lunesActual;
+    const isNext = proximo && proximo[0] === lunes;
+    return `<div class="especial-item${isCurrent ? ' is-current' : ''}${isNext ? ' is-next' : ''}">
       <div class="especial-dot" style="background:${color};"></div>
       <div class="especial-info">
+        <div class="especial-meta">
+          ${isCurrent ? '<span class="especial-chip current">Esta semana</span>' : ''}
+          ${isNext ? '<span class="especial-chip next">Próximo</span>' : ''}
+          <span class="especial-range">${rango}</span>
+        </div>
         <div class="especial-label">${label}</div>
-        <div class="especial-fecha">${rango}${extra}</div>
+        <div class="especial-fecha">${extra || 'Semana marcada como especial para el resto de la app.'}</div>
       </div>
       <button class="especial-del-btn" onclick="eliminarEspecial('${lunes}')">×</button>
     </div>`;
@@ -951,6 +1011,7 @@ window.toggleFormEspecial = function() {
   f.style.display = visible ? 'none' : '';
   if (!visible) {
     document.getElementById('esp-tipo').value = 'conmemoracion';
+    document.getElementById('esp-subtipo').value = 'circuito';
     document.getElementById('esp-fecha').value = '';
     window.actualizarLabelFechaEsp();
   }
@@ -959,6 +1020,8 @@ window.toggleFormEspecial = function() {
 window.actualizarLabelFechaEsp = function() {
   const tipo = document.getElementById('esp-tipo')?.value;
   const lbl  = document.getElementById('esp-fecha-label');
+  const subtipoWrap = document.getElementById('esp-subtipo-wrap');
+  if (subtipoWrap) subtipoWrap.style.display = tipo === 'asamblea' ? '' : 'none';
   if (lbl) lbl.textContent = tipo === 'conmemoracion'
     ? 'Fecha exacta del evento'
     : 'Fecha de la semana (cualquier día)';
@@ -967,15 +1030,16 @@ window.actualizarLabelFechaEsp = function() {
 window.guardarEspecial = async function() {
   const tipo  = document.getElementById('esp-tipo')?.value;
   const fecha = document.getElementById('esp-fecha')?.value;
+  const subtipo = document.getElementById('esp-subtipo')?.value || 'circuito';
   if (!tipo || !fecha) { await uiAlert('Completá todos los campos.'); return; }
   const lunes = lunesISO(new Date(fecha + 'T12:00:00'));
-  const data  = { tipo, fechaEvento: fecha };
+  const data  = { tipo, fechaEvento: fecha, ...(tipo === 'asamblea' ? { subtipo } : {}) };
   try {
     await setDoc(doc(db, 'congregaciones', CONGRE_ID, 'semanasEspeciales', lunes), data);
     semanasEspeciales[lunes] = data;
     renderEspecialesList();
     window.toggleFormEspecial();
-    uiToast(`${TIPO_LABELS[tipo]} guardada`, 'success');
+    uiToast(`${especialLabel(data)} guardada`, 'success');
   } catch(e) { await uiAlert('Error al guardar: ' + e.message); }
 };
 

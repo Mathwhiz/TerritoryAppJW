@@ -110,6 +110,10 @@
         </div>
       </button>
 
+      <button id="btn-ver-planilla" class="btn-secondary" onclick="abrirPlanilla()" style="width:100%;margin-top:14px;display:none;">
+        📊 Ver planilla
+      </button>
+
       <a href="../index.html#menu" class="cs-back-btn">← Volver al módulo</a>
 
     </div>
@@ -255,14 +259,22 @@
       <button class="btn-esp-add" onclick="toggleFormEspecial()" style="width:36px;height:36px;font-size:22px;">+</button>
     </div>
 
+    <div id="especiales-resumen"></div>
     <div id="especiales-lista"><div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div></div>
 
-    <div id="especiales-form" style="display:none;background:#1e2023;border:1px solid #2e3033;border-radius:14px;padding:14px 16px;margin-top:12px;">
+    <div id="especiales-form" class="especiales-form-card" style="display:none;">
       <select id="esp-tipo" onchange="actualizarLabelFechaEsp()" class="esp-select">
         <option value="conmemoracion">Conmemoración</option>
         <option value="superintendente">Visita superintendente</option>
         <option value="asamblea">Asamblea</option>
       </select>
+      <div id="esp-subtipo-wrap" class="esp-field" style="display:none;">
+        <label class="esp-label">Tipo de asamblea</label>
+        <select id="esp-subtipo" class="esp-select" style="margin-bottom:0;">
+          <option value="circuito">Asamblea de Circuito</option>
+          <option value="regional">Asamblea Regional</option>
+        </select>
+      </div>
       <div class="esp-field">
         <label id="esp-fecha-label" class="esp-label">Fecha exacta del evento</label>
         <input type="date" id="esp-fecha" class="esp-date-input">
@@ -272,10 +284,6 @@
         <button class="btn-save" onclick="guardarEspecial()" style="flex:2;">Guardar</button>
       </div>
     </div>
-
-    <button id="btn-ver-planilla" class="btn-secondary" onclick="abrirPlanilla()" style="width:100%;margin-top:16px;display:none;">
-      📊 Ver planilla
-    </button>
 
     <div style="height:2rem;"></div>
   </div>
