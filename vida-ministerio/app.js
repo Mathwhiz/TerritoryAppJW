@@ -888,6 +888,16 @@ function renderParteItem(key, label, parte, opts = {}) {
     ? `<button class="btn-quitar-parte" onclick="${opts.onRemove}" title="Quitar">×</button>`
     : '';
   const dur = parte?.duracion ? `<span class="parte-dur-badge">${parte.duracion} min</span>` : '';
+
+  // Discurso de ministerio con sala auxiliar: una persona por sala, sin ayudante
+  const esMinisterio = key.startsWith('ministerio.');
+  const spLabel = (tieneAuxiliar && esMinisterio)
+    ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
+  const auxHtml = (tieneAuxiliar && esMinisterio)
+    ? `<div class="sala-divider"><span>Sala Auxiliar</span></div>
+       ${renderAsigBtn(key + '.salaAux', parte?.salaAux?.pubId, 'Asignar hermano')}`
+    : '';
+
   return `<div class="parte-item">
     <div class="parte-meta-row">
       <span class="parte-label-text">${label}</span>${dur}${quitar}
@@ -897,7 +907,9 @@ function renderParteItem(key, label, parte, opts = {}) {
            placeholder="Título de la parte…"
            value="${esc(parte?.titulo || '')}"
            oninput="onTituloChange('${key}', this.value)">
+    ${spLabel}
     ${renderAsigBtn(key, parte?.pubId, 'Asignar hermano')}
+    ${auxHtml}
   </div>`;
 }
 
@@ -1372,10 +1384,15 @@ function construirSlotsOrdenados(semana) {
   ministerio.forEach((parte, i) => {
     const rol = TIPO_MIN_ROL[parte.tipo] || 'VM_MINISTERIO_CONVERSACION';
     slots.push({ key: `ministerio.${i}`, rolRequerido: rol });
-    if (parte.tipo !== 'discurso') {
+    if (parte.tipo === 'discurso') {
+      // Discurso: sin ayudante, pero sala auxiliar sí tiene su propia persona
+      if (tieneAuxiliar) {
+        slots.push({ key: `ministerio.${i}.salaAux`, rolRequerido: rol, esSalaAux: true });
+      }
+    } else {
       slots.push({ key: `ministerio.${i}.ayudante`, rolRequerido: rol, esAyudante: true });
       if (tieneAuxiliar) {
-        slots.push({ key: `ministerio.${i}.salaAux`,         rolRequerido: rol, esSalaAux: true });
+        slots.push({ key: `ministerio.${i}.salaAux`,          rolRequerido: rol, esSalaAux: true });
         slots.push({ key: `ministerio.${i}.salaAux.ayudante`, rolRequerido: rol, esSalaAux: true, esAyudante: true });
       }
     }
