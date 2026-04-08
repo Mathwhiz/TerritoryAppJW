@@ -1193,11 +1193,11 @@ function limpiaTitulo(text) {
   return text.replace(/^\d+\.\s*/, '').trim();
 }
 
-// Detecta el tipo de parte de "Seamos mejores maestros" desde el título
+// Detecta el tipo de parte de "Seamos mejores maestros" desde el título e instrucción.
 // tipo === 'discurso' → solo 1 participante (sin ayudante)
 // los demás → estudiante principal + ayudante
-function tipoMinisterioDesdeWOL(titulo) {
-  const t = titulo.toLowerCase();
+function tipoMinisterioDesdeWOL(titulo, instruccion) {
+  const t = (titulo + ' ' + (instruccion || '')).toLowerCase();
   if (t.includes('conversación') || t.includes('conversacion')) return 'conversacion';
   if (t.includes('revisita'))                                    return 'revisita';
   if (t.includes('escenificación') || t.includes('escenificacion')) return 'escenificacion';
@@ -1270,7 +1270,7 @@ function parseWOL(html) {
 
   const ministerio = ministrioParts.length
     ? ministrioParts.map(p => {
-        const tipo = tipoMinisterioDesdeWOL(p.titulo);
+        const tipo = tipoMinisterioDesdeWOL(p.titulo, p.instruccion);
         const base = { titulo: p.titulo, tipo, duracion: p.duracion, instruccion: p.instruccion ?? null, pubId: null };
         return tipo === 'discurso' ? base : { ...base, ayudante: null };
       })
