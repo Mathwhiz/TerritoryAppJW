@@ -977,7 +977,7 @@ function renderEspecialesList() {
     el.innerHTML = '<div class="especiales-empty">Sin semanas especiales configuradas.</div>';
     return;
   }
-  el.innerHTML = entries.map(([lunes, e]) => {
+  const makeCard = ([lunes, e]) => {
     const { color } = TIPO_COLORS[e.tipo] || { color: '#eee' };
     const lunesDate   = isoToDate(lunes);
     const domingoDate = new Date(lunesDate); domingoDate.setDate(lunesDate.getDate() + 6);
@@ -1001,7 +1001,27 @@ function renderEspecialesList() {
       </div>
       <button class="especial-del-btn" onclick="eliminarEspecial('${lunes}')">×</button>
     </div>`;
-  }).join('');
+  };
+
+  const futuras = entries.filter(([lunes]) => lunes > lunesActual);
+  const actuales = entries.filter(([lunes]) => lunes === lunesActual);
+  const pasadas = entries.filter(([lunes]) => lunes < lunesActual);
+
+  const bloques = [];
+  if (actuales.length) {
+    bloques.push(`<div class="especiales-section-label">Esta semana</div>`);
+    bloques.push(actuales.map(makeCard).join(''));
+  }
+  if (futuras.length) {
+    bloques.push(`<div class="especiales-section-label">Próximas</div>`);
+    bloques.push(futuras.reverse().map(makeCard).join(''));
+  }
+  if (pasadas.length) {
+    bloques.push(`<div class="especiales-section-label">Pasadas</div>`);
+    bloques.push(pasadas.map(([lunes, e]) => makeCard([lunes, e]).replace('especial-item', 'especial-item is-past')).join(''));
+  }
+
+  el.innerHTML = bloques.join('');
 }
 
 window.toggleFormEspecial = function() {
