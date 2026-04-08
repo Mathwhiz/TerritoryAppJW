@@ -1,5 +1,6 @@
 import { db } from '../shared/firebase.js';
 import '../shared/auth.js';
+import { logActividad } from '../shared/actividad.js';
 import {
   doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
   collection, getDocs, serverTimestamp
@@ -257,6 +258,8 @@ async function init(uid) {
   // Meta mensual personal (guardada en el doc del usuario)
   _metaMensualPersonal = typeof _user?.metaMensualHoras === 'number' ? _user.metaMensualHoras : null;
 
+  if (_user?.congregacionId) logActividad(_user.congregacionId, 'predicacion', 'apertura');
+
   await cargarHistorial(false);
   await cargarMes();
   renderHistorial();
@@ -356,6 +359,8 @@ async function guardarDia(fecha, minutos, extras = {}) {
     estudios:  _dataMes.estudios  || 0,
     updatedAt: serverTimestamp(),
   }, { merge: true });
+
+  if (_user?.congregacionId) logActividad(_user.congregacionId, 'predicacion', 'guardado', 'Tiempo registrado');
 }
 
 // Solo guarda revisitas/estudios (contadores)
