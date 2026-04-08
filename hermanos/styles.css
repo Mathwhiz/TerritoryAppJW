@@ -307,6 +307,12 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   margin-top: 14px;
   box-shadow: 0 18px 42px rgba(0,0,0,0.18);
 }
+.esp-form-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
 .especiales-resumen {
   display: grid;
   gap: 10px;
@@ -437,6 +443,33 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   cursor: pointer; padding: 2px 4px; border-radius: 6px; flex-shrink: 0;
 }
 .especial-del-btn:hover { color: #F09595; background: rgba(160,45,45,0.15); }
+.especial-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.especial-edit-btn,
+.especial-del-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.especial-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.especial-edit-btn:hover {
+  color: #9b93ee;
+  background: rgba(127,119,221,0.15);
+}
 .esp-select {
   width: 100%; background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: 8px;
   padding: 8px 10px; color: var(--text-primary); font-size: 14px; margin-bottom: 8px;

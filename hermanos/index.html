@@ -263,6 +263,7 @@
     <div id="especiales-lista"><div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">Cargando…</div></div></div>
 
     <div id="especiales-form" class="especiales-form-card" style="display:none;">
+      <div id="esp-form-title" class="esp-form-title">Nuevo evento especial</div>
       <select id="esp-tipo" onchange="actualizarLabelFechaEsp()" class="esp-select">
         <option value="conmemoracion">Conmemoración</option>
         <option value="superintendente">Visita superintendente</option>
@@ -281,7 +282,7 @@
       </div>
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn-secondary" onclick="toggleFormEspecial()" style="flex:1;">Cancelar</button>
-        <button class="btn-save" onclick="guardarEspecial()" style="flex:2;">Guardar</button>
+        <button id="btn-guardar-especial" class="btn-save" onclick="guardarEspecial()" style="flex:2;">Guardar</button>
       </div>
     </div>
 

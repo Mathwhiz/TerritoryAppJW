@@ -117,6 +117,7 @@ let pinBuffer       = '';
 let editandoId      = null;
 let sheetsUrl       = null;
 let semanasEspeciales = {};
+let _especialEditLunes = null;
 let _modalSexo      = null; // 'H' | 'M' | null
 let listaVisible    = [];   // hermanos actualmente visibles en la lista (respetando filtros)
 let _gruposPubs     = [];
@@ -999,7 +1000,10 @@ function renderEspecialesList() {
         <div class="especial-label">${label}</div>
         <div class="especial-fecha">${extra || 'Semana marcada como especial para el resto de la app.'}</div>
       </div>
-      <button class="especial-del-btn" onclick="eliminarEspecial('${lunes}')">×</button>
+      <div class="especial-actions">
+        <button class="especial-edit-btn" onclick="editarEspecial('${lunes}')" title="Editar">✎</button>
+        <button class="especial-del-btn" onclick="eliminarEspecial('${lunes}')" title="Eliminar">×</button>
+      </div>
     </div>`;
   };
 
@@ -1029,12 +1033,38 @@ window.toggleFormEspecial = function() {
   if (!f) return;
   const visible = f.style.display !== 'none';
   f.style.display = visible ? 'none' : '';
-  if (!visible) {
+  if (visible) {
+    _especialEditLunes = null;
+    const title = document.getElementById('esp-form-title');
+    const saveBtn = document.getElementById('btn-guardar-especial');
+    if (title) title.textContent = 'Nuevo evento especial';
+    if (saveBtn) saveBtn.textContent = 'Guardar';
+  } else {
     document.getElementById('esp-tipo').value = 'conmemoracion';
     document.getElementById('esp-subtipo').value = 'circuito';
     document.getElementById('esp-fecha').value = '';
+    const title = document.getElementById('esp-form-title');
+    const saveBtn = document.getElementById('btn-guardar-especial');
+    if (title) title.textContent = _especialEditLunes ? 'Editar evento especial' : 'Nuevo evento especial';
+    if (saveBtn) saveBtn.textContent = _especialEditLunes ? 'Guardar cambios' : 'Guardar';
     window.actualizarLabelFechaEsp();
   }
+};
+
+window.editarEspecial = function(lunes) {
+  const item = semanasEspeciales[lunes];
+  if (!item) return;
+  _especialEditLunes = lunes;
+  const f = document.getElementById('especiales-form');
+  if (f) f.style.display = '';
+  document.getElementById('esp-tipo').value = item.tipo || 'conmemoracion';
+  document.getElementById('esp-subtipo').value = item.subtipo || 'circuito';
+  document.getElementById('esp-fecha').value = item.fechaEvento || lunes;
+  const title = document.getElementById('esp-form-title');
+  const saveBtn = document.getElementById('btn-guardar-especial');
+  if (title) title.textContent = 'Editar evento especial';
+  if (saveBtn) saveBtn.textContent = 'Guardar cambios';
+  window.actualizarLabelFechaEsp();
 };
 
 window.actualizarLabelFechaEsp = function() {
@@ -1055,8 +1085,13 @@ window.guardarEspecial = async function() {
   const lunes = lunesISO(new Date(fecha + 'T12:00:00'));
   const data  = { tipo, fechaEvento: fecha, ...(tipo === 'asamblea' ? { subtipo } : {}) };
   try {
+    if (_especialEditLunes && _especialEditLunes !== lunes) {
+      await deleteDoc(doc(db, 'congregaciones', CONGRE_ID, 'semanasEspeciales', _especialEditLunes));
+      delete semanasEspeciales[_especialEditLunes];
+    }
     await setDoc(doc(db, 'congregaciones', CONGRE_ID, 'semanasEspeciales', lunes), data);
     semanasEspeciales[lunes] = data;
+    _especialEditLunes = null;
     renderEspecialesList();
     window.toggleFormEspecial();
     uiToast(`${especialLabel(data)} guardada`, 'success');
