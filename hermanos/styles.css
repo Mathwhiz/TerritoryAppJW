@@ -269,8 +269,11 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .btn-secondary:hover { border-color: var(--border-light); color: var(--text-primary); }
 .btn-planilla-menu {
   width: 100%;
+  flex: none;
+  display: block;
+  align-self: stretch;
   margin-top: 14px;
-  padding: 10px 14px;
+  padding: 9px 14px;
   font-size: 13px;
   line-height: 1.1;
   font-weight: 600;
@@ -320,7 +323,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #c9c5ff;
   margin-bottom: 6px;
 }
 .especiales-summary-title {
@@ -330,7 +333,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .especiales-summary-sub {
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   margin-top: 5px;
   line-height: 1.5;
 }
@@ -339,7 +342,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #b7b2ff;
   margin: 12px 2px 8px;
 }
 .especiales-section-label:first-child {
@@ -404,7 +407,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .light-mode .especiales-summary-kicker,
 .light-mode .especiales-section-label {
-  color: var(--text-muted);
+  color: #5f57d6;
 }
 .light-mode .especiales-summary-title,
 .light-mode .especiales-summary-sub,
@@ -412,6 +415,9 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 .light-mode .especial-fecha,
 .light-mode .especial-range {
   color: var(--text-primary);
+}
+.light-mode .especiales-summary-card {
+  box-shadow: 0 10px 24px rgba(96, 87, 214, 0.08);
 }
 .light-mode .especial-chip.current {
   background: rgba(127,119,221,0.08);
