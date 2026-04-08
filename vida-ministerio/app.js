@@ -56,6 +56,7 @@ let publicadores = [];
 let semanaData  = null;  // programa de la semana actualmente cargada/editada
 let modoEncargado = false;
 let tieneAuxiliar = false;
+let presidenteEsOradorFinal = false;
 let semanasLista      = [];  // cache para navegación encargado (orden desc)
 let pubFecha          = null; // fecha activa en vista pública
 let vmEspeciales      = {};   // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
@@ -458,15 +459,21 @@ window.goToSemanas = async function() {
 
 window.goToConfig = function() {
   document.getElementById('config-aux').checked = tieneAuxiliar;
+  document.getElementById('config-presidente-orador').checked = presidenteEsOradorFinal;
   showView('view-config');
 };
 
 window.guardarConfig = async function() {
-  const nuevo = document.getElementById('config-aux').checked;
+  const nuevoAux      = document.getElementById('config-aux').checked;
+  const nuevoPresOrad = document.getElementById('config-presidente-orador').checked;
   uiLoading.show('Guardando…');
   try {
-    await setDoc(doc(db, 'congregaciones', congreId), { tieneAuxiliar: nuevo }, { merge: true });
-    tieneAuxiliar = nuevo;
+    await setDoc(doc(db, 'congregaciones', congreId), {
+      tieneAuxiliar: nuevoAux,
+      presidenteEsOradorFinal: nuevoPresOrad,
+    }, { merge: true });
+    tieneAuxiliar           = nuevoAux;
+    presidenteEsOradorFinal = nuevoPresOrad;
     await syncVmPublicConfig();
     uiLoading.hide();
     uiToast('Configuración guardada', 'success');
@@ -1536,6 +1543,14 @@ function autoAsignarSemana(semana, colas, { soloVacios = false } = {}) {
   for (const slot of slots) {
     if (soloVacios && getSlotPubIdFromSemana(semana, slot.key)) continue;
 
+    // Oración de cierre = presidente cuando la opción está activa
+    if (presidenteEsOradorFinal && slot.key === 'oracionCierre') {
+      const presId = getSlotPubIdFromSemana(semana, 'presidente');
+      if (presId) setSlotPubIdOnSemana(semana, 'oracionCierre', presId);
+      // No agregamos al Set para no bloquear al presidente en otros slots
+      continue;
+    }
+
     const rolId = slot.rolRequerido;
     const cola = colas[rolId];
     if (!cola || cola.length === 0) continue;
@@ -1916,7 +1931,8 @@ window.exportarMesASheets = async function() {
     const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
     const mergedConfig = { ...data, ...privateData };
     pinVM = mergedConfig.pinVidaMinisterio || data.pinVidaMinisterio || '1234';
-    tieneAuxiliar = data.tieneAuxiliar === true;
+    tieneAuxiliar           = data.tieneAuxiliar === true;
+    presidenteEsOradorFinal = data.presidenteEsOradorFinal === true;
     vmScriptUrl = mergedConfig.scriptUrl || data.scriptUrl || null;
     await syncVmPublicConfig();
     await cargarPublicadores();
