@@ -35,6 +35,7 @@ var SECCIONES_BG = {
 };
 
 function doPost(e) {
+  Logger.log('doPost ejecutado. postData: ' + JSON.stringify(e?.postData));
   try {
     var payload = JSON.parse(e.postData.contents);
     var ss      = SpreadsheetApp.getActiveSpreadsheet();
