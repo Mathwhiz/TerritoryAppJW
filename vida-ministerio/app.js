@@ -1949,13 +1949,20 @@ window.abrirPickerAuxMes = async function(mesISO) {
       .filter(Boolean)
   );
 
-  // Ancianos que no son presidente en ninguna semana del mes
-  const candidatos = publicadores.filter(p =>
+  // Preferir ancianos; si no hay con ese rol, mostrar todos los varones disponibles
+  let candidatos = publicadores.filter(p =>
     (p.roles || []).includes('ANCIANO') && !presidentesDelMes.has(p.id)
   );
-
   if (!candidatos.length) {
-    await uiAlert('No hay ancianos disponibles (todos son presidentes en alguna semana de este mes).', 'Sin candidatos');
+    candidatos = publicadores.filter(p =>
+      p.sexo !== 'M' && !presidentesDelMes.has(p.id)
+    );
+  }
+  if (!candidatos.length) {
+    candidatos = publicadores.filter(p => !presidentesDelMes.has(p.id));
+  }
+  if (!candidatos.length) {
+    await uiAlert('No hay publicadores disponibles para este mes.', 'Sin candidatos');
     return;
   }
 
