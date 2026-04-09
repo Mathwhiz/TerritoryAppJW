@@ -2034,14 +2034,14 @@ function formatSemanaParaSheets(s) {
   rows.push([`2. ${joyas.duracion ?? 10} mins. Busquemos perlas escondidas`,              n(joyas.pubId), '']);
   if (tieneAuxiliar) rows.push(['', 'Sala Principal', 'Sala Auxiliar']);
   rows.push([`3. ${lb.duracion ?? 4} mins. Lectura de la Biblia`,
-    n(lb.pubId), tieneAuxiliar ? n(lb.salaAux?.pubId) : '']);
+    n(lb.pubId), tieneAuxiliar ? n(lb.ayudante) : '']);
 
   rows.push(['Seamos Mejores Maestros', '', '']);
   let num = 4;
   (s.ministerio || []).forEach(p => {
     const t  = `${num}. ${p.duracion ?? 3} mins. ${p.titulo || 'Parte'}`;
     const sp = par(p.pubId, p.ayudante);
-    const sa = tieneAuxiliar && p.tipo !== 'discurso' ? par(p.salaAux?.pubId, p.salaAux?.ayudante) : '';
+    const sa = tieneAuxiliar ? (p.tipo === 'discurso' ? n(p.salaAux?.pubId) : par(p.salaAux?.pubId, p.salaAux?.ayudante)) : '';
     rows.push([t, sp, sa]);
     num++;
   });
@@ -2064,7 +2064,7 @@ window.exportarMesASheets = async function(mesISO) {
   if (!vmScriptUrl || !mesISO) return;
   const [anio, mes] = mesISO.split('-').map(Number);
   const hojaName     = `${MESES_ES[mes-1]} ${String(anio).slice(2)}`;
-  const semanasDelMes = semanasLista.filter(s => s.fecha.startsWith(mesISO));
+  const semanasDelMes = semanasLista.filter(s => s.fecha.startsWith(mesISO)).slice().reverse();
 
   if (!semanasDelMes.length) {
     await uiAlert(`No hay semanas cargadas para ${hojaName}.`, 'Sin datos');

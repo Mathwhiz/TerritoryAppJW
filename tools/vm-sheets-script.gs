@@ -156,14 +156,32 @@ function _writeFilasConFormato(sheet, startRow, filas) {
     }
   } catch(e) { Logger.log('hdr text err: '+e); }
 
-  // 6. Fila 1 y 2 (solo al exportar el mes completo)
+  // 6. Bordes thin en toda la grilla de datos
+  try {
+    sheet.getRange(startRow, 1, n, 3)
+      .setBorder(true, true, true, true, true, true,
+                 '#000000', SpreadsheetApp.BorderStyle.SOLID);
+  } catch(e) { Logger.log('borders err: '+e); }
+
+  // 7. Centrar columnas B y C para todas las filas (nombres, sala aux, etc.)
+  try {
+    sheet.getRange(startRow, 2, n, 2).setHorizontalAlignment('center');
+  } catch(e) { Logger.log('center bc err: '+e); }
+
+  // 8. Fila 1 y 2 (solo al exportar el mes completo)
   if (startRow === 3) {
     try {
       sheet.getRange(1, 1, 1, 3).merge();
       sheet.getRange(1, 1).setBackground(BG_VERDE).setFontColor(FG_BLANCO)
         .setFontWeight('bold').setFontSize(14).setHorizontalAlignment('center');
+      sheet.getRange(1, 1, 1, 3)
+        .setBorder(true, true, true, true, null, null,
+                   '#000000', SpreadsheetApp.BorderStyle.SOLID);
       sheet.getRange(2, 1, 1, 3).merge();
       sheet.getRange(2, 1).setFontWeight('bold').setFontSize(12).setHorizontalAlignment('center');
+      sheet.getRange(2, 1, 1, 3)
+        .setBorder(true, true, true, true, null, null,
+                   '#000000', SpreadsheetApp.BorderStyle.SOLID);
     } catch(e) { Logger.log('filas 1-2 err: '+e); }
   }
 }
