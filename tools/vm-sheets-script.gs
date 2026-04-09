@@ -132,34 +132,38 @@ function _writeFilasConFormato(sheet, startRow, filas) {
     }
   }
 
-  // 3. Merges A:C solo para headers (~16 rangos, 1 llamada)
+  // 3. Merges A:C para headers (si falla, seguir igual)
   var toMerge = rSemana.concat(rTesoros, rSeamos, rVC);
   if (toMerge.length) {
-    try { sheet.getRangeList(toMerge).breakApart(); } catch(e) {}
-    sheet.getRangeList(toMerge).merge();
+    try { sheet.getRangeList(toMerge).breakApart(); } catch(e) { Logger.log('breakApart err: '+e); }
+    try { sheet.getRangeList(toMerge).merge();       } catch(e) { Logger.log('merge err: '+e); }
   }
 
-  // 4. Fondos (5 llamadas)
-  if (rSemana.length)  sheet.getRangeList(rSemana).setBackground(BG_VERDE);
-  if (rTesoros.length) sheet.getRangeList(rTesoros).setBackground(BG_GRIS);
-  if (rSeamos.length)  sheet.getRangeList(rSeamos).setBackground(BG_ORO);
-  if (rVC.length)      sheet.getRangeList(rVC).setBackground(BG_ROJO);
-  if (rSalaHdr.length) sheet.getRangeList(rSalaHdr).setBackground(BG_ORO);
+  // 4. Fondos (cada uno aislado)
+  try { if (rSemana.length)  sheet.getRangeList(rSemana).setBackground(BG_VERDE);  } catch(e) { Logger.log('bg semana: '+e); }
+  try { if (rTesoros.length) sheet.getRangeList(rTesoros).setBackground(BG_GRIS);  } catch(e) { Logger.log('bg tesoros: '+e); }
+  try { if (rSeamos.length)  sheet.getRangeList(rSeamos).setBackground(BG_ORO);    } catch(e) { Logger.log('bg seamos: '+e); }
+  try { if (rVC.length)      sheet.getRangeList(rVC).setBackground(BG_ROJO);        } catch(e) { Logger.log('bg vc: '+e); }
+  try { if (rSalaHdr.length) sheet.getRangeList(rSalaHdr).setBackground(BG_ORO);   } catch(e) { Logger.log('bg sala: '+e); }
 
-  // 5. Texto blanco + negrita en headers (2 llamadas)
+  // 5. Texto blanco + negrita en headers
   var allHdrs = toMerge.concat(rSalaHdr);
-  if (allHdrs.length) {
-    sheet.getRangeList(allHdrs).setFontColor(FG_BLANCO).setFontWeight('bold').setHorizontalAlignment('center');
-  }
+  try {
+    if (allHdrs.length) {
+      sheet.getRangeList(allHdrs).setFontColor(FG_BLANCO);
+      sheet.getRangeList(allHdrs).setFontWeight('bold');
+      sheet.getRangeList(allHdrs).setHorizontalAlignment('center');
+    }
+  } catch(e) { Logger.log('hdr text err: '+e); }
 
-  // 6. Fila 1 y 2: formato especial (2 llamadas)
-  sheet.getRange(startRow - (startRow > 2 ? 0 : 0), 1); // no-op, solo para claridad
+  // 6. Fila 1 y 2 (solo al exportar el mes completo)
   if (startRow === 3) {
-    // Solo al escribir el mes completo
-    sheet.getRange(1, 1, 1, 3).merge();
-    sheet.getRange(1, 1).setBackground(BG_VERDE).setFontColor(FG_BLANCO)
-      .setFontWeight('bold').setFontSize(14).setHorizontalAlignment('center');
-    sheet.getRange(2, 1, 1, 3).merge();
-    sheet.getRange(2, 1).setFontWeight('bold').setFontSize(12).setHorizontalAlignment('center');
+    try {
+      sheet.getRange(1, 1, 1, 3).merge();
+      sheet.getRange(1, 1).setBackground(BG_VERDE).setFontColor(FG_BLANCO)
+        .setFontWeight('bold').setFontSize(14).setHorizontalAlignment('center');
+      sheet.getRange(2, 1, 1, 3).merge();
+      sheet.getRange(2, 1).setFontWeight('bold').setFontSize(12).setHorizontalAlignment('center');
+    } catch(e) { Logger.log('filas 1-2 err: '+e); }
   }
 }
