@@ -1996,9 +1996,11 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 async function apiFetchVM(payload) {
+  console.log('[VM export] apiFetchVM start — url:', vmScriptUrl, 'action:', payload.action);
   const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), 90000);
+  const tid  = setTimeout(() => { console.log('[VM export] TIMEOUT 90s'); ctrl.abort(); }, 90000);
   try {
+    console.log('[VM export] fetch enviando…');
     await fetch(vmScriptUrl, {
       method: 'POST',
       mode: 'no-cors',
@@ -2006,6 +2008,10 @@ async function apiFetchVM(payload) {
       body: JSON.stringify(payload),
       signal: ctrl.signal,
     });
+    console.log('[VM export] fetch resolvió OK');
+  } catch(err) {
+    console.error('[VM export] fetch error:', err);
+    throw err;
   } finally {
     clearTimeout(tid);
   }
@@ -2074,16 +2080,18 @@ window.exportarMesASheets = async function(mesISO) {
     return;
   }
 
+  console.log('[VM export] exportarMesASheets — mesISO:', mesISO, 'hojaName:', hojaName, 'semanas:', semanasDelMes.length, 'vmScriptUrl:', vmScriptUrl);
   uiLoading.show(`Enviando ${hojaName} a Sheets…`);
   try {
-    // semanasLista ya tiene los datos completos en memoria — no re-fetchear Firestore
     const semanasData = semanasDelMes.map(s => ({
       fecha: s.fecha,
       filas: formatSemanaParaSheets(s),
     }));
+    console.log('[VM export] semanasData armado, filas totales:', semanasData.reduce((a,s)=>a+s.filas.length,0));
 
     const auxId = vmMesesCache[mesISO]?.encargadoSalaAuxId;
     const encargadoNombre = (tieneAuxiliar && auxId) ? (nombreDePub(auxId) || '') : '';
+    console.log('[VM export] llamando apiFetchVM…');
     await apiFetchVM({
       action: 'saveVMMes',
       hoja: hojaName,
@@ -2093,9 +2101,11 @@ window.exportarMesASheets = async function(mesISO) {
 
     uiLoading.hide();
     uiToast(`✓ Exportado a "${hojaName}"`, 'success');
+    console.log('[VM export] ✓ éxito');
   } catch(e) {
     uiLoading.hide();
     uiToast('Error: ' + e.message, 'error');
+    console.error('[VM export] catch:', e);
   }
 };
 
