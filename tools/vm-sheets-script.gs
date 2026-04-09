@@ -97,14 +97,22 @@ function _reemplazarSemana(sheet, filas) {
 
   var colA = sheet.getRange(3, 1, lastRow - 2, 1).getValues();
 
+  // Extraer día de inicio del header nuestro (ej: "Semana del 06 al..." → "06")
+  var diaMatch = headerText.match(/Semana del (\d{1,2})/i);
+  var diaInicio = diaMatch ? diaMatch[1].replace(/^0/, '') : null; // sin cero inicial para comparar
+
   var startIdx = -1; // índice 0-based dentro de colA
   var endIdx   = colA.length - 1;
 
   for (var i = 0; i < colA.length; i++) {
     var val = String(colA[i][0]).trim();
-    if (val === headerText) {
+    var esSemana = val.toLowerCase().indexOf('semana del') === 0;
+    // Match exacto O match por día de inicio (tolerante con formato distinto)
+    var esEstasSemana = val === headerText ||
+      (esSemana && diaInicio !== null && val.match(/Semana del (\d{1,2})/i)?.[1]?.replace(/^0/, '') === diaInicio);
+    if (esEstasSemana) {
       startIdx = i;
-    } else if (startIdx >= 0 && val.indexOf('Semana del') === 0) {
+    } else if (startIdx >= 0 && esSemana) {
       endIdx = i - 1;
       break;
     }
