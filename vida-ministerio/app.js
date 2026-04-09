@@ -1638,12 +1638,14 @@ function calcularColasVM() {
     }
   }
 
-  // Para cada rol: ordenar por fecha de última asignación (más antigua → va primero)
+  // Para cada rol: ordenar por fecha de última asignación (más antigua → va primero).
+  // Shuffle previo para romper empates de forma aleatoria (evita sesgo alfabético).
   const colas = {};
   ROLES_VM.forEach(r => {
     const lista = pubsConRol(r.id);
     const fechas = ultimaFecha[r.id] || {};
-    const ordenada = [...lista].sort((a, b) => {
+    const shuffled = [...lista].sort(() => Math.random() - 0.5);
+    const ordenada = shuffled.sort((a, b) => {
       const fa = fechas[a.id] || '0000-00-00'; // nunca asignado → máxima prioridad
       const fb = fechas[b.id] || '0000-00-00';
       return fa.localeCompare(fb);
