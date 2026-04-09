@@ -112,8 +112,7 @@ function _writeFilasConFormato(sheet, startRow, filas) {
 
   // 2. Clasificar filas por tipo (sin llamadas a API)
   var rSemana = [], rTesoros = [], rSeamos = [], rVC = [], rSalaHdr = [];
-  var rLabelSolo = []; // A tiene texto, B y C vacíos → merge A:C, centrado, bold
-  var rNameSolo  = []; // A vacío, B tiene nombre, C vacío → bold, 11pt
+  var rSinglePerson = []; // A tiene label, B tiene nombre, C vacío → merge B:C
 
   for (var i = 0; i < n; i++) {
     var r    = startRow + i;
@@ -132,10 +131,8 @@ function _writeFilasConFormato(sheet, startRow, filas) {
       rVC.push(ac);
     } else if (colA === '' && colB === 'Sala Principal') {
       rSalaHdr.push('B' + r + ':C' + r);
-    } else if (colA !== '' && colB === '' && colC === '') {
-      rLabelSolo.push(ac);  // etiqueta de parte single-person
-    } else if (colA === '' && colB !== '' && colC === '') {
-      rNameSolo.push('B' + r); // nombre de parte single-person
+    } else if (colA !== '' && colB !== '' && colC === '') {
+      rSinglePerson.push('B' + r + ':C' + r); // una sola persona → merge B:C
     }
   }
 
@@ -165,21 +162,13 @@ function _writeFilasConFormato(sheet, startRow, filas) {
   // Semana header: font size más grande para distinguir
   try { if (rSemana.length) sheet.getRangeList(rSemana).setFontSize(12); } catch(e) { Logger.log('semana size: '+e); }
 
-  // 5b. Label solo rows (etiquetas de partes single-person): merge A:C, centrado, bold
+  // 5b. Single-person rows: merge B:C → nombre centrado en espacio B+C
   try {
-    if (rLabelSolo.length) {
-      sheet.getRangeList(rLabelSolo).breakApart();
-      sheet.getRangeList(rLabelSolo).merge();
-      sheet.getRangeList(rLabelSolo).setHorizontalAlignment('center').setFontWeight('bold');
+    if (rSinglePerson.length) {
+      sheet.getRangeList(rSinglePerson).breakApart();
+      sheet.getRangeList(rSinglePerson).merge();
     }
-  } catch(e) { Logger.log('label solo err: '+e); }
-
-  // 5c. Name solo rows (nombres de partes single-person): bold, 11pt, centrado
-  try {
-    if (rNameSolo.length) {
-      sheet.getRangeList(rNameSolo).setFontWeight('bold').setFontSize(11).setHorizontalAlignment('center');
-    }
-  } catch(e) { Logger.log('name solo err: '+e); }
+  } catch(e) { Logger.log('single person merge err: '+e); }
 
   // 6. Bordes thin en toda la grilla de datos
   try {
