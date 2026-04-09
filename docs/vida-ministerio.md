@@ -3,9 +3,10 @@
 Módulo para el **presidente de la reunión VM**: importar programa de WOL, asignar partes,
 gestionar publicadores por rol VM, sala auxiliar.
 
-**Estado al 2026-04-08:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI+generador),
+**Estado al 2026-04-09:** Fases 1, 2, sala auxiliar, historial Excel, semanas especiales (UI+generador),
 PIN VM, navegación, vista mensual, editar títulos, duración visible, export/compartir, visor público,
-menú Encargado centrado, filtros en vista Hermanos, Lista de Hermanos en encargado VM, dirty state con aviso de guardado — todos ✅.
+menú Encargado centrado, filtros en vista Hermanos, Lista de Hermanos en encargado VM, dirty state con aviso de guardado,
+**export a Google Sheets + export imagen por mes** — todos ✅.
 **Fase 4 auto-asignación:** ✅ implementada (colas democráticas por historial completo + restricción de género en ayudantes).
 
 ### Visor público (`programa.html`)
@@ -58,6 +59,53 @@ Filtros en la parte superior:
 
 Ambos llaman `filtrarHermanosVM()`. `goToHermanos()` los resetea al entrar (vacía el texto, select a "Todos").
 La lista renderizada por `renderHermanosVM()` muestra chips de rol por publicador.
+
+### Encargado Sala Auxiliar del mes (`vmMeses`)
+
+Cada mes se designa un anciano como encargado de la sala auxiliar. Se guarda en una subcolección separada:
+
+```
+congregaciones/{congreId}/vmMeses/{YYYY-MM}
+  └── encargadoSalaAuxId: "pubId"   ← anciano designado ese mes
+```
+
+- **Cache en memoria:** `vmMesesCache = {}` — `{ 'YYYY-MM': { encargadoSalaAuxId } }` — se precarga en `cargarSemanas()` para todos los meses visibles.
+- **UI:** botón inline en el header de cada mes (solo visible si `tieneAuxiliar`). Muestra el nombre del anciano actual. Abre `uiConductorPicker` con la lista de ancianos activos que no sean presidente en ninguna semana del mes.
+- **Restricción:** solo publicadores con rol `ANCIANO` (sin fallback a otros roles). El rol se edita en Administrador → Responsabilidades.
+- **Helper:** `vmMesRef(mesISO)` — devuelve la referencia Firestore al doc del mes.
+
+### Export a Google Sheets
+
+Botones inline en el header de cada mes en la vista "Semanas". También hay botón "→ Sheets" en `view-semana` para exportar una semana individual.
+
+**Función `apiFetchVM(payload)`** — fire-and-forget con `mode: 'no-cors'` + `keepalive: true`. No espera respuesta (igual que asignaciones). Muestra toast inmediato; el script corre en background (~5-10s).
+
+**Función `formatSemanaParaSheets(s)`** — convierte un doc semana a filas `[colA, colB, colC]`:
+- Headers de semana: `"Semana del DD al DD de Mes de AAAA"`
+- Headers de sección: `"Tesoros de la Biblia"`, `"Seamos Mejores Maestros"`, `"Nuestra Vida Cristiana"`
+- Sub-header sala: `['', 'Sala Principal', 'Sala Auxiliar']`
+- Partes: `["N. X mins. Título", "SP - Ayudante", "SA - Ayudante"]`
+
+**`tools/vm-sheets-script.gs`** — Apps Script que recibe el payload y escribe en Google Sheets con formato:
+
+| Elemento | Color fondo | Texto |
+|----------|-------------|-------|
+| Título hoja (fila 1) | Verde `#38761D` | Blanco, bold, 14pt |
+| Header semana | Verde `#38761D` | Blanco, bold, 12pt, merge A:C |
+| Tesoros de la Biblia | Gris `#999999` | Blanco, bold, merge A:C |
+| Seamos Mejores Maestros | Dorado `#BF9000` | Blanco, bold, merge A:C |
+| Nuestra Vida Cristiana | Rojo `#990000` | Blanco, bold, merge A:C |
+| Sub-header sala | Dorado `#BF9000` | Blanco, bold (B y C separados) |
+
+Acciones soportadas: `saveVMMes` (borra y reescribe el mes completo) y `saveVMSemana` (reemplaza una semana buscando por día de inicio).
+
+**Config:** `vmScriptUrl` en `congregaciones/{congreId}/config_privada/modulos`. Se configura en Admin → Congregación. La hoja destino se infiere del mes: `"Mayo 26"`, `"Junio 26"`, etc.
+
+**Importante — re-deploy:** al actualizar el código del Apps Script hay que ir a Implementar → Gestionar implementaciones → lápiz → Nueva versión → Implementar. La URL no cambia.
+
+### Export como imagen del mes
+
+Botón "Img" en el header de cada mes. Usa `html2canvas` para renderizar todas las semanas del mes apiladas en un div off-screen (usando `renderSemanaPublico()`), y descarga como `.jpg`.
 
 ### Firestore — doc semana
 

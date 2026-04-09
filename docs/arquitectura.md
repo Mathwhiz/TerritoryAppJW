@@ -14,7 +14,8 @@ congregaciones/{congreId}/
   ├── semanasEspeciales/{lunesISO} → tipo, fechaEvento
   ├── chatNotas/grupo_{grupoId}/mensajes → autor, texto, createdAt, canal, grupo
   ├── chatNotas/congregacion/mensajes   → autor, texto, createdAt, canal, grupo
-  └── vidaministerio/{semanaId} → fecha, canciones, presidente, oraciones, tesoros, ministerio[], vidaCristiana[], tipoEspecial?
+  ├── vidaministerio/{semanaId} → fecha, canciones, presidente, oraciones, tesoros, ministerio[], vidaCristiana[], tipoEspecial?
+  └── vmMeses/{YYYY-MM}        → encargadoSalaAuxId
 
 config/superadmin              → pin  ← PIN del panel de admin
 
@@ -36,7 +37,8 @@ usuarios/{uid}                 → perfil de usuario (ver sección Auth)
 |-------|-------------|
 | `pinEncargado` | PIN del encargado para módulos que todavía dependen de PIN. |
 | `pinVidaMinisterio` | PIN del módulo VM. |
-| `scriptUrl` | URL del Apps Script de asignaciones / VM. |
+| `scriptUrl` | URL del Apps Script de asignaciones (módulo Asignaciones). |
+| `vmScriptUrl` | URL del Apps Script de VM (`tools/vm-sheets-script.gs`) — para export a Sheets desde VM. |
 | `sheetsUrl` | URL de Google Sheets para accesos rápidos internos. |
 
 ### Navegación
