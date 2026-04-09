@@ -49,10 +49,12 @@ function _setEncargadoAux(sheet, nombre) {
 }
 
 function _escribirMes(sheet, encargadoAux, semanas) {
-  // Limpiar hoja de un golpe (2 llamadas)
+  // Limpiar hoja: contenido + formato + merges
   var lastRow = Math.max(sheet.getLastRow(), 3);
-  sheet.getRange(1, 1, lastRow, 3).clearContent();
-  sheet.getRange(1, 1, lastRow, 3).clearFormat();
+  var fullRange = sheet.getRange(1, 1, lastRow, 3);
+  try { fullRange.breakApart(); } catch(e) {}
+  fullRange.clearContent();
+  fullRange.clearFormat();
 
   sheet.setColumnWidth(1, 550);
   sheet.setColumnWidth(2, 230);
@@ -132,7 +134,10 @@ function _writeFilasConFormato(sheet, startRow, filas) {
 
   // 3. Merges A:C solo para headers (~16 rangos, 1 llamada)
   var toMerge = rSemana.concat(rTesoros, rSeamos, rVC);
-  if (toMerge.length) sheet.getRangeList(toMerge).merge();
+  if (toMerge.length) {
+    try { sheet.getRangeList(toMerge).breakApart(); } catch(e) {}
+    sheet.getRangeList(toMerge).merge();
+  }
 
   // 4. Fondos (5 llamadas)
   if (rSemana.length)  sheet.getRangeList(rSemana).setBackground(BG_VERDE);
