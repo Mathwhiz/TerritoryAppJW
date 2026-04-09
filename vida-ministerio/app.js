@@ -64,12 +64,18 @@ let semanasLista      = [];  // cache para navegación encargado (orden desc)
 let pubFecha          = null; // fecha activa en vista pública
 let vmEspeciales      = {};   // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
 let vmScriptUrl       = null; // Apps Script URL para exportar a Sheets
+let vmMesActual       = null; // 'YYYY-MM' del mes visible en el panel encargado
+let vmEncargadoAuxId  = null; // pubId del encargado de Sala Auxiliar del mes
 let vmPublicadoresLoaded = false;
 let vmEspecialesLoaded = false;
 let vmMirrorSyncStarted = false;
 
 function privateModuleConfigRef() {
   return doc(db, 'congregaciones', congreId, 'config_privada', 'modulos');
+}
+
+function vmMesRef(mesISO) {
+  return doc(db, 'congregaciones', congreId, 'vmMeses', mesISO);
 }
 
 function vmPublicConfigRef() {
@@ -464,17 +470,27 @@ window.goToSemanas = async function() {
   if (btnCfg) btnCfg.style.display = modoEncargado ? '' : 'none';
   const exportSec = document.getElementById('vm-export-section');
   if (exportSec) {
-    exportSec.style.display = (modoEncargado && vmScriptUrl) ? '' : 'none';
-    const mesInput = document.getElementById('vm-export-mes');
-    if (mesInput && !mesInput.value) {
-      const hoy = new Date();
-      mesInput.value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+    const showSec = modoEncargado && (tieneAuxiliar || !!vmScriptUrl);
+    exportSec.style.display = showSec ? '' : 'none';
+    if (showSec) {
+      const mesInput = document.getElementById('vm-export-mes');
+      if (mesInput && !mesInput.value) {
+        const hoy = new Date();
+        mesInput.value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+      }
+      const auxRow = document.getElementById('vm-aux-mes-row');
+      if (auxRow) auxRow.style.display = (modoEncargado && tieneAuxiliar) ? '' : 'none';
+      const btnExport = document.getElementById('btn-sheets-export');
+      if (btnExport) btnExport.style.display = (modoEncargado && vmScriptUrl) ? '' : 'none';
     }
   }
+  const btnSheetSem = document.getElementById('btn-sheet-semana');
+  if (btnSheetSem) btnSheetSem.style.display = (modoEncargado && vmScriptUrl) ? '' : 'none';
   showView('view-semanas');
   uiLoading.hide();
   scheduleVmMirrorSync();
   await cargarSemanas();
+  if (modoEncargado && (tieneAuxiliar || vmScriptUrl)) _cargarEncargadoAuxMes();
 };
 
 window.goToConfig = function() {
@@ -1895,57 +1911,139 @@ window.compartirSemanaFoto = function() {
 };
 
 // ─────────────────────────────────────────
+//   ENCARGADO SALA AUXILIAR DEL MES
+// ─────────────────────────────────────────
+async function _cargarEncargadoAuxMes() {
+  const mesInput = document.getElementById('vm-export-mes');
+  const mes = mesInput?.value;
+  if (!mes || !congreId) return;
+  vmMesActual = mes;
+  try {
+    const snap = await getDoc(vmMesRef(mes));
+    vmEncargadoAuxId = snap.exists() ? (snap.data().encargadoSalaAuxId || null) : null;
+  } catch { vmEncargadoAuxId = null; }
+  _renderAuxRow();
+}
+
+function _renderAuxRow() {
+  const el = document.getElementById('aux-mes-nombre');
+  if (!el) return;
+  el.textContent = vmEncargadoAuxId ? (nombreDePub(vmEncargadoAuxId) || '—') : 'Sin asignar';
+}
+
+window.onMesExportChange = function() {
+  _cargarEncargadoAuxMes();
+};
+
+window.abrirPickerAuxMes = async function() {
+  if (!modoEncargado || !tieneAuxiliar) return;
+
+  // Presidentes del mes (excluir)
+  const mesVal = document.getElementById('vm-export-mes')?.value;
+  const [anioM, mesM] = (mesVal || '').split('-').map(Number);
+  const presidentesDelMes = new Set();
+  if (anioM && mesM) {
+    semanasLista
+      .filter(s => {
+        const d = new Date(s.fecha + 'T12:00:00');
+        return d.getFullYear() === anioM && d.getMonth() + 1 === mesM;
+      })
+      .forEach(s => { if (s.presidente) presidentesDelMes.add(s.presidente); });
+  }
+
+  // Ancianos que no son presidente en ninguna semana del mes
+  const candidatos = publicadores.filter(p =>
+    (p.roles || []).includes('ANCIANO') && !presidentesDelMes.has(p.id)
+  );
+
+  if (!candidatos.length) {
+    await uiAlert('No hay ancianos disponibles para la sala auxiliar (todos son presidentes en alguna semana de este mes).', 'Sin candidatos');
+    return;
+  }
+
+  const result = await uiConductorPicker({
+    conductores: candidatos,
+    value: vmEncargadoAuxId,
+    label: 'Encargado Sala Auxiliar',
+    color: '#EF9F27',
+  });
+
+  if (result === undefined) return; // cancelado
+
+  vmEncargadoAuxId = result || null;
+  try {
+    await setDoc(vmMesRef(vmMesActual), { encargadoSalaAuxId: vmEncargadoAuxId }, { merge: true });
+    _renderAuxRow();
+    uiToast('Guardado', 'success');
+  } catch(e) {
+    uiToast('Error al guardar: ' + e.message, 'error');
+  }
+};
+
+// ─────────────────────────────────────────
 //   EXPORTAR A SHEETS
 // ─────────────────────────────────────────
 const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-async function apiFetchVM(params) {
-  const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-  await fetch(`${vmScriptUrl}?${qs}`, { mode: 'no-cors' });
+async function apiFetchVM(payload) {
+  await fetch(vmScriptUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+  });
+}
+
+function _semanaHeaderText(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const start = new Date(y, m - 1, d);
+  const end   = new Date(y, m - 1, d + 6);
+  const ds = String(start.getDate()).padStart(2, '0');
+  const de = String(end.getDate()).padStart(2, '0');
+  return `Semana del ${ds} al ${de} de ${MESES_ES[start.getMonth()]} de ${y}`;
 }
 
 function formatSemanaParaSheets(s) {
   const rows = [];
-  const n = id => (id && nombreDePub(id)) || '—';
-  const add = (parte, titulo, persona, ayudante) =>
-    rows.push([parte, titulo || '', persona || '—', ayudante || '']);
+  const n   = id => (id && nombreDePub(id)) || '';
+  const par = (pid, aid) => { const sp = n(pid); const ay = n(aid); return sp ? (ay ? `${sp} - ${ay}` : sp) : ''; };
 
-  rows.push([`=== Semana del ${fmtDisplay(s.fecha)} ===`, '', '', '']);
-  const cStr = [
-    s.cancionApertura   ? `Ap: ${s.cancionApertura}`   : null,
-    s.cancionIntermedia ? `Int: ${s.cancionIntermedia}` : null,
-    s.cancionCierre     ? `Cie: ${s.cancionCierre}`     : null,
-  ].filter(Boolean).join('  ·  ');
-  rows.push(['Canciones', cStr || '—', '', '']);
-  rows.push(['', '', '', '']);
+  rows.push([_semanaHeaderText(s.fecha), '', '']);
+  rows.push(['Oración: ', n(s.oracionApertura), '']);
+  rows.push(['Palabras de Introducción', n(s.presidente), '']);
 
-  rows.push(['— PRESIDENCIA —', '', '', '']);
-  add('Presidente',      '',  n(s.presidente));
-  add('Oración apertura','',  n(s.oracionApertura));
-  add('Oración cierre',  '',  n(s.oracionCierre));
-  rows.push(['', '', '', '']);
+  rows.push(['Tesoros de la Biblia', '', '']);
+  const disc  = s.tesoros?.discurso  || {};
+  const joyas = s.tesoros?.joyas     || {};
+  const lb    = s.tesoros?.lecturaBiblica || {};
+  rows.push([`1. ${disc.duracion  ?? 10} mins. ${disc.titulo  || 'Discurso'}`,           n(disc.pubId),  '']);
+  rows.push([`2. ${joyas.duracion ?? 10} mins. Busquemos perlas escondidas`,              n(joyas.pubId), '']);
+  if (tieneAuxiliar) rows.push(['', 'Sala Principal', 'Sala Auxiliar']);
+  rows.push([`3. ${lb.duracion ?? 4} mins. Lectura de la Biblia`,
+    n(lb.pubId), tieneAuxiliar ? n(lb.salaAux?.pubId) : '']);
 
-  rows.push(['— TESOROS DE LA PALABRA DE DIOS —', '', '', '']);
-  add('1. Discurso',       s.tesoros?.discurso?.titulo,       n(s.tesoros?.discurso?.pubId));
-  add('2. Perlas escondidas', s.tesoros?.joyas?.titulo,      n(s.tesoros?.joyas?.pubId));
-  const lb = s.tesoros?.lecturaBiblica;
-  add('3. Lectura Bíblica', lb?.titulo, n(lb?.pubId), n(lb?.ayudante));
-  rows.push(['', '', '', '']);
+  rows.push(['Seamos Mejores Maestros', '', '']);
+  let num = 4;
+  (s.ministerio || []).forEach(p => {
+    const t  = `${num}. ${p.duracion ?? 3} mins. ${p.titulo || 'Parte'}`;
+    const sp = par(p.pubId, p.ayudante);
+    const sa = tieneAuxiliar && p.tipo !== 'discurso' ? par(p.salaAux?.pubId, p.salaAux?.ayudante) : '';
+    rows.push([t, sp, sa]);
+    num++;
+  });
 
-  rows.push(['— SEAMOS MEJORES MAESTROS —', '', '', '']);
-  (s.ministerio || []).forEach((p, i) =>
-    add(`Parte ${i+1}`, p.titulo, n(p.pubId), n(p.ayudante))
-  );
-  rows.push(['', '', '', '']);
+  rows.push(['Nuestra Vida Cristiana', '', '']);
+  (s.vidaCristiana || []).forEach(p => {
+    rows.push([`${num}. ${p.duracion ?? 10} mins. ${p.titulo || 'Parte'}`, n(p.pubId), '']);
+    num++;
+  });
 
-  rows.push(['— NUESTRA VIDA CRISTIANA —', '', '', '']);
-  (s.vidaCristiana || []).forEach((p, i) =>
-    add(`Parte ${i+1}`, p.titulo, n(p.pubId))
-  );
   const est = s.estudioBiblico || {};
-  add('Estudio Bíblico', est.titulo, n(est.conductor), n(est.lector));
-  rows.push(['', '', '', '']); // separador entre semanas
+  rows.push([`${num}. ${est.duracion ?? 30} mins. Estudio bíblico de la congregación`, n(est.conductor), '']);
+
+  rows.push(['3 mins. Palabras de conclusión', n(s.presidente), '']);
+  rows.push(['Oración', n(s.oracionCierre), '']);
   return rows;
 }
 
@@ -1955,7 +2053,7 @@ window.exportarMesASheets = async function() {
   const [anio, mes] = (mesInput?.value || '').split('-').map(Number);
   if (!anio || !mes) { uiToast('Seleccioná un mes', 'error'); return; }
 
-  const hojaName = `${MESES_ES[mes-1]} ${anio}`;
+  const hojaName = `${MESES_ES[mes-1]} ${String(anio).slice(2)}`;
   const semanasDelMes = semanasLista.filter(s => {
     const d = new Date(s.fecha + 'T12:00:00');
     return d.getFullYear() === anio && d.getMonth() + 1 === mes;
@@ -1966,37 +2064,72 @@ window.exportarMesASheets = async function() {
     return;
   }
 
-  // Cargar datos completos de Firestore para cada semana (semanasLista puede tener datos parciales)
-  const statusEl = document.getElementById('vm-export-status');
-  const setBtnDis = d => { const b = document.querySelector('.btn-sheets-vm'); if (b) b.disabled = d; };
+  const statusEl   = document.getElementById('vm-export-status');
+  const btnExport  = document.getElementById('btn-sheets-export');
+  if (btnExport) btnExport.disabled = true;
+  if (statusEl) { statusEl.style.color = ''; statusEl.textContent = 'Cargando datos…'; }
 
-  setBtnDis(true);
   try {
+    const semanasData = [];
     for (let i = 0; i < semanasDelMes.length; i++) {
       const fecha = semanasDelMes[i].fecha;
-      if (statusEl) statusEl.textContent = `Enviando ${i+1}/${semanasDelMes.length}…`;
-
-      // Cargar doc completo para tener todos los pubId
+      if (statusEl) statusEl.textContent = `Preparando ${i+1}/${semanasDelMes.length}…`;
       const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
       if (!snap.exists()) continue;
-      const filas = formatSemanaParaSheets(snap.data());
-
-      await apiFetchVM({
-        action: 'saveVMSemana',
-        hoja: hojaName,
-        semana: fecha,
-        clearFirst: i === 0 ? 'true' : 'false',
-        filas: JSON.stringify(filas),
-      });
+      semanasData.push({ fecha, filas: formatSemanaParaSheets(snap.data()) });
     }
+
+    if (statusEl) statusEl.textContent = 'Enviando a Sheets…';
+    const encargadoNombre = (tieneAuxiliar && vmEncargadoAuxId) ? (nombreDePub(vmEncargadoAuxId) || '') : '';
+    await apiFetchVM({
+      action: 'saveVMMes',
+      hoja: hojaName,
+      encargadoAux: encargadoNombre,
+      semanas: semanasData,
+    });
+
     if (statusEl) {
       statusEl.style.color = '#5DCAA5';
       statusEl.textContent = `✓ Exportado a hoja "${hojaName}"`;
     }
   } catch(e) {
     if (statusEl) { statusEl.style.color = '#e05050'; statusEl.textContent = 'Error: ' + e.message; }
+  } finally {
+    if (btnExport) btnExport.disabled = false;
   }
-  setBtnDis(false);
+};
+
+window.exportarSemanaActualASheets = async function() {
+  if (!vmScriptUrl || !semanaData) return;
+  const mes  = semanaData.fecha.slice(0, 7); // 'YYYY-MM'
+  const anio = Number(mes.slice(0, 4));
+  const mesN = Number(mes.slice(5, 7));
+  const hojaName = `${MESES_ES[mesN-1]} ${String(anio).slice(2)}`;
+
+  let encargadoNombre = '';
+  if (tieneAuxiliar) {
+    try {
+      const snap = await getDoc(vmMesRef(mes));
+      const auxId = snap.exists() ? snap.data().encargadoSalaAuxId : null;
+      encargadoNombre = auxId ? (nombreDePub(auxId) || '') : '';
+    } catch { /* ignorar */ }
+  }
+
+  const btnSheet = document.getElementById('btn-sheet-semana');
+  if (btnSheet) btnSheet.disabled = true;
+  try {
+    await apiFetchVM({
+      action: 'saveVMSemana',
+      hoja: hojaName,
+      encargadoAux: encargadoNombre,
+      semanas: [{ fecha: semanaData.fecha, filas: formatSemanaParaSheets(semanaData) }],
+    });
+    uiToast(`Semana exportada a "${hojaName}"`, 'success');
+  } catch(e) {
+    uiToast('Error al exportar: ' + e.message, 'error');
+  } finally {
+    if (btnSheet) btnSheet.disabled = false;
+  }
 };
 
 // ─────────────────────────────────────────
@@ -2029,7 +2162,7 @@ window.exportarMesASheets = async function() {
     pinVM = mergedConfig.pinVidaMinisterio || data.pinVidaMinisterio || '1234';
     tieneAuxiliar           = data.tieneAuxiliar === true;
     presidenteEsOradorFinal = data.presidenteEsOradorFinal === true;
-    vmScriptUrl = mergedConfig.scriptUrl || data.scriptUrl || null;
+    vmScriptUrl = mergedConfig.vmScriptUrl || null;
     vmInitReady = true;
   } catch(e) {
     console.error('Error al inicializar:', e);

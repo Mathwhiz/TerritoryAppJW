@@ -271,6 +271,7 @@ function startWizard(prefill = null) {
   document.getElementById('w-id').value               = isEdit ? editingCongreId : '';
   document.getElementById('w-pin').value              = prefill?.pinEncargado       || '';
   document.getElementById('w-pin-vm').value           = prefill?.pinVidaMinisterio  || '';
+  document.getElementById('w-vm-script-url').value    = prefill?.vmScriptUrl         || '';
   document.getElementById('w-ciudad-principal').value = prefill?.ciudadPrincipal    || '';
   ciudadesExtrasKml = prefill?.ciudadesExtras?.map(c => ({ nombre: c.nombre, offset: c.offset, territories: null })) ?? [];
   renderCiudadesExtra();
@@ -312,6 +313,7 @@ async function editCongre(id) {
       nombre:            data.nombre,
       pinEncargado:      privateData.pinEncargado ?? data.pinEncargado ?? '',
       pinVidaMinisterio: privateData.pinVidaMinisterio ?? data.pinVidaMinisterio ?? '',
+      vmScriptUrl:       privateData.vmScriptUrl ?? '',
       color:             data.color || null,
       ciudadPrincipal:   data.ciudadPrincipal || '',
       ciudadesExtras:    data.ciudadesExtras || [],
@@ -686,6 +688,7 @@ async function crearCongregacion(skipKml) {
   const nombre            = document.getElementById('w-nombre').value.trim();
   const pinEncargado      = document.getElementById('w-pin').value.trim();
   const pinVidaMinisterio = document.getElementById('w-pin-vm').value.trim();
+  const vmScriptUrl       = document.getElementById('w-vm-script-url').value.trim();
   const ciudadPrincipal   = document.getElementById('w-ciudad-principal').value.trim();
   const status       = document.getElementById('wizard-status');
   status.textContent = '';
@@ -716,6 +719,7 @@ async function crearCongregacion(skipKml) {
       await setDoc(privateModuleConfigRef(congreId), {
         pinEncargado,
         pinVidaMinisterio,
+        vmScriptUrl: vmScriptUrl || null,
       }, { merge: true });
       await updateDoc(doc(db, 'congregaciones', congreId), {
         nombre,
@@ -757,6 +761,7 @@ async function crearCongregacion(skipKml) {
       await setDoc(privateModuleConfigRef(congreId), {
         pinEncargado,
         pinVidaMinisterio,
+        vmScriptUrl: vmScriptUrl || null,
       });
       await syncPublicMapConfig(congreId, {
         nombre,
