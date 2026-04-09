@@ -1996,12 +1996,19 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 async function apiFetchVM(payload) {
-  await fetch(vmScriptUrl, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(payload),
-  });
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), 60000); // 60s timeout
+  try {
+    await fetch(vmScriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(tid);
+  }
 }
 
 function _semanaHeaderText(iso) {
