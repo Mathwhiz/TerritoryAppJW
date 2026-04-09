@@ -35,11 +35,14 @@ var SECCIONES_BG = {
 };
 
 function doPost(e) {
-  Logger.log('doPost ejecutado. postData: ' + JSON.stringify(e?.postData));
   try {
+    Logger.log('doPost start. contents length: ' + (e?.postData?.contents?.length || 'null'));
     var payload = JSON.parse(e.postData.contents);
+    Logger.log('payload action=' + payload.action + ' hoja=' + payload.hoja + ' semanas=' + (payload.semanas||[]).length);
     var ss      = SpreadsheetApp.getActiveSpreadsheet();
+    Logger.log('spreadsheet: ' + ss.getName());
     var sheet   = _getOrCreateSheet(ss, payload.hoja);
+    Logger.log('sheet ok: ' + sheet.getName());
 
     if (payload.action === 'saveVMMes') {
       _escribirMes(sheet, payload.encargadoAux || '', payload.semanas || []);
@@ -48,9 +51,11 @@ function doPost(e) {
       _reemplazarSemana(sheet, (payload.semanas || [])[0]?.filas || []);
     }
 
+    Logger.log('doPost OK');
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
+    Logger.log('doPost ERROR: ' + err.message + ' stack: ' + err.stack);
     return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
       .setMimeType(ContentService.MimeType.JSON);
   }
