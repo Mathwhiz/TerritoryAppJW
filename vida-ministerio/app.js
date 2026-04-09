@@ -1995,26 +1995,17 @@ window.abrirPickerAuxMes = async function(mesISO) {
 const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-async function apiFetchVM(payload) {
-  console.log('[VM export] apiFetchVM start — url:', vmScriptUrl, 'action:', payload.action);
-  const ctrl = new AbortController();
-  const tid  = setTimeout(() => { console.log('[VM export] TIMEOUT 90s'); ctrl.abort(); }, 90000);
-  try {
-    console.log('[VM export] fetch enviando…');
-    await fetch(vmScriptUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
-      signal: ctrl.signal,
-    });
-    console.log('[VM export] fetch resolvió OK');
-  } catch(err) {
-    console.error('[VM export] fetch error:', err);
-    throw err;
-  } finally {
-    clearTimeout(tid);
-  }
+function apiFetchVM(payload) {
+  // Fire-and-forget: no-cors no permite leer la respuesta de igual modo
+  console.log('[VM export] fetch enviando (fire & forget)…', payload.action);
+  fetch(vmScriptUrl, {
+    method:    'POST',
+    mode:      'no-cors',
+    keepalive: true,
+    headers:   { 'Content-Type': 'text/plain' },
+    body:      JSON.stringify(payload),
+  }).then(() => console.log('[VM export] fetch completó'))
+    .catch(err => console.warn('[VM export] fetch error (ignorado):', err));
 }
 
 function _semanaHeaderText(iso) {
@@ -2080,33 +2071,21 @@ window.exportarMesASheets = async function(mesISO) {
     return;
   }
 
-  console.log('[VM export] exportarMesASheets — mesISO:', mesISO, 'hojaName:', hojaName, 'semanas:', semanasDelMes.length, 'vmScriptUrl:', vmScriptUrl);
-  uiLoading.show(`Enviando ${hojaName} a Sheets…`);
-  try {
-    const semanasData = semanasDelMes.map(s => ({
-      fecha: s.fecha,
-      filas: formatSemanaParaSheets(s),
-    }));
-    console.log('[VM export] semanasData armado, filas totales:', semanasData.reduce((a,s)=>a+s.filas.length,0));
+  const semanasData = semanasDelMes.map(s => ({
+    fecha: s.fecha,
+    filas: formatSemanaParaSheets(s),
+  }));
+  const auxId = vmMesesCache[mesISO]?.encargadoSalaAuxId;
+  const encargadoNombre = (tieneAuxiliar && auxId) ? (nombreDePub(auxId) || '') : '';
 
-    const auxId = vmMesesCache[mesISO]?.encargadoSalaAuxId;
-    const encargadoNombre = (tieneAuxiliar && auxId) ? (nombreDePub(auxId) || '') : '';
-    console.log('[VM export] llamando apiFetchVM…');
-    await apiFetchVM({
-      action: 'saveVMMes',
-      hoja: hojaName,
-      encargadoAux: encargadoNombre,
-      semanas: semanasData,
-    });
+  apiFetchVM({
+    action: 'saveVMMes',
+    hoja: hojaName,
+    encargadoAux: encargadoNombre,
+    semanas: semanasData,
+  });
 
-    uiLoading.hide();
-    uiToast(`✓ Exportado a "${hojaName}"`, 'success');
-    console.log('[VM export] ✓ éxito');
-  } catch(e) {
-    uiLoading.hide();
-    uiToast('Error: ' + e.message, 'error');
-    console.error('[VM export] catch:', e);
-  }
+  uiToast(`Enviando "${hojaName}" a Sheets… revisá la planilla en unos segundos`, 'success');
 };
 
 window.exportarMesImagen = async function(mesISO) {
@@ -2166,37 +2145,22 @@ window.exportarMesImagen = async function(mesISO) {
     });
 };
 
-window.exportarSemanaActualASheets = async function() {
+window.exportarSemanaActualASheets = function() {
   if (!vmScriptUrl || !semanaData) return;
-  const mes  = semanaData.fecha.slice(0, 7); // 'YYYY-MM'
+  const mes  = semanaData.fecha.slice(0, 7);
   const anio = Number(mes.slice(0, 4));
   const mesN = Number(mes.slice(5, 7));
   const hojaName = `${MESES_ES[mesN-1]} ${String(anio).slice(2)}`;
+  const encargadoNombre = (tieneAuxiliar && vmMesesCache[mes]?.encargadoSalaAuxId)
+    ? (nombreDePub(vmMesesCache[mes].encargadoSalaAuxId) || '') : '';
 
-  let encargadoNombre = '';
-  if (tieneAuxiliar) {
-    try {
-      const snap = await getDoc(vmMesRef(mes));
-      const auxId = snap.exists() ? snap.data().encargadoSalaAuxId : null;
-      encargadoNombre = auxId ? (nombreDePub(auxId) || '') : '';
-    } catch { /* ignorar */ }
-  }
-
-  const btnSheet = document.getElementById('btn-sheet-semana');
-  if (btnSheet) btnSheet.disabled = true;
-  try {
-    await apiFetchVM({
-      action: 'saveVMSemana',
-      hoja: hojaName,
-      encargadoAux: encargadoNombre,
-      semanas: [{ fecha: semanaData.fecha, filas: formatSemanaParaSheets(semanaData) }],
-    });
-    uiToast(`Semana exportada a "${hojaName}"`, 'success');
-  } catch(e) {
-    uiToast('Error al exportar: ' + e.message, 'error');
-  } finally {
-    if (btnSheet) btnSheet.disabled = false;
-  }
+  apiFetchVM({
+    action: 'saveVMSemana',
+    hoja: hojaName,
+    encargadoAux: encargadoNombre,
+    semanas: [{ fecha: semanaData.fecha, filas: formatSemanaParaSheets(semanaData) }],
+  });
+  uiToast(`Enviando semana a "${hojaName}"… revisá en unos segundos`, 'success');
 };
 
 // ─────────────────────────────────────────
