@@ -64,8 +64,7 @@ let semanasLista      = [];  // cache para navegación encargado (orden desc)
 let pubFecha          = null; // fecha activa en vista pública
 let vmEspeciales      = {};   // { 'YYYY-MM-DD' (lunes) → { tipo, fechaEvento } }
 let vmScriptUrl       = null; // Apps Script URL para exportar a Sheets
-let vmMesActual       = null; // 'YYYY-MM' del mes visible en el panel encargado
-let vmEncargadoAuxId  = null; // pubId del encargado de Sala Auxiliar del mes
+let vmMesesCache      = {};   // { 'YYYY-MM': { encargadoSalaAuxId } }
 let vmPublicadoresLoaded = false;
 let vmEspecialesLoaded = false;
 let vmMirrorSyncStarted = false;
@@ -468,29 +467,15 @@ window.goToSemanas = async function() {
   document.getElementById('semanas-congre-sub').textContent = congreNombre || '—';
   const btnCfg = document.getElementById('btn-config-vm');
   if (btnCfg) btnCfg.style.display = modoEncargado ? '' : 'none';
+  // Ocultar sección vieja (reemplazada por botones en headers de mes)
   const exportSec = document.getElementById('vm-export-section');
-  if (exportSec) {
-    const showSec = modoEncargado && (tieneAuxiliar || !!vmScriptUrl);
-    exportSec.style.display = showSec ? '' : 'none';
-    if (showSec) {
-      const mesInput = document.getElementById('vm-export-mes');
-      if (mesInput && !mesInput.value) {
-        const hoy = new Date();
-        mesInput.value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-      }
-      const auxRow = document.getElementById('vm-aux-mes-row');
-      if (auxRow) auxRow.style.display = (modoEncargado && tieneAuxiliar) ? '' : 'none';
-      const btnExport = document.getElementById('btn-sheets-export');
-      if (btnExport) btnExport.style.display = (modoEncargado && vmScriptUrl) ? '' : 'none';
-    }
-  }
+  if (exportSec) exportSec.style.display = 'none';
   const btnSheetSem = document.getElementById('btn-sheet-semana');
   if (btnSheetSem) btnSheetSem.style.display = (modoEncargado && vmScriptUrl) ? '' : 'none';
   showView('view-semanas');
   uiLoading.hide();
   scheduleVmMirrorSync();
   await cargarSemanas();
-  if (modoEncargado && (tieneAuxiliar || vmScriptUrl)) _cargarEncargadoAuxMes();
 };
 
 window.goToConfig = function() {
@@ -645,6 +630,19 @@ async function cargarSemanas() {
       }
     });
     semanasLista = semanas;
+
+    // Precargar encargados de sala aux de todos los meses visibles
+    if (modoEncargado && tieneAuxiliar && semanas.length) {
+      const meses = [...new Set(semanas.map(s => s.fecha.slice(0, 7)))];
+      await Promise.all(meses.map(async mes => {
+        if (vmMesesCache[mes]) return;
+        try {
+          const sn = await getDoc(vmMesRef(mes));
+          vmMesesCache[mes] = sn.exists() ? sn.data() : {};
+        } catch { vmMesesCache[mes] = {}; }
+      }));
+    }
+
     renderSemanas(semanas);
   } catch(e) {
     list.innerHTML = `<div class="error-wrap">Error al cargar: ${e.message}</div>`;
@@ -797,7 +795,7 @@ function renderSemanas(semanas) {
   // Agrupar por mes (desc)
   const grupos = {};
   semanas.forEach(s => {
-    const key = s.fecha.substring(0, 7); // "YYYY-MM"
+    const key = s.fecha.substring(0, 7);
     if (!grupos[key]) grupos[key] = [];
     grupos[key].push(s);
   });
@@ -807,7 +805,34 @@ function renderSemanas(semanas) {
     const [y, m] = key.split('-');
     const label  = `${MESES_ES[parseInt(m) - 1]} ${y}`;
     const cards  = grupos[key].map(s => renderSemanaCard(s, hoy)).join('');
-    return `<div class="semanas-mes-hdr">${label}</div><div class="semanas-mes-grid">${cards}</div>`;
+
+    let acciones = '';
+    if (modoEncargado) {
+      if (tieneAuxiliar) {
+        const auxId  = vmMesesCache[key]?.encargadoSalaAuxId;
+        const auxNom = auxId ? (nombreDePub(auxId) || '…') : 'Sala aux';
+        acciones += `<button class="vm-mes-aux-btn" onclick="abrirPickerAuxMes('${key}')" title="Encargado Sala Auxiliar del mes">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-1a6 6 0 0112 0v1"/></svg>
+          <span id="aux-mes-${key}">${esc(auxNom)}</span>
+        </button>`;
+      }
+      if (vmScriptUrl) {
+        acciones += `<button class="vm-mes-action-btn vm-mes-sheets-btn" onclick="exportarMesASheets('${key}')" title="Exportar a Sheets">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Sheets
+        </button>`;
+      }
+      acciones += `<button class="vm-mes-action-btn vm-mes-img-btn" onclick="exportarMesImagen('${key}')" title="Exportar como imagen">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Img
+      </button>`;
+    }
+
+    return `<div class="semanas-mes-hdr-row">
+      <span class="semanas-mes-hdr-txt">${label}</span>
+      ${acciones ? `<div class="semanas-mes-acciones">${acciones}</div>` : ''}
+    </div>
+    <div class="semanas-mes-grid">${cards}</div>`;
   }).join('');
 }
 
@@ -1913,43 +1938,16 @@ window.compartirSemanaFoto = function() {
 // ─────────────────────────────────────────
 //   ENCARGADO SALA AUXILIAR DEL MES
 // ─────────────────────────────────────────
-async function _cargarEncargadoAuxMes() {
-  const mesInput = document.getElementById('vm-export-mes');
-  const mes = mesInput?.value;
-  if (!mes || !congreId) return;
-  vmMesActual = mes;
-  try {
-    const snap = await getDoc(vmMesRef(mes));
-    vmEncargadoAuxId = snap.exists() ? (snap.data().encargadoSalaAuxId || null) : null;
-  } catch { vmEncargadoAuxId = null; }
-  _renderAuxRow();
-}
-
-function _renderAuxRow() {
-  const el = document.getElementById('aux-mes-nombre');
-  if (!el) return;
-  el.textContent = vmEncargadoAuxId ? (nombreDePub(vmEncargadoAuxId) || '—') : 'Sin asignar';
-}
-
-window.onMesExportChange = function() {
-  _cargarEncargadoAuxMes();
-};
-
-window.abrirPickerAuxMes = async function() {
+window.abrirPickerAuxMes = async function(mesISO) {
   if (!modoEncargado || !tieneAuxiliar) return;
 
   // Presidentes del mes (excluir)
-  const mesVal = document.getElementById('vm-export-mes')?.value;
-  const [anioM, mesM] = (mesVal || '').split('-').map(Number);
-  const presidentesDelMes = new Set();
-  if (anioM && mesM) {
+  const presidentesDelMes = new Set(
     semanasLista
-      .filter(s => {
-        const d = new Date(s.fecha + 'T12:00:00');
-        return d.getFullYear() === anioM && d.getMonth() + 1 === mesM;
-      })
-      .forEach(s => { if (s.presidente) presidentesDelMes.add(s.presidente); });
-  }
+      .filter(s => s.fecha.startsWith(mesISO))
+      .map(s => s.presidente)
+      .filter(Boolean)
+  );
 
   // Ancianos que no son presidente en ninguna semana del mes
   const candidatos = publicadores.filter(p =>
@@ -1957,23 +1955,27 @@ window.abrirPickerAuxMes = async function() {
   );
 
   if (!candidatos.length) {
-    await uiAlert('No hay ancianos disponibles para la sala auxiliar (todos son presidentes en alguna semana de este mes).', 'Sin candidatos');
+    await uiAlert('No hay ancianos disponibles (todos son presidentes en alguna semana de este mes).', 'Sin candidatos');
     return;
   }
 
+  const auxActualId = vmMesesCache[mesISO]?.encargadoSalaAuxId || null;
   const result = await uiConductorPicker({
     conductores: candidatos,
-    value: vmEncargadoAuxId,
+    value: auxActualId,
     label: 'Encargado Sala Auxiliar',
     color: '#EF9F27',
   });
 
   if (result === undefined) return; // cancelado
 
-  vmEncargadoAuxId = result || null;
+  const nuevoId = result || null;
   try {
-    await setDoc(vmMesRef(vmMesActual), { encargadoSalaAuxId: vmEncargadoAuxId }, { merge: true });
-    _renderAuxRow();
+    await setDoc(vmMesRef(mesISO), { encargadoSalaAuxId: nuevoId }, { merge: true });
+    if (!vmMesesCache[mesISO]) vmMesesCache[mesISO] = {};
+    vmMesesCache[mesISO].encargadoSalaAuxId = nuevoId;
+    const el = document.getElementById(`aux-mes-${mesISO}`);
+    if (el) el.textContent = nuevoId ? (nombreDePub(nuevoId) || '…') : 'Sala aux';
     uiToast('Guardado', 'success');
   } catch(e) {
     uiToast('Error al guardar: ' + e.message, 'error');
@@ -2047,40 +2049,29 @@ function formatSemanaParaSheets(s) {
   return rows;
 }
 
-window.exportarMesASheets = async function() {
-  if (!vmScriptUrl) return;
-  const mesInput = document.getElementById('vm-export-mes');
-  const [anio, mes] = (mesInput?.value || '').split('-').map(Number);
-  if (!anio || !mes) { uiToast('Seleccioná un mes', 'error'); return; }
-
-  const hojaName = `${MESES_ES[mes-1]} ${String(anio).slice(2)}`;
-  const semanasDelMes = semanasLista.filter(s => {
-    const d = new Date(s.fecha + 'T12:00:00');
-    return d.getFullYear() === anio && d.getMonth() + 1 === mes;
-  });
+window.exportarMesASheets = async function(mesISO) {
+  if (!vmScriptUrl || !mesISO) return;
+  const [anio, mes] = mesISO.split('-').map(Number);
+  const hojaName     = `${MESES_ES[mes-1]} ${String(anio).slice(2)}`;
+  const semanasDelMes = semanasLista.filter(s => s.fecha.startsWith(mesISO));
 
   if (!semanasDelMes.length) {
     await uiAlert(`No hay semanas cargadas para ${hojaName}.`, 'Sin datos');
     return;
   }
 
-  const statusEl   = document.getElementById('vm-export-status');
-  const btnExport  = document.getElementById('btn-sheets-export');
-  if (btnExport) btnExport.disabled = true;
-  if (statusEl) { statusEl.style.color = ''; statusEl.textContent = 'Cargando datos…'; }
-
+  uiLoading.show(`Exportando ${hojaName}…`);
   try {
     const semanasData = [];
     for (let i = 0; i < semanasDelMes.length; i++) {
       const fecha = semanasDelMes[i].fecha;
-      if (statusEl) statusEl.textContent = `Preparando ${i+1}/${semanasDelMes.length}…`;
       const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
       if (!snap.exists()) continue;
       semanasData.push({ fecha, filas: formatSemanaParaSheets(snap.data()) });
     }
 
-    if (statusEl) statusEl.textContent = 'Enviando a Sheets…';
-    const encargadoNombre = (tieneAuxiliar && vmEncargadoAuxId) ? (nombreDePub(vmEncargadoAuxId) || '') : '';
+    const auxId = vmMesesCache[mesISO]?.encargadoSalaAuxId;
+    const encargadoNombre = (tieneAuxiliar && auxId) ? (nombreDePub(auxId) || '') : '';
     await apiFetchVM({
       action: 'saveVMMes',
       hoja: hojaName,
@@ -2088,15 +2079,69 @@ window.exportarMesASheets = async function() {
       semanas: semanasData,
     });
 
-    if (statusEl) {
-      statusEl.style.color = '#5DCAA5';
-      statusEl.textContent = `✓ Exportado a hoja "${hojaName}"`;
-    }
+    uiLoading.hide();
+    uiToast(`✓ Exportado a "${hojaName}"`, 'success');
   } catch(e) {
-    if (statusEl) { statusEl.style.color = '#e05050'; statusEl.textContent = 'Error: ' + e.message; }
-  } finally {
-    if (btnExport) btnExport.disabled = false;
+    uiLoading.hide();
+    uiToast('Error: ' + e.message, 'error');
   }
+};
+
+window.exportarMesImagen = async function(mesISO) {
+  const [y, m] = mesISO.split('-').map(Number);
+  const label  = `${MESES_ES[m-1]} ${y}`;
+
+  // Semanas del mes en orden ascendente
+  const semanasDelMes = semanasLista.filter(s => s.fecha.startsWith(mesISO)).slice().reverse();
+  if (!semanasDelMes.length) {
+    uiToast('No hay semanas para este mes', 'error');
+    return;
+  }
+
+  await ensureVmLookupsLoaded();
+
+  const auxId      = vmMesesCache[mesISO]?.encargadoSalaAuxId;
+  const auxNombre  = (tieneAuxiliar && auxId) ? (nombreDePub(auxId) || '') : '';
+  const auxLine    = auxNombre
+    ? `<div style="font-size:12px;color:#888;margin-bottom:14px;">Sala Auxiliar: ${esc(auxNombre)}</div>`
+    : '';
+
+  // Cargar datos completos de Firestore (semanasLista tiene todo pero por si acaso)
+  const contenidoSemanas = await Promise.all(semanasDelMes.map(async s => {
+    let data = s;
+    if (!s.tesoros) { // datos parciales → recargar
+      try {
+        const sn = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', s.fecha));
+        if (sn.exists()) data = sn.data();
+      } catch { /* usar lo que hay */ }
+    }
+    return `<div style="margin-bottom:14px;">${renderSemanaPublico(data)}</div>`;
+  }));
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;background:#1a1c1f;padding:20px 16px;width:400px;';
+  wrap.innerHTML = `
+    <div style="font-size:17px;font-weight:800;color:#EF9F27;margin-bottom:4px;">${esc(label)}</div>
+    ${auxLine}
+    ${contenidoSemanas.join('')}
+  `;
+  document.body.appendChild(wrap);
+
+  uiLoading.show('Generando imagen…');
+  html2canvas(wrap, { backgroundColor: '#1a1c1f', scale: 2, useCORS: true, logging: false })
+    .then(canvas => {
+      document.body.removeChild(wrap);
+      uiLoading.hide();
+      const link = document.createElement('a');
+      link.download = `vm-${mesISO}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.92);
+      link.click();
+    })
+    .catch(e => {
+      if (wrap.parentNode) document.body.removeChild(wrap);
+      uiLoading.hide();
+      uiToast('Error al generar imagen: ' + e.message, 'error');
+    });
 };
 
 window.exportarSemanaActualASheets = async function() {
