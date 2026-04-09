@@ -2023,19 +2023,24 @@ function formatSemanaParaSheets(s) {
   const par = (pid, aid) => { const sp = n(pid); const ay = n(aid); return sp ? (ay ? `${sp} - ${ay}` : sp) : ''; };
 
   rows.push([_semanaHeaderText(s.fecha), '', '']);
-  rows.push(['Oración: ', n(s.oracionApertura), '']);
-  rows.push(['Palabras de Introducción', n(s.presidente), '']);
+  // Apertura — una persona por fila (label + nombre centrado)
+  rows.push(['Oración apertura',           '', '']); rows.push(['', n(s.oracionApertura), '']);
+  rows.push(['Palabras de Introducción',   '', '']); rows.push(['', n(s.presidente),      '']);
 
+  // Tesoros — discurso y joyas: una persona (label + nombre); lectura: multi-columna
   rows.push(['Tesoros de la Biblia', '', '']);
-  const disc  = s.tesoros?.discurso  || {};
-  const joyas = s.tesoros?.joyas     || {};
-  const lb    = s.tesoros?.lecturaBiblica || {};
-  rows.push([`1. ${disc.duracion  ?? 10} mins. ${disc.titulo  || 'Discurso'}`,           n(disc.pubId),  '']);
-  rows.push([`2. ${joyas.duracion ?? 10} mins. Busquemos perlas escondidas`,              n(joyas.pubId), '']);
+  const disc  = s.tesoros?.discurso        || {};
+  const joyas = s.tesoros?.joyas           || {};
+  const lb    = s.tesoros?.lecturaBiblica  || {};
+  rows.push([`1. ${disc.duracion  ?? 10} mins. ${disc.titulo  || 'Discurso'}`, '', '']);
+  rows.push(['', n(disc.pubId), '']);
+  rows.push([`2. ${joyas.duracion ?? 10} mins. Busquemos perlas escondidas`,   '', '']);
+  rows.push(['', n(joyas.pubId), '']);
   if (tieneAuxiliar) rows.push(['', 'Sala Principal', 'Sala Auxiliar']);
   rows.push([`3. ${lb.duracion ?? 4} mins. Lectura de la Biblia`,
     n(lb.pubId), tieneAuxiliar ? n(lb.ayudante) : '']);
 
+  // Ministerio (escuela) — multi-columna, sin cambios
   rows.push(['Seamos Mejores Maestros', '', '']);
   let num = 4;
   (s.ministerio || []).forEach(p => {
@@ -2046,17 +2051,21 @@ function formatSemanaParaSheets(s) {
     num++;
   });
 
+  // Vida Cristiana — una persona por parte (label + nombre)
   rows.push(['Nuestra Vida Cristiana', '', '']);
   (s.vidaCristiana || []).forEach(p => {
-    rows.push([`${num}. ${p.duracion ?? 10} mins. ${p.titulo || 'Parte'}`, n(p.pubId), '']);
+    rows.push([`${num}. ${p.duracion ?? 10} mins. ${p.titulo || 'Parte'}`, '', '']);
+    rows.push(['', n(p.pubId), '']);
     num++;
   });
-
   const est = s.estudioBiblico || {};
-  rows.push([`${num}. ${est.duracion ?? 30} mins. Estudio bíblico de la congregación`, n(est.conductor), '']);
+  const estCond = n(est.conductor); const estLect = n(est.lector);
+  rows.push([`${num}. ${est.duracion ?? 30} mins. Estudio bíblico de la congregación`, '', '']);
+  rows.push(['', estCond + (estLect ? ` · ${estLect}` : ''), '']);
 
-  rows.push(['3 mins. Palabras de conclusión', n(s.presidente), '']);
-  rows.push(['Oración', n(s.oracionCierre), '']);
+  // Cierre
+  rows.push(['3 mins. Palabras de conclusión', '', '']); rows.push(['', n(s.presidente),     '']);
+  rows.push(['Oración cierre',                 '', '']); rows.push(['', n(s.oracionCierre),  '']);
   return rows;
 }
 

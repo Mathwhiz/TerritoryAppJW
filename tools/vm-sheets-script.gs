@@ -1,5 +1,5 @@
 /**
- * Apps Script — Vida y Ministerio (v2.4)
+ * Apps Script — Vida y Ministerio (v2.5)
  * SETUP: Implementar → Gestionar implementaciones → editar → Nueva versión → Implementar
  */
 
@@ -112,11 +112,14 @@ function _writeFilasConFormato(sheet, startRow, filas) {
 
   // 2. Clasificar filas por tipo (sin llamadas a API)
   var rSemana = [], rTesoros = [], rSeamos = [], rVC = [], rSalaHdr = [];
+  var rLabelSolo = []; // A tiene texto, B y C vacíos → merge A:C, centrado, bold
+  var rNameSolo  = []; // A vacío, B tiene nombre, C vacío → bold, 11pt
 
   for (var i = 0; i < n; i++) {
     var r    = startRow + i;
     var colA = String(filas[i][0] || '').trim();
     var colB = String(filas[i][1] || '').trim();
+    var colC = String(filas[i][2] || '').trim();
     var ac   = 'A' + r + ':C' + r;
 
     if (colA.toLowerCase().indexOf('semana del') === 0) {
@@ -129,6 +132,10 @@ function _writeFilasConFormato(sheet, startRow, filas) {
       rVC.push(ac);
     } else if (colA === '' && colB === 'Sala Principal') {
       rSalaHdr.push('B' + r + ':C' + r);
+    } else if (colA !== '' && colB === '' && colC === '') {
+      rLabelSolo.push(ac);  // etiqueta de parte single-person
+    } else if (colA === '' && colB !== '' && colC === '') {
+      rNameSolo.push('B' + r); // nombre de parte single-person
     }
   }
 
@@ -146,7 +153,7 @@ function _writeFilasConFormato(sheet, startRow, filas) {
   try { if (rVC.length)      sheet.getRangeList(rVC).setBackground(BG_ROJO);        } catch(e) { Logger.log('bg vc: '+e); }
   try { if (rSalaHdr.length) sheet.getRangeList(rSalaHdr).setBackground(BG_ORO);   } catch(e) { Logger.log('bg sala: '+e); }
 
-  // 5. Texto blanco + negrita en headers
+  // 5. Texto blanco + negrita en headers de sección
   var allHdrs = toMerge.concat(rSalaHdr);
   try {
     if (allHdrs.length) {
@@ -155,6 +162,24 @@ function _writeFilasConFormato(sheet, startRow, filas) {
       sheet.getRangeList(allHdrs).setHorizontalAlignment('center');
     }
   } catch(e) { Logger.log('hdr text err: '+e); }
+  // Semana header: font size más grande para distinguir
+  try { if (rSemana.length) sheet.getRangeList(rSemana).setFontSize(12); } catch(e) { Logger.log('semana size: '+e); }
+
+  // 5b. Label solo rows (etiquetas de partes single-person): merge A:C, centrado, bold
+  try {
+    if (rLabelSolo.length) {
+      sheet.getRangeList(rLabelSolo).breakApart();
+      sheet.getRangeList(rLabelSolo).merge();
+      sheet.getRangeList(rLabelSolo).setHorizontalAlignment('center').setFontWeight('bold');
+    }
+  } catch(e) { Logger.log('label solo err: '+e); }
+
+  // 5c. Name solo rows (nombres de partes single-person): bold, 11pt, centrado
+  try {
+    if (rNameSolo.length) {
+      sheet.getRangeList(rNameSolo).setFontWeight('bold').setFontSize(11).setHorizontalAlignment('center');
+    }
+  } catch(e) { Logger.log('name solo err: '+e); }
 
   // 6. Bordes thin en toda la grilla de datos
   try {
