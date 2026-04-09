@@ -1997,17 +1997,27 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
 
 async function apiFetchVM(payload) {
   const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), 60000); // 60s timeout
+  const tid  = setTimeout(() => ctrl.abort(), 90000); // 90s timeout
   try {
-    await fetch(vmScriptUrl, {
+    const res = await fetch(vmScriptUrl, {
       method: 'POST',
-      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
       signal: ctrl.signal,
+      redirect: 'follow',
     });
-  } finally {
     clearTimeout(tid);
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (!json.ok) throw new Error(json.error || 'Error en el script');
+    } catch(parseErr) {
+      // Si no es JSON válido pero el HTTP fue exitoso, asumir OK
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    }
+  } catch(err) {
+    clearTimeout(tid);
+    throw err;
   }
 }
 
