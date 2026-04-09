@@ -113,6 +113,7 @@ function _writeFilasConFormato(sheet, startRow, filas) {
   // 2. Clasificar filas por tipo (sin llamadas a API)
   var rSemana = [], rTesoros = [], rSeamos = [], rVC = [], rSalaHdr = [];
   var rSinglePerson = []; // A tiene label, B tiene nombre, C vacío → merge B:C
+  var seccion = ''; // tracker de sección actual
 
   for (var i = 0; i < n; i++) {
     var r    = startRow + i;
@@ -122,16 +123,18 @@ function _writeFilasConFormato(sheet, startRow, filas) {
     var ac   = 'A' + r + ':C' + r;
 
     if (colA.toLowerCase().indexOf('semana del') === 0) {
-      rSemana.push(ac);
+      seccion = ''; rSemana.push(ac);
     } else if (colA === 'Tesoros de la Biblia') {
-      rTesoros.push(ac);
+      seccion = 'tesoros'; rTesoros.push(ac);
     } else if (colA === 'Seamos Mejores Maestros') {
-      rSeamos.push(ac);
+      seccion = 'ministerio'; rSeamos.push(ac);
     } else if (colA === 'Nuestra Vida Cristiana') {
-      rVC.push(ac);
+      seccion = 'vc'; rVC.push(ac);
     } else if (colA === '' && colB === 'Sala Principal') {
       rSalaHdr.push('B' + r + ':C' + r);
-    } else if (colA !== '' && colB !== '' && colC === '') {
+    } else if (colA !== '' && colB !== '' && colC === ''
+               && seccion !== 'ministerio'
+               && colA.indexOf('Lectura de la Biblia') === -1) {
       rSinglePerson.push('B' + r + ':C' + r); // una sola persona → merge B:C
     }
   }
