@@ -514,7 +514,7 @@ function _canBypassGrupoPin(grupoId) {
 }
 
 function openPin() {
-  if (_canBypassGrupoPin(selectedGrupo)) { goToModo(); return; }
+  if (_canBypassGrupoPin(selectedGrupo)) { goToModo(); cargarConductores(); cargarConfigCongre(); return; }
   pinGrupo = selectedGrupo;
   pinBuffer = '';
   updatePinDots();
