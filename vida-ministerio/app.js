@@ -1997,27 +1997,17 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
 
 async function apiFetchVM(payload) {
   const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), 90000); // 90s timeout
+  const tid  = setTimeout(() => ctrl.abort(), 90000);
   try {
-    const res = await fetch(vmScriptUrl, {
+    await fetch(vmScriptUrl, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
       signal: ctrl.signal,
-      redirect: 'follow',
     });
+  } finally {
     clearTimeout(tid);
-    const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      if (!json.ok) throw new Error(json.error || 'Error en el script');
-    } catch(parseErr) {
-      // Si no es JSON válido pero el HTTP fue exitoso, asumir OK
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    }
-  } catch(err) {
-    clearTimeout(tid);
-    throw err;
   }
 }
 
@@ -2084,15 +2074,13 @@ window.exportarMesASheets = async function(mesISO) {
     return;
   }
 
-  uiLoading.show(`Exportando ${hojaName}…`);
+  uiLoading.show(`Enviando ${hojaName} a Sheets…`);
   try {
-    const semanasData = [];
-    for (let i = 0; i < semanasDelMes.length; i++) {
-      const fecha = semanasDelMes[i].fecha;
-      const snap = await getDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha));
-      if (!snap.exists()) continue;
-      semanasData.push({ fecha, filas: formatSemanaParaSheets(snap.data()) });
-    }
+    // semanasLista ya tiene los datos completos en memoria — no re-fetchear Firestore
+    const semanasData = semanasDelMes.map(s => ({
+      fecha: s.fecha,
+      filas: formatSemanaParaSheets(s),
+    }));
 
     const auxId = vmMesesCache[mesISO]?.encargadoSalaAuxId;
     const encargadoNombre = (tieneAuxiliar && auxId) ? (nombreDePub(auxId) || '') : '';
