@@ -1949,34 +1949,34 @@ window.abrirPickerAuxMes = async function(mesISO) {
       .filter(Boolean)
   );
 
-  // Preferir ancianos; si no hay con ese rol, mostrar todos los varones disponibles
-  let candidatos = publicadores.filter(p =>
-    (p.roles || []).includes('ANCIANO') && !presidentesDelMes.has(p.id)
+  // Solo ancianos que no sean presidentes en alguna semana del mes
+  const candidatos = publicadores.filter(p =>
+    p.activo !== false &&
+    (p.roles || []).includes('ANCIANO') &&
+    !presidentesDelMes.has(p.id)
   );
+
   if (!candidatos.length) {
-    candidatos = publicadores.filter(p =>
-      p.sexo !== 'M' && !presidentesDelMes.has(p.id)
-    );
-  }
-  if (!candidatos.length) {
-    candidatos = publicadores.filter(p => !presidentesDelMes.has(p.id));
-  }
-  if (!candidatos.length) {
-    await uiAlert('No hay publicadores disponibles para este mes.', 'Sin candidatos');
+    await uiAlert('No hay ancianos disponibles para este mes (todos están asignados como presidente en alguna semana).', 'Sin candidatos');
     return;
   }
 
-  const auxActualId = vmMesesCache[mesISO]?.encargadoSalaAuxId || null;
-  const result = await uiConductorPicker({
-    conductores: candidatos,
-    value: auxActualId,
+  const auxActualId  = vmMesesCache[mesISO]?.encargadoSalaAuxId || null;
+  const auxActualNom = auxActualId ? (nombreDePub(auxActualId) || '') : '';
+
+  // uiConductorPicker espera array de strings (nombres)
+  const nombres = candidatos.map(p => p.nombre);
+  const result  = await uiConductorPicker({
+    conductores: nombres,
+    value: auxActualNom,
     label: 'Encargado Sala Auxiliar',
-    color: '#EF9F27',
   });
 
-  if (result === undefined) return; // cancelado
+  if (result === undefined || result === null) return; // cancelado
 
-  const nuevoId = result || null;
+  // Mapear nombre elegido de vuelta a pubId
+  const elegido  = candidatos.find(p => p.nombre === result) || null;
+  const nuevoId  = elegido?.id || null;
   try {
     await setDoc(vmMesRef(mesISO), { encargadoSalaAuxId: nuevoId }, { merge: true });
     if (!vmMesesCache[mesISO]) vmMesesCache[mesISO] = {};

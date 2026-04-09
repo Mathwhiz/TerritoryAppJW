@@ -9,36 +9,23 @@
  *    - Quién tiene acceso: Cualquier persona
  * 3. Copiá la URL generada y pegala en Admin → Congregación → "URL Apps Script — Vida y Ministerio".
  *
- * ACCIONES SOPORTADAS (campo `action` en el payload):
- *   saveVMMes    → borra las semanas del mes y reescribe todo (col A-C desde fila 3)
- *   saveVMSemana → busca el header de la semana y reemplaza solo esas filas
- *
  * PAYLOAD JSON (POST body como text/plain):
  * {
  *   action: "saveVMMes" | "saveVMSemana",
  *   hoja: "Abril 26",
- *   encargadoAux: "José Reynoso",   // nombre del encargado de sala aux del mes (puede ser "")
- *   semanas: [
- *     { fecha: "2026-04-06", filas: [["col A", "col B", "col C"], ...] }
- *   ]
+ *   encargadoAux: "José Reynoso",
+ *   semanas: [{ fecha: "2026-04-06", filas: [["col A", "col B", "col C"], ...] }]
  * }
  */
 
-// ─── Colores del tema ────────────────────────────────────────────────────────
-var C_TITLE_BG    = '#1C3B5A';   // azul oscuro — fila 1 título hoja
-var C_TITLE_FG    = '#FFFFFF';
-var C_AUXROW_BG   = '#2E4A5F';   // azul más claro — fila 2 sala auxiliar
-var C_AUXROW_FG   = '#FFFFFF';
-var C_WEEK_BG     = '#E8F0FE';   // azul claro — header de semana
-var C_WEEK_FG     = '#1A237E';
-var C_SECTION_BG  = '#F5F5F5';   // gris claro — headers de sección
-var C_SECTION_FG  = '#37474F';
-var C_SALA_BG     = '#FAFAFA';   // gris muy claro — sub-header sala principal/auxiliar
-var C_SALA_FG     = '#757575';
-var C_ROW_BG      = '#FFFFFF';   // blanco — filas normales
-var C_ROW_FG      = '#212121';
-var C_ROW_ALT_BG  = '#F8F9FA';   // gris alternado (filas impares dentro de sección)
-var C_BORDER      = '#CFD8DC';
+// ─── Colores (hex sin #, incluye prefijo FF para opaco) ─────────────────────
+var BG_VERDE    = '#38761D';  // título + header semana
+var BG_GRIS     = '#999999';  // Tesoros de la Biblia
+var BG_ORO      = '#BF9000';  // Seamos Mejores Maestros + sala principal/aux sub-header
+var BG_ROJO     = '#990000';  // Nuestra Vida Cristiana
+var FG_BLANCO   = '#FFFFFF';
+var BG_BLANCO   = '#FFFFFF';
+var FG_NEGRO    = '#000000';
 
 function doPost(e) {
   try {
@@ -62,84 +49,61 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  return ContentService.createTextOutput('VM Sheets Script v2.0 — OK')
+  return ContentService.createTextOutput('VM Sheets Script v2.1 — OK')
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
-// ─── Obtener o crear hoja del mes ───────────────────────────────────────────
+// ─── Obtener o crear hoja ────────────────────────────────────────────────────
 function _getOrCreateSheet(ss, nombre) {
   var sheet = ss.getSheetByName(nombre);
-  if (!sheet) {
-    sheet = ss.insertSheet(nombre);
-  }
+  if (!sheet) sheet = ss.insertSheet(nombre);
   return sheet;
 }
 
-// ─── Configurar columnas y filas 1-2 de la hoja ─────────────────────────────
-function _initHoja(sheet, encargadoAux) {
-  // Anchos de columna
-  sheet.setColumnWidth(1, 360);  // A
-  sheet.setColumnWidth(2, 180);  // B
-  sheet.setColumnWidth(3, 180);  // C
-
-  // Fila 1 — título
-  _clearMerges(sheet, 1, 1);
-  sheet.getRange(1, 1, 1, 3).merge();
-  var r1 = sheet.getRange(1, 1);
-  r1.setValue('Reunión Vida y Ministerio Cristiana');
-  r1.setFontWeight('bold')
-    .setFontSize(12)
-    .setHorizontalAlignment('center')
-    .setBackground(C_TITLE_BG)
-    .setFontColor(C_TITLE_FG);
-  sheet.setRowHeight(1, 28);
-
-  // Fila 2 — sala auxiliar
-  _clearMerges(sheet, 2, 1);
-  sheet.getRange(2, 1, 1, 3).merge();
-  var r2 = sheet.getRange(2, 1);
-  r2.setValue(encargadoAux ? 'Sala Auxiliar: ' + encargadoAux : 'Sala Auxiliar: ');
-  r2.setFontWeight('normal')
-    .setFontStyle('italic')
-    .setFontSize(10)
-    .setHorizontalAlignment('left')
-    .setBackground(C_AUXROW_BG)
-    .setFontColor(C_AUXROW_FG);
-  sheet.setRowHeight(2, 22);
-}
-
-// ─── Actualizar encargado de sala auxiliar (fila 2) ─────────────────────────
+// ─── Actualizar encargado sala auxiliar (fila 2) ─────────────────────────────
 function _setEncargadoAux(sheet, nombre) {
   while (sheet.getLastRow() < 2) sheet.appendRow(['']);
-  _clearMerges(sheet, 2, 1);
+  _bf(sheet, 2, 1);
   sheet.getRange(2, 1, 1, 3).merge();
-  var r2 = sheet.getRange(2, 1);
-  r2.setValue(nombre ? 'Sala Auxiliar: ' + nombre : 'Sala Auxiliar: ');
-  r2.setBackground(C_AUXROW_BG).setFontColor(C_AUXROW_FG).setFontStyle('italic').setFontSize(10);
+  var r = sheet.getRange(2, 1);
+  r.setValue(nombre ? 'Sala Auxiliar: ' + nombre : 'Sala Auxiliar: ');
+  r.setFontWeight('bold').setFontSize(12).setHorizontalAlignment('center')
+   .setBackground(BG_BLANCO).setFontColor(FG_NEGRO);
 }
 
-// ─── Exportar mes completo (borra filas 3+ y reescribe) ─────────────────────
+// ─── Exportar mes completo ────────────────────────────────────────────────────
 function _escribirMes(sheet, encargadoAux, semanas) {
-  // Limpiar todo primero
   var lastRow = sheet.getLastRow();
   if (lastRow >= 1) {
+    try { sheet.getRange(1, 1, Math.max(lastRow, 3), 3).breakApart(); } catch(e) {}
     sheet.clearContents();
     sheet.clearFormats();
-    // Limpiar merges de toda la hoja
-    try { sheet.getRange(1, 1, Math.max(lastRow, 3), 3).breakApart(); } catch(e) {}
   }
 
-  _initHoja(sheet, encargadoAux);
+  // Columnas
+  sheet.setColumnWidth(1, 550);  // A — títulos de partes
+  sheet.setColumnWidth(2, 230);  // B — sala principal
+  sheet.setColumnWidth(3, 200);  // C — sala auxiliar
 
+  // Fila 1 — título
+  _bf(sheet, 1, 1);
+  sheet.getRange(1, 1, 1, 3).merge();
+  var r1 = sheet.getRange(1, 1);
+  r1.setValue('Reunión Vida y Ministerio Cristianos');
+  _estiloHeader(r1, BG_VERDE, 14);
+  sheet.setRowHeight(1, 24);
+
+  // Fila 2 — sala auxiliar
+  _setEncargadoAux(sheet, encargadoAux);
+  sheet.setRowHeight(2, 20);
+
+  // Semanas desde fila 3
   var allFilas = [];
   semanas.forEach(function(s) { allFilas = allFilas.concat(s.filas); });
-
-  if (allFilas.length > 0) {
-    _writeFilasConFormato(sheet, 3, allFilas);
-  }
+  if (allFilas.length > 0) _writeFilasConFormato(sheet, 3, allFilas);
 }
 
-// ─── Reemplazar una semana individual (busca header y sobreescribe) ──────────
+// ─── Reemplazar semana individual ────────────────────────────────────────────
 function _reemplazarSemana(sheet, filas) {
   if (!filas || !filas.length) return;
 
@@ -152,19 +116,17 @@ function _reemplazarSemana(sheet, filas) {
   }
 
   var colA = sheet.getRange(3, 1, lastRow - 2, 1).getValues();
-
-  var diaMatch = headerText.match(/Semana del (\d{1,2})/i);
+  var diaMatch  = headerText.match(/Semana del (\d{1,2})/i);
   var diaInicio = diaMatch ? diaMatch[1].replace(/^0/, '') : null;
 
-  var startIdx = -1;
-  var endIdx   = colA.length - 1;
-
+  var startIdx = -1, endIdx = colA.length - 1;
   for (var i = 0; i < colA.length; i++) {
-    var val = String(colA[i][0]).trim();
+    var val      = String(colA[i][0]).trim();
     var esSemana = val.toLowerCase().indexOf('semana del') === 0;
-    var esEstaSemana = val === headerText ||
-      (esSemana && diaInicio !== null && val.match(/Semana del (\d{1,2})/i)?.[1]?.replace(/^0/, '') === diaInicio);
-    if (esEstaSemana) {
+    var esEsta   = val === headerText ||
+      (esSemana && diaInicio !== null &&
+       val.match(/Semana del (\d{1,2})/i)?.[1]?.replace(/^0/, '') === diaInicio);
+    if (esEsta) {
       startIdx = i;
     } else if (startIdx >= 0 && esSemana) {
       endIdx = i - 1;
@@ -176,11 +138,7 @@ function _reemplazarSemana(sheet, filas) {
 
   if (startIdx >= 0) {
     var existingCount = endIdx - startIdx + 1;
-    // Deshacer merges en la zona a reemplazar
-    try {
-      sheet.getRange(startRow, 1, existingCount, 3).breakApart();
-    } catch(e) {}
-
+    try { sheet.getRange(startRow, 1, existingCount, 3).breakApart(); } catch(e) {}
     if (existingCount > filas.length) {
       sheet.deleteRows(startRow + filas.length, existingCount - filas.length);
     } else if (existingCount < filas.length) {
@@ -191,79 +149,107 @@ function _reemplazarSemana(sheet, filas) {
   _writeFilasConFormato(sheet, startRow, filas);
 }
 
-// ─── Escribir filas con formato ──────────────────────────────────────────────
+// ─── Escribir filas con formato ───────────────────────────────────────────────
 function _writeFilasConFormato(sheet, startRow, filas) {
-  var SECCIONES = ['Tesoros de la Biblia', 'Seamos Mejores Maestros', 'Nuestra Vida Cristiana'];
-
-  // Primero escribir valores crudos de un golpe (más rápido)
+  // Escribir valores de un golpe
   sheet.getRange(startRow, 1, filas.length, 3).setValues(filas);
 
-  // Luego aplicar formato fila a fila
-  var altCounter = 0; // para alternado dentro de sección
   for (var i = 0; i < filas.length; i++) {
-    var row    = startRow + i;
-    var colA   = String(filas[i][0] || '').trim();
-    var colB   = String(filas[i][1] || '').trim();
-    var range3 = sheet.getRange(row, 1, 1, 3);
-    var rangeA = sheet.getRange(row, 1);
+    var row  = startRow + i;
+    var colA = String(filas[i][0] || '').trim();
+    var colB = String(filas[i][1] || '').trim();
+    var colC = String(filas[i][2] || '').trim();
 
-    // Deshacer cualquier merge previo
-    try { range3.breakApart(); } catch(e) {}
+    // Limpiar merges previos en esta fila
+    _bf(sheet, row, 1);
+
+    var rA  = sheet.getRange(row, 1);
+    var rBC = sheet.getRange(row, 2, 1, 2);
+    var r3  = sheet.getRange(row, 1, 1, 3);
 
     if (colA.toLowerCase().indexOf('semana del') === 0) {
       // ── Header de semana ──────────────────────────────────────────────
-      range3.merge();
-      rangeA.setValue(colA);
-      range3.setBackground(C_WEEK_BG)
-            .setFontColor(C_WEEK_FG)
-            .setFontWeight('bold')
-            .setFontSize(11)
-            .setHorizontalAlignment('left');
-      sheet.setRowHeight(row, 24);
-      altCounter = 0;
-
-    } else if (SECCIONES.indexOf(colA) >= 0) {
-      // ── Header de sección ─────────────────────────────────────────────
-      range3.merge();
-      rangeA.setValue(colA);
-      range3.setBackground(C_SECTION_BG)
-            .setFontColor(C_SECTION_FG)
-            .setFontWeight('bold')
-            .setFontSize(10)
-            .setHorizontalAlignment('left');
+      r3.merge();
+      _estiloHeader(rA, BG_VERDE, 12);
       sheet.setRowHeight(row, 20);
-      altCounter = 0;
+
+    } else if (colA === 'Tesoros de la Biblia') {
+      // ── Header Tesoros ────────────────────────────────────────────────
+      r3.merge();
+      _estiloHeader(rA, BG_GRIS, 11);
+      sheet.setRowHeight(row, 18);
+
+    } else if (colA === 'Seamos Mejores Maestros') {
+      // ── Header Seamos ─────────────────────────────────────────────────
+      r3.merge();
+      _estiloHeader(rA, BG_ORO, 11);
+      sheet.setRowHeight(row, 18);
+
+    } else if (colA === 'Nuestra Vida Cristiana') {
+      // ── Header VC ────────────────────────────────────────────────────
+      r3.merge();
+      _estiloHeader(rA, BG_ROJO, 11);
+      sheet.setRowHeight(row, 18);
 
     } else if (colA === '' && colB === 'Sala Principal') {
-      // ── Sub-header Sala Principal / Sala Auxiliar ──────────────────────
-      range3.setBackground(C_SALA_BG)
-            .setFontColor(C_SALA_FG)
-            .setFontStyle('italic')
-            .setFontSize(9)
-            .setHorizontalAlignment('center');
+      // ── Sub-header sala principal / auxiliar ──────────────────────────
+      // B y C separados (no merge) con fondo dorado
+      var rB = sheet.getRange(row, 2);
+      var rC = sheet.getRange(row, 3);
+      rB.setBackground(BG_ORO).setFontColor(FG_BLANCO).setFontWeight('bold')
+        .setFontSize(10).setHorizontalAlignment('center');
+      rC.setBackground(BG_ORO).setFontColor(FG_BLANCO).setFontWeight('bold')
+        .setFontSize(10).setHorizontalAlignment('center');
+      rA.setBackground(BG_BLANCO);
       sheet.setRowHeight(row, 18);
 
     } else {
       // ── Fila normal ───────────────────────────────────────────────────
-      var bg = (altCounter % 2 === 0) ? C_ROW_BG : C_ROW_ALT_BG;
-      range3.setBackground(bg)
-            .setFontColor(C_ROW_FG)
-            .setFontWeight('normal')
-            .setFontStyle('normal')
-            .setFontSize(10)
-            .setHorizontalAlignment('left');
-      sheet.setRowHeight(row, 20);
-      altCounter++;
-    }
+      // Decidir si A va en bold
+      var boldA = _debeNegritaA(colA);
+      rA.setFontWeight(boldA ? 'bold' : 'normal')
+        .setFontSize(10)
+        .setFontColor(FG_NEGRO)
+        .setBackground(BG_BLANCO)
+        .setHorizontalAlignment('left');
 
-    // Borde inferior fino en todas las filas
-    range3.setBorder(false, false, true, false, false, false, C_BORDER, SpreadsheetApp.BorderStyle.SOLID);
+      if (colC !== '') {
+        // Hay datos en B y C → no merge, centrar ambos
+        sheet.getRange(row, 2).setHorizontalAlignment('center').setFontSize(10).setFontColor(FG_NEGRO).setBackground(BG_BLANCO);
+        sheet.getRange(row, 3).setHorizontalAlignment('center').setFontSize(10).setFontColor(FG_NEGRO).setBackground(BG_BLANCO);
+      } else if (colB !== '') {
+        // Solo B tiene dato → merge B:C
+        rBC.merge();
+        sheet.getRange(row, 2).setHorizontalAlignment('center').setFontSize(10).setFontColor(FG_NEGRO).setBackground(BG_BLANCO);
+      } else {
+        // B y C vacíos
+        rBC.setBackground(BG_BLANCO).setFontColor(FG_NEGRO);
+      }
+      sheet.setRowHeight(row, 18);
+    }
   }
 }
 
-// ─── Limpiar merges en un rango de una fila ──────────────────────────────────
-function _clearMerges(sheet, row, col) {
-  try {
-    sheet.getRange(row, col, 1, 3).breakApart();
-  } catch(e) {}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Aplicar estilo de header (fondo color, texto blanco, negrita, centrado)
+function _estiloHeader(range, bg, fontSize) {
+  range.setBackground(bg)
+       .setFontColor(FG_BLANCO)
+       .setFontWeight('bold')
+       .setFontSize(fontSize || 11)
+       .setHorizontalAlignment('center');
+}
+
+// Deshacer merges en fila, col A-C
+function _bf(sheet, row, col) {
+  try { sheet.getRange(row, col, 1, 3).breakApart(); } catch(e) {}
+}
+
+// ¿La columna A de esta fila normal va en negrita?
+function _debeNegritaA(colA) {
+  var lower = colA.toLowerCase();
+  if (lower.indexOf('oraci') === 0) return true;      // Oración apertura / cierre / Final
+  if (lower.indexOf('1.') === 0)    return true;      // Primer parte de sección (discurso Tesoros)
+  return false;
 }
