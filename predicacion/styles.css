@@ -455,6 +455,22 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
   background: linear-gradient(90deg, #E05277 0%, #ff7e9b 100%);
 }
 .meta-foot { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+.meta-card.meta-cumplida {
+  border-color: rgba(224,82,119,0.4);
+  box-shadow: 0 0 0 1px rgba(224,82,119,0.12);
+}
+.meta-confetti-piece {
+  position: absolute; top: 6px; font-size: 18px;
+  pointer-events: none; will-change: transform, opacity;
+  animation: metaConfettiFall 1.6s ease-in forwards;
+}
+@keyframes metaConfettiFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(150px) rotate(340deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meta-confetti-piece { display: none; }
+}
 .meta-empty {
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: 16px; padding: 22px 18px; text-align: center;

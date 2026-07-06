@@ -685,9 +685,10 @@ function renderHistorialMesesAnteriores(meses) {
 }
 
 function _metaMensualCard(actualMes, metaMensual, labelMes, extraHead = '') {
-  const faltante = Math.max(0, metaMensual - actualMes);
+  const faltante  = Math.max(0, metaMensual - actualMes);
+  const cumplida  = actualMes >= metaMensual;
   return `
-    <div class="meta-card">
+    <div class="meta-card${cumplida ? ' meta-cumplida' : ''}" id="meta-mensual-card">
       <div class="meta-head">
         <div class="meta-title">Meta mensual</div>
         <div class="meta-sub" style="display:flex;gap:8px;align-items:center;">${labelMes}${extraHead}</div>
@@ -700,9 +701,43 @@ function _metaMensualCard(actualMes, metaMensual, labelMes, extraHead = '') {
         <div class="meta-bar-fill" style="width:${metaPct(actualMes, metaMensual)}%;"></div>
       </div>
       <div class="meta-foot">
-        ${faltante > 0 ? `Te faltan ${fmtTiempo(faltante)} para llegar a la meta.` : 'Meta mensual cumplida.'}
+        ${faltante > 0 ? `Te faltan ${fmtTiempo(faltante)} para llegar a la meta.` : '🎉 ¡Meta mensual cumplida!'}
       </div>
     </div>`;
+}
+
+// ── Festejo (una vez por mes) al alcanzar la meta mensual ─────────
+const FESTEJO_EMOJIS = ['🎉', '🎊', '🏆', '✨', '🎉', '🎊'];
+
+function _yaFestejoMeta(mesId) {
+  try { return localStorage.getItem(`ziv_festejo_meta_${_uid}_${mesId}`) === '1'; }
+  catch { return true; }
+}
+function _marcarFestejoMeta(mesId) {
+  try { localStorage.setItem(`ziv_festejo_meta_${_uid}_${mesId}`, '1'); } catch {}
+}
+
+function _maybeFestejarMeta(mesId, actualMes, metaMensual) {
+  if (mesId !== mesHoy()) return;
+  if (actualMes < metaMensual) return;
+  if (_yaFestejoMeta(mesId)) return;
+  _marcarFestejoMeta(mesId);
+
+  const card = document.getElementById('meta-mensual-card');
+  if (!card) return;
+  const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+
+  card.style.position = card.style.position || 'relative';
+  FESTEJO_EMOJIS.forEach((emoji, i) => {
+    const piece = document.createElement('span');
+    piece.className = 'meta-confetti-piece';
+    piece.textContent = emoji;
+    piece.style.left = `${8 + i * (84 / (FESTEJO_EMOJIS.length - 1))}%`;
+    piece.style.animationDelay = `${i * 70}ms`;
+    card.appendChild(piece);
+    setTimeout(() => piece.remove(), 1700 + i * 70);
+  });
 }
 
 function renderMetas() {
@@ -759,16 +794,19 @@ function renderMetas() {
         ${renderAnimacionRitmo(servicioDesde, mesesServicio, actualAnual, metaAnual)}
         ${historialCard}
       </div>`;
+    _maybeFestejarMeta(_mesMostrado, actualMes, metaMensual);
     return;
   }
 
   // ── Precursor auxiliar: 30 h/mes, sin anual ────────────────────
   if (_esPrecursorAuxiliar) {
+    const metaMensualAux = 30 * 60;
     cont.innerHTML = `
       <div class="metas-grid">
-        ${_metaMensualCard(actualMes, 30 * 60, `${fmtMes(_mesMostrado)} · Auxiliar`)}
+        ${_metaMensualCard(actualMes, metaMensualAux, `${fmtMes(_mesMostrado)} · Auxiliar`)}
         ${historialCard}
       </div>`;
+    _maybeFestejarMeta(_mesMostrado, actualMes, metaMensualAux);
     return;
   }
 
@@ -777,11 +815,13 @@ function renderMetas() {
     const extraHead = `
       <button onclick="iniciarFijarMeta()" class="meta-action-btn">Editar</button>
       <button onclick="quitarMetaPersonal()" class="meta-action-btn">Quitar</button>`;
+    const metaMensualPersonalMin = _metaMensualPersonal * 60;
     cont.innerHTML = `
       <div class="metas-grid">
-        ${_metaMensualCard(actualMes, _metaMensualPersonal * 60, fmtMes(_mesMostrado), extraHead)}
+        ${_metaMensualCard(actualMes, metaMensualPersonalMin, fmtMes(_mesMostrado), extraHead)}
         ${historialCard}
       </div>`;
+    _maybeFestejarMeta(_mesMostrado, actualMes, metaMensualPersonalMin);
     return;
   }
 
