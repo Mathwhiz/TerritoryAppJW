@@ -1780,6 +1780,78 @@ window.closeSessionMenu = function() {
   if (b) b.classList.remove('open');
 };
 
+/* ─────────────────────────────────────────
+   FESTEJO: pelota rebotando (guardado exitoso)
+   Usar tras un guardado importante: window.lanzarPelotaFestejo()
+───────────────────────────────────────── */
+(function initPelotaFestejo() {
+  let canvas, ctx, pelota = null, animando = false;
+
+  function getCanvas() {
+    if (canvas) return canvas;
+    canvas = document.createElement('canvas');
+    canvas.id = 'ziv-pelota-canvas';
+    canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9998;';
+    document.body.appendChild(canvas);
+    ctx = canvas.getContext('2d');
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.addEventListener('resize', resize);
+    resize();
+    return canvas;
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (pelota) {
+      const p = pelota;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.9;
+      p.rot += p.vx * 0.03;
+
+      if (p.y >= p.groundY) {
+        p.y = p.groundY;
+        p.vy *= -0.68;
+        if (Math.abs(p.vy) < 4) p.vy = -9;
+      }
+
+      const alturaRel = Math.max(0, (p.groundY - p.y) / 180);
+      ctx.save();
+      ctx.globalAlpha = 0.25 * (1 - Math.min(alturaRel, 0.8));
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.groundY + p.radio * 0.6, p.radio * (1 - alturaRel * 0.4), 6, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#000';
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.font = `${p.radio * 2}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.emoji, 0, 0);
+      ctx.restore();
+
+      if (p.x > canvas.width + 60) pelota = null;
+    }
+    if (pelota) {
+      requestAnimationFrame(tick);
+    } else {
+      animando = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  window.lanzarPelotaFestejo = function(emoji = '⚽') {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    getCanvas();
+    const groundY = canvas.height - 70;
+    pelota = { emoji, x: -40, y: groundY, vx: Math.max(5, canvas.width / 130), vy: -18, radio: 22, rot: 0, groundY };
+    if (!animando) { animando = true; requestAnimationFrame(tick); }
+  };
+})();
+
 window.sessionSignOut = async function() {
   ['ziv_congre_id', 'ziv_congre_nombre', 'ziv_congre_color'].forEach(k => localStorage.removeItem(k));
   ['congreId', 'congreNombre', 'congreColor'].forEach(k => sessionStorage.removeItem(k));

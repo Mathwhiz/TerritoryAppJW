@@ -1431,6 +1431,7 @@ window.guardarSemana = async function() {
     uiLoading.hide();
     uiToast('Programa guardado', 'success');
     logActividad(congreId, 'vida-ministerio', 'guardado', 'Semana ' + semanaData.fecha);
+    window.lanzarPelotaFestejo?.('🎾');
   } catch(e) {
     uiLoading.hide();
     await uiAlert('Error al guardar: ' + e.message);

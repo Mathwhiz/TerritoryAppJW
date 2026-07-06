@@ -1213,6 +1213,7 @@ async function registrarEnProgreso() {
     status.textContent = `✓ ${territoriosARegistrar.length} territorio(s) registrado(s) como en progreso`;
     btn.disabled = true;
     btn.textContent = 'Ya registrado ✓';
+    window.lanzarPelotaFestejo?.('⚽');
   } catch(err) {
     if (window.uiLoading) uiLoading.hide();
     status.style.color = '#F09595';
