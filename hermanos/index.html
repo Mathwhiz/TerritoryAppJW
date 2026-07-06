@@ -360,34 +360,25 @@
     </div>
   </div>
 
-  <!-- ── PIN MODAL ── -->
-  <div id="pin-modal" class="pin-modal" style="display:flex;">
+  <!-- ── CARGANDO (estado neutral por defecto, antes de saber el permiso) ── -->
+  <div id="view-cargando" class="pin-modal" style="display:flex;">
+    <div class="pin-card">
+      <div class="loading-wrap" style="padding:0;">
+        <div class="spinner"></div>
+        <div class="loading-txt">Cargando…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SIN PERMISO ── -->
+  <div id="view-sin-permiso" class="pin-modal" style="display:none;">
     <div class="pin-card">
       <div class="pin-title">Administrador</div>
       <div class="pin-sub js-congre">—</div>
-      <div class="pin-sub" style="margin-top:6px;">Ingresá el PIN de encargado</div>
-      <div class="pin-dots" style="margin-top:16px;margin-bottom:20px;">
-        <div class="pin-dot" id="pd0"></div>
-        <div class="pin-dot" id="pd1"></div>
-        <div class="pin-dot" id="pd2"></div>
-        <div class="pin-dot" id="pd3"></div>
+      <div class="pin-sub" style="margin-top:14px;line-height:1.5;">
+        No tenés permiso para acceder a este módulo.<br>Pedile a un admin que te asigne el rol de encargado.
       </div>
-      <div class="pin-grid">
-        <button class="pin-btn" onclick="pinPress('1')">1</button>
-        <button class="pin-btn" onclick="pinPress('2')">2</button>
-        <button class="pin-btn" onclick="pinPress('3')">3</button>
-        <button class="pin-btn" onclick="pinPress('4')">4</button>
-        <button class="pin-btn" onclick="pinPress('5')">5</button>
-        <button class="pin-btn" onclick="pinPress('6')">6</button>
-        <button class="pin-btn" onclick="pinPress('7')">7</button>
-        <button class="pin-btn" onclick="pinPress('8')">8</button>
-        <button class="pin-btn" onclick="pinPress('9')">9</button>
-        <button class="pin-btn" style="visibility:hidden;"></button>
-        <button class="pin-btn" onclick="pinPress('0')">0</button>
-        <button class="pin-btn pin-del" onclick="pinDelete()">⌫</button>
-      </div>
-      <div class="pin-error" id="pin-error"></div>
-      <button class="pin-cancel" onclick="goToCover()">← Cancelar</button>
+      <button class="pin-cancel" style="margin-top:24px;" onclick="goToCover()">← Volver</button>
     </div>
   </div>
 
@@ -431,7 +422,7 @@
 </div><!-- /.app -->
 
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="../shared/ui-utils.js?v=1.4"></script>
+<script src="../shared/ui-utils.js?v=1.7"></script>
 <script type="module" src="/hermanos/app.js"></script>
 </body>
 </html>

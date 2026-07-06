@@ -86,8 +86,6 @@ const DIA_BG = {
   'Jueves':'#2a1d05','Viernes':'#0f2a13','Sábado':'#1f1638','Domingo':'#321218',
 };
 
-/* ─── PIN ─── */
-let PIN_ENCARGADO = null;
 let SCRIPT_URL    = null;
 let SHEETS_URL    = null;
 
@@ -97,23 +95,27 @@ function privateModuleConfigRef() {
 
 (async function cargarConfig() {
   try {
-    const [snap, privateSnap] = await Promise.all([
+    const esEncargadoAsig = puedeVerComoEncargado();
+    // Quien solo viene a mirar no necesita las escrituras de sincronización del
+    // espejo público (usado por la página standalone programa.html) — esas
+    // solo hacen falta cuando un encargado edita algo. Se piden todas las
+    // lecturas en paralelo en vez de encadenadas.
+    const [snap, privateSnap, rowsActuales] = await Promise.all([
       getDoc(congreRef()),
       getDoc(privateModuleConfigRef()).catch(() => null),
+      getProgramacion(),
+      cargarEspeciales(esEncargadoAsig),
     ]);
+    todasLasFilas = rowsActuales;
     if (snap.exists()) {
       const data = snap.data();
       const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
       const mergedConfig = { ...data, ...privateData };
-      await syncAsigPublicConfig(data.nombre || CONGRE_NOMBRE || CONGRE_ID);
-      const rowsActuales = await getProgramacion();
-      todasLasFilas = rowsActuales;
-      await replaceAsigPublicPrograma(rowsActuales);
-      await cargarEspeciales();
-      if (mergedConfig.pinEncargado) {
-        PIN_ENCARGADO = mergedConfig.pinEncargado;
-      } else {
-        await uiAlert('No se encontró el PIN del encargado en la base de datos.', 'Error de configuración');
+      if (esEncargadoAsig) {
+        await Promise.all([
+          syncAsigPublicConfig(data.nombre || CONGRE_NOMBRE || CONGRE_ID),
+          replaceAsigPublicPrograma(rowsActuales),
+        ]);
       }
       if (mergedConfig.scriptUrl) {
         SCRIPT_URL = mergedConfig.scriptUrl;
@@ -125,9 +127,9 @@ function privateModuleConfigRef() {
         const btn = document.getElementById('btn-ver-planilla');
         if (btn) btn.style.display = '';
       }
-    } else {
-      await uiAlert('No se encontró el PIN del encargado en la base de datos.', 'Error de configuración');
     }
+    const btnEnc = document.getElementById('btn-encargado-asig');
+    if (btnEnc) btnEnc.style.display = puedeVerComoEncargado() ? '' : 'none';
   } catch(e) {
     await uiAlert('Error al cargar la configuración: ' + e.message, 'Error');
   }
@@ -141,7 +143,6 @@ let listaHermanos = [];
 let todasLasFilas = [];
 let autoResult    = [];
 let esEncargado   = false;
-let pinBuffer     = '';
 let semanaOffsetEdit = 0;
 let semanaOffsetVer   = 0;
 let semanaOffsetImagen = 0;
@@ -437,55 +438,7 @@ async function getHermanos() {
   return result;
 }
 
-// ─────────────────────────────────────────
-//   PIN
-// ─────────────────────────────────────────
-function openPin() {
-  pinBuffer = '';
-  updatePinDots();
-  setText('pin-error', '');
-  show('pin-modal');
-}
-function pinPress(d) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += d;
-  updatePinDots();
-  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
-}
-function pinDelete() {
-  pinBuffer = pinBuffer.slice(0,-1);
-  updatePinDots();
-  setText('pin-error', '');
-}
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('pd' + i);
-    if (!dot) continue;
-    dot.style.borderColor = i < pinBuffer.length ? '#7F77DD' : '#555';
-    dot.style.background  = i < pinBuffer.length ? '#7F77DD' : 'transparent';
-  }
-}
-function checkPin() {
-  if (PIN_ENCARGADO === null) {
-    setText('pin-error', 'Error: configuración no cargada');
-    pinBuffer = '';
-    updatePinDots();
-    return;
-  }
-  if (pinBuffer === PIN_ENCARGADO) {
-    hide('pin-modal');
-    esEncargado = true;
-    pinBuffer = '';
-    goToEncargado();
-  } else {
-    setText('pin-error', 'PIN incorrecto, intentá de nuevo');
-    pinBuffer = '';
-    updatePinDots();
-  }
-}
-function pinCancel() { hide('pin-modal'); pinBuffer = ''; }
-
-function _canBypassPin() {
+function puedeVerComoEncargado() {
   const u = window.currentUser;
   if (!u) return false;
   const roles = u.appRoles || (u.appRol ? [u.appRol] : []);
@@ -495,8 +448,9 @@ function _canBypassPin() {
 /* ─── Navegación ─── */
 function goToCover() { showView('view-cover'); }
 function goToPin() {
-  if (_canBypassPin()) { esEncargado = true; goToEncargado(); return; }
-  openPin();
+  if (!puedeVerComoEncargado()) return;
+  esEncargado = true;
+  goToEncargado();
 }
 async function cerrarSesionEncargado() {
   const ok = await uiConfirm({
@@ -1205,12 +1159,12 @@ function guardarImagen() {
 //   SEMANAS ESPECIALES
 // ─────────────────────────────────────────
 
-async function cargarEspeciales() {
+async function cargarEspeciales(syncMirror = true) {
   try {
     const snap = await getDocs(especCol());
     semanasEspeciales = {};
     snap.forEach(d => { semanasEspeciales[d.id] = d.data(); });
-    await replaceAsigPublicEspeciales();
+    if (syncMirror) await replaceAsigPublicEspeciales();
     renderEspecialesList();
   } catch(e) {
     console.error('Error cargando especiales:', e);
@@ -1293,10 +1247,6 @@ window.eliminarEspecial = async function(lunes) {
 };
 
 window.guardarImagen = guardarImagen;
-window.openPin = openPin;
-window.pinPress = pinPress;
-window.pinDelete = pinDelete;
-window.pinCancel = pinCancel;
 window.goToCover = goToCover;
 window.goToPin = goToPin;
 window.cerrarSesionEncargado = cerrarSesionEncargado;

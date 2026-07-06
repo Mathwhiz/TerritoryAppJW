@@ -1424,7 +1424,7 @@
       <div class="dash-content">
         <p class="section-label">Módulos disponibles</p>
         <div class="module-grid">
-      <a id="menu-card-terr" class="cs-nav-card cs-nav-card-terr" href="territorios/index.html">
+      <a id="menu-card-terr" class="cs-nav-card cs-nav-card-terr" href="territorios/index.html" style="display:none;">
         <div class="cs-nav-icon cs-nav-icon-terr">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"
@@ -1450,7 +1450,7 @@
         </div>
       </a>
 
-      <a id="menu-card-asign" class="cs-nav-card cs-nav-card-asign" href="asignaciones/index.html">
+      <a id="menu-card-asign" class="cs-nav-card cs-nav-card-asign" href="asignaciones/index.html" style="display:none;">
         <div class="cs-nav-icon cs-nav-icon-asign">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
@@ -1463,7 +1463,7 @@
         </div>
       </a>
 
-      <a id="menu-card-herm" class="cs-nav-card cs-nav-card-herm" href="hermanos/index.html">
+      <a id="menu-card-herm" class="cs-nav-card cs-nav-card-herm" href="hermanos/index.html" style="display:none;">
         <div class="cs-nav-icon cs-nav-icon-herm">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#D85A30" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1477,7 +1477,7 @@
         </div>
       </a>
 
-      <a id="menu-card-vm" class="cs-nav-card cs-nav-card-vm" href="vida-ministerio/index.html">
+      <a id="menu-card-vm" class="cs-nav-card cs-nav-card-vm" href="vida-ministerio/index.html" style="display:none;">
         <div class="cs-nav-icon cs-nav-icon-vm">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1503,7 +1503,7 @@
         </div>
       </a>
 
-      <a class="cs-nav-card cs-nav-card-conf" href="conferencias/index.html">
+      <a id="menu-card-conf" class="cs-nav-card cs-nav-card-conf" href="conferencias/index.html" style="display:none;">
         <div class="cs-nav-icon cs-nav-icon-conf">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#0DB6CC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1591,11 +1591,18 @@
     }
     syncInstallButtons();
   </script>
-  <script src="shared/ui-utils.js?v=1.4"></script>
+  <script src="shared/ui-utils.js?v=1.7"></script>
   <script type="module">
     import { db } from './shared/firebase.js';
     import './shared/auth.js';
+    import { TERMINOS_VERSION } from './shared/auth-config.js';
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+    function necesitaCompletarPerfil(user) {
+      if (!user || user.isAnonymous) return false;
+      if (user.primerLogin) return true;
+      return user.terminosAceptados !== true || user.terminosVersion !== TERMINOS_VERSION;
+    }
 
     const PALETA = [
       { bg: 'rgba(55,138,221,0.18)',  border: 'rgba(55,138,221,0.35)',  color: '#378ADD' },
@@ -1985,7 +1992,7 @@
       const nombre = sessionStorage.getItem('congreNombre') || '';
       const color  = sessionStorage.getItem('congreColor')  || '';
       if (window.uiLoading) window.uiLoading.hide();
-      if (finalUser.primerLogin) {
+      if (necesitaCompletarPerfil(finalUser)) {
         window.location.href = '/perfil.html';
         return;
       }
@@ -2042,26 +2049,32 @@
       const cardAdmin = document.getElementById('menu-card-admin');
       if (cardAdmin) cardAdmin.style.display = window.hasPermission?.('acceso_admin') ? '' : 'none';
 
+      // Cada card se oculta según el permiso real del rol (evita mostrar una card
+      // que el authGuard va a rebotar apenas se toque)
+      const cardTerr  = document.getElementById('menu-card-terr');
+      const cardAsign = document.getElementById('menu-card-asign');
+      const cardHerm  = document.getElementById('menu-card-herm');
+      const cardConf  = document.getElementById('menu-card-conf');
+      if (cardTerr)  cardTerr.style.display  = window.hasPermission?.('acceso_territorios')  ? '' : 'none';
+      if (cardAsign) cardAsign.style.display = window.hasPermission?.('acceso_asignaciones') ? '' : 'none';
+      if (cardHerm)  cardHerm.style.display  = window.hasPermission?.('acceso_hermanos')     ? '' : 'none';
+      if (cardConf)  cardConf.style.display  = window.hasPermission?.('acceso_conferencias') ? '' : 'none';
+
       // Hermana registrada: ocultar módulos no relevantes, redirigir VM al visor público
       const esHermana = user && !user.isAnonymous && user.sexo === 'M';
       if (esHermana) {
-        ['menu-card-terr', 'menu-card-asign', 'menu-card-herm'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = 'none';
-        });
+        [cardTerr, cardAsign, cardHerm].forEach(el => { if (el) el.style.display = 'none'; });
         const cardVm = document.getElementById('menu-card-vm');
         if (cardVm) {
+          cardVm.style.display = window.hasPermission?.('acceso_vm') ? '' : 'none';
           const congreId = sessionStorage.getItem('congreId') || '';
           cardVm.href = `vida-ministerio/programa.html?congre=${encodeURIComponent(congreId)}`;
           cardVm.querySelector('.cs-nav-sub').textContent = 'Programa de esta semana';
         }
       } else {
-        ['menu-card-terr', 'menu-card-asign', 'menu-card-herm'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = '';
-        });
         const cardVm = document.getElementById('menu-card-vm');
         if (cardVm) {
+          cardVm.style.display = window.hasPermission?.('acceso_vm') ? '' : 'none';
           cardVm.href = 'vida-ministerio/index.html';
           cardVm.querySelector('.cs-nav-sub').textContent = 'Programa de la reunión semanal';
         }
@@ -2074,7 +2087,7 @@
         mostrarViewAuth(nombre);
         return;
       }
-      if (user.primerLogin) {
+      if (necesitaCompletarPerfil(user)) {
         window.location.href = '/perfil.html';
         return;
       }

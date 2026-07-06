@@ -129,7 +129,7 @@ let semanaOffset  = 0;
 let chatScope     = 'grupo';
 
 // ─────────────────────────────────────────
-//   COLORES (dinámico — se construye en cargarPins)
+//   COLORES (dinámico — se construye en cargarGrupos)
 // ─────────────────────────────────────────
 let GRUPOS       = [];   // [{ id, label, color }] — cargado desde Firestore
 let GCOLORS      = {};
@@ -316,12 +316,12 @@ async function fetchConfig(grupo) {
 const WEEK = getWeekDates();
 
 
-function selectGrupo(el, n, autoOpenPin = true) {
+function selectGrupo(el, n, autoEnter = true) {
   document.querySelectorAll('.grupo-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   selectedGrupo = n;
   document.getElementById('btn-start').classList.add('enabled');
-  if (autoOpenPin && selectedGrupo) openPin();
+  if (autoEnter && selectedGrupo) entrarGrupoSeleccionado();
 }
 
 function goToCover() {
@@ -413,26 +413,19 @@ async function cerrarSesion() {
 }
 
 // ─────────────────────────────────────────
-//   PIN
+//   GRUPOS
 // ─────────────────────────────────────────
-let PINS = null;
-let pinBuffer = '';
-let pinGrupo  = null;
-
-async function cargarPins() {
+async function cargarGrupos() {
   try {
     const snap = await getDocs(gruposCol());
-    PINS = {};
     GRUPOS = [];
     snap.forEach(d => {
       const data = d.data();
-      const { id, pin, label, color } = data;
-      if (id && pin) PINS[id] = pin;
+      const { id, label, color } = data;
       if (id) GRUPOS.push({ id: String(id), label: label || (id === 'C' ? 'Congregación' : `Grupo ${id}`), color: color || '#888' });
     });
-    if (Object.keys(PINS).length === 0) {
+    if (GRUPOS.length === 0) {
       await uiAlert('No se encontraron grupos configurados en la base de datos.', 'Error de configuración');
-      PINS = null;
       return;
     }
     // Ordenar: numéricos primero (por número), luego C
@@ -450,10 +443,11 @@ async function cargarPins() {
       GROUP_COLORS[g.id] = g.color;
       GROUP_BG[g.id]     = hexToRgba(g.color, 0.15);
     });
+    const teniaGrupoGuardado = !!sessionStorage.getItem('selectedGrupo');
     renderGrupoButtons();
+    if (!teniaGrupoGuardado) await resolverGrupoPropio();
   } catch(e) {
     await uiAlert('Error al cargar la configuración de grupos: ' + e.message, 'Error');
-    PINS = null;
   }
 }
 
@@ -517,79 +511,53 @@ function _applyGrupoColorToBtn(btn, id) {
   btn.style.setProperty('--grupo-hover-bg', hexToRgba(c, 0.13));
 }
 
-cargarPins();
+cargarGrupos();
 
-function _canBypassGrupoPin(grupoId) {
+function puedeElegirGrupo(grupoId) {
   const u = window.currentUser;
   if (!u) return false;
   const roles = u.appRoles || (u.appRol ? [u.appRol] : []);
-  if (roles.some(r => ['admin_general', 'admin_congre'].includes(r))) return true;
-  if (roles.includes('encargado_grupo') && String(u.grupoEncargado) === String(grupoId)) return true;
-  return false;
+  return roles.some(r => ['admin_general', 'admin_congre', 'encargado_grupo'].includes(r));
 }
 
-function openPin() {
-  if (_canBypassGrupoPin(selectedGrupo)) { goToModo(); cargarConductores(); cargarConfigCongre(); return; }
-  pinGrupo = selectedGrupo;
-  pinBuffer = '';
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-  const pinGrupoObj = GRUPOS.find(g => String(g.id) === String(pinGrupo));
-  const label = pinGrupoObj ? pinGrupoObj.label : 'Grupo ' + pinGrupo;
-  document.getElementById('pin-title').textContent = label;
-  const color = GCOLORS[pinGrupo] || '#97C459';
-  document.getElementById('pin-title').style.color = color;
-  document.getElementById('pin-card').style.borderColor = color;
-  document.getElementById('pin-modal').style.display = 'flex';
+function entrarGrupoSeleccionado() {
+  if (!puedeElegirGrupo(selectedGrupo)) return;
+  goToModo();
+  cargarConductores();
+  cargarConfigCongre();
 }
 
-function pinPress(digit) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += digit;
-  updatePinDots();
-  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
-}
-
-function pinDelete() {
-  pinBuffer = pinBuffer.slice(0, -1);
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-}
-
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('pd' + i);
-    dot.classList.toggle('filled', i < pinBuffer.length);
-    const color = GCOLORS[pinGrupo] || '#97C459';
-    dot.style.borderColor = i < pinBuffer.length ? color : '#555';
-    dot.style.background  = i < pinBuffer.length ? color : 'transparent';
+async function resolverGrupoPropio() {
+  const u = window.currentUser;
+  const roles = u?.appRoles || (u?.appRol ? [u.appRol] : []);
+  if (roles.some(r => ['admin_general', 'admin_congre', 'encargado_grupo'].includes(r))) {
+    return; // se queda en view-cover con el selector completo de grupos
   }
+  if (u?.matchedPublisherId) {
+    try {
+      const pubSnap = await getDoc(doc(db, 'congregaciones', CONGRE_ID, 'publicadores', u.matchedPublisherId));
+      const grupoId = pubSnap.exists() ? pubSnap.data().grupoId : null;
+      if (grupoId && GRUPOS.some(g => String(g.id) === String(grupoId))) {
+        const btn = document.querySelector(`.grupo-btn[data-grupo="${grupoId}"]`);
+        if (btn) selectGrupo(btn, String(grupoId), false);
+        else selectedGrupo = String(grupoId);
+        goToModo();
+        cargarConductores();
+        cargarConfigCongre();
+        return;
+      }
+    } catch (e) {
+      console.warn('No se pudo resolver el grupo propio:', e);
+    }
+  }
+  mostrarAvisoSinGrupo();
 }
 
-function checkPin() {
-  if (PINS === null) {
-    document.getElementById('pin-error').textContent = 'Error: configuración no cargada';
-    pinBuffer = '';
-    updatePinDots();
-    return;
-  }
-  const correct = PINS[String(pinGrupo)];
-  if (pinBuffer === correct) {
-    document.getElementById('pin-modal').style.display = 'none';
-    pinBuffer = '';
-    goToModo();
-    cargarConductores();
-    cargarConfigCongre();
-  } else {
-    document.getElementById('pin-error').textContent = 'PIN incorrecto, intentá de nuevo';
-    pinBuffer = '';
-    updatePinDots();
-  }
-}
-
-function pinCancel() {
-  document.getElementById('pin-modal').style.display = 'none';
-  pinBuffer = '';
+function mostrarAvisoSinGrupo() {
+  const subEl = document.getElementById('congre-sub-sg');
+  if (subEl) subEl.textContent = CONGRE_NOMBRE;
+  hide('view-cover');
+  show('view-sin-grupo');
 }
 
 // ─────────────────────────────────────────
@@ -2106,10 +2074,7 @@ window.guardarRegistros = guardarRegistros;
 window.setTerritoryEstado = setTerritoryEstado;
 window.closeModal = closeModal;
 window.handleModalBg = handleModalBg;
-window.pinPress = pinPress;
-window.pinDelete = pinDelete;
-window.pinCancel = pinCancel;
-window.openPin = openPin;
+window.entrarGrupoSeleccionado = entrarGrupoSeleccionado;
 window.generatePreview = generatePreview;
 window.guardarImagen = guardarImagen;
 window.registrarEnProgreso = registrarEnProgreso;

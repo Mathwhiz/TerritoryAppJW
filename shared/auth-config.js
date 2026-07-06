@@ -3,6 +3,10 @@
 // Para agregar una feature nueva: agregar la key aquí y llamar
 // hasPermission('nueva_feature') donde se necesite.
 
+// Versión vigente de Términos y Condiciones / Política de Privacidad.
+// Subir este valor fuerza a todos los usuarios a re-aceptar en su próximo login.
+export const TERMINOS_VERSION = 'v1';
+
 export const APP_ROLES = {
   ADMIN_GENERAL:            'admin_general',
   ADMIN_CONGRE:             'admin_congre',
@@ -57,20 +61,17 @@ export const PERMISOS = {
     'acceso_asignaciones',
     'acceso_hermanos',
     'acceso_predicacion',
-    'acceso_conferencias',
   ],
 
   encargado_vm: [
     'acceso_vm',
     'acceso_hermanos',
     'acceso_predicacion',
-    'acceso_conferencias',
   ],
 
   encargado_grupo: [
     'acceso_territorios',
     'acceso_predicacion',
-    'acceso_conferencias',
   ],
 
   encargado_conferencias: [
@@ -79,34 +80,38 @@ export const PERMISOS = {
     'acceso_predicacion',
   ],
 
+  // acceso_conferencias: solo anciano/siervo_ministerial entre los roles de
+  // publicador — el resto de roles "base" no lo tiene (decisión de acceso,
+  // no relacionada con los PINs).
   anciano: [
-    'acceso_territorios',
+    'acceso_asignaciones',
     'acceso_vm',
     'acceso_conferencias',
     'acceso_predicacion',
   ],
 
   siervo_ministerial: [
-    'acceso_territorios',
+    'acceso_asignaciones',
+    'acceso_vm',
     'acceso_conferencias',
     'acceso_predicacion',
   ],
 
   precursor_regular: [
-    'acceso_territorios',
-    'acceso_conferencias',
+    'acceso_asignaciones',
+    'acceso_vm',
     'acceso_predicacion',
   ],
 
   precursor_auxiliar: [
-    'acceso_territorios',
-    'acceso_conferencias',
+    'acceso_asignaciones',
+    'acceso_vm',
     'acceso_predicacion',
   ],
 
   publicador: [
-    'acceso_territorios',
-    'acceso_conferencias',
+    'acceso_asignaciones',
+    'acceso_vm',
     'acceso_predicacion',
   ],
 
@@ -114,13 +119,13 @@ export const PERMISOS = {
     // Sin acceso hasta que el admin confirme el match
   ],
 
-  // Acceso anónimo: mismo nivel que antes del sistema de perfiles.
-  // Los módulos siguen protegidos por PIN internamente.
+  // Acceso anónimo: Asignaciones/VM tienen vista pública propia (sin datos de
+  // encargado). Territorios (interno) y Hermanos quedan afuera — Territorios
+  // solo lo ven encargado_grupo/admin; el mapa público (mapa.html?modo=public)
+  // es una vista aparte que no pasa por authGuard.
   anonimo: [
-    'acceso_territorios',
     'acceso_asignaciones',
     'acceso_vm',
-    'acceso_hermanos',
     'acceso_predicacion',
   ],
 

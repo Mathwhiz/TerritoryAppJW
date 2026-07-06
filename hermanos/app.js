@@ -113,8 +113,6 @@ function buildConductorUI(grupos) {
 let publicadores    = [];
 let gruposGlobales  = [];     // grupos numéricos (no 'C'), cargados en init
 let _respPubs       = [];     // cache de publicadores para la vista Responsabilidades
-let pinEncargado    = null;
-let pinBuffer       = '';
 let editandoId      = null;
 let sheetsUrl       = null;
 let semanasEspeciales = {};
@@ -138,16 +136,14 @@ window.showView = function showView(id) {
   showChatFab();
 }
 
-function showPinModal() {
-  pinBuffer = ''; updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-  document.getElementById('pin-modal').style.display = 'flex';
+function showSinPermiso() {
+  document.getElementById('view-sin-permiso').style.display = 'flex';
   document.getElementById('btn-home').classList.remove('visible');
   hideChatFab();
 }
 
-function hidePinModal() {
-  document.getElementById('pin-modal').style.display = 'none';
+function hideSinPermiso() {
+  document.getElementById('view-sin-permiso').style.display = 'none';
   document.getElementById('btn-home').classList.add('visible');
   showChatFab();
 }
@@ -166,7 +162,7 @@ function pubCol() {
 // ─────────────────────────────────────────
 //   INIT — cargar config + grupos
 // ─────────────────────────────────────────
-function _canBypassHermanosPin() {
+function puedeVerComoEncargado() {
   const u = window.currentUser;
   if (!u) return false;
   const roles = u.appRoles || (u.appRol ? [u.appRol] : []);
@@ -184,7 +180,6 @@ function _canBypassHermanosPin() {
       const d = congreSnap.data();
       const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
       const mergedConfig = { ...d, ...privateData };
-      pinEncargado = String(mergedConfig.pinEncargado || d.pinEncargado || '1234');
       if (mergedConfig.sheetsUrl) {
         sheetsUrl = mergedConfig.sheetsUrl;
         const btn = document.getElementById('btn-ver-planilla');
@@ -204,56 +199,15 @@ function _canBypassHermanosPin() {
     buildConductorUI([]); // fallback: muestra grupos 1-4
   } finally {
     logActividad(CONGRE_ID, 'hermanos', 'apertura');
-    if (_canBypassHermanosPin()) {
-      hidePinModal();
+    document.getElementById('view-cargando').style.display = 'none';
+    if (puedeVerComoEncargado()) {
+      hideSinPermiso();
       showView('view-menu');
+    } else {
+      showSinPermiso();
     }
   }
 })();
-
-// ─────────────────────────────────────────
-//   PIN
-// ─────────────────────────────────────────
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('pd' + i);
-    if (!dot) continue;
-    const filled = i < pinBuffer.length;
-    dot.style.borderColor = filled ? '#D85A30' : '#555';
-    dot.style.background  = filled ? '#D85A30' : 'transparent';
-    dot.classList.toggle('filled', filled);
-  }
-  document.getElementById('pin-error').textContent = '';
-}
-
-window.pinPress = function(d) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += d;
-  updatePinDots();
-  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
-};
-
-window.pinDelete = function() {
-  pinBuffer = pinBuffer.slice(0, -1);
-  updatePinDots();
-};
-
-function checkPin() {
-  if (pinEncargado === null) {
-    document.getElementById('pin-error').textContent = 'Cargando configuración…';
-    pinBuffer = ''; updatePinDots(); return;
-  }
-  if (pinBuffer === pinEncargado) {
-    pinBuffer = ''; updatePinDots();
-    hidePinModal();
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-menu').classList.add('active');
-    document.getElementById('btn-home').classList.remove('visible');
-  } else {
-    document.getElementById('pin-error').textContent = 'PIN incorrecto';
-    pinBuffer = ''; updatePinDots();
-  }
-}
 
 window.goToCover = function() {
   window.location.href = '../index.html#menu';

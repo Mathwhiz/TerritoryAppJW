@@ -67,7 +67,7 @@
         </div>
       </button>
 
-      <button class="cs-module-card" style="--card-hover-border:rgba(127,119,221,0.55);--card-hover-bg:#1a1820;--card-hover-shadow:0 6px 24px rgba(0,0,0,0.35),0 0 0 1px rgba(127,119,221,0.55),0 4px 20px rgba(127,119,221,0.12);" onclick="goToPin()">
+      <button id="btn-encargado-vm" class="cs-module-card" style="display:none;--card-hover-border:rgba(127,119,221,0.55);--card-hover-bg:#1a1820;--card-hover-shadow:0 6px 24px rgba(0,0,0,0.35),0 0 0 1px rgba(127,119,221,0.55),0 4px 20px rgba(127,119,221,0.12);" onclick="goToPin()">
         <div class="cs-module-card-icon" style="background:rgba(127,119,221,0.15);">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <rect x="3" y="11" width="18" height="11" rx="2" stroke="#7F77DD" stroke-width="1.8"/>
@@ -81,36 +81,6 @@
       </button>
 
       <a href="../index.html#menu" class="cs-back-btn">← Volver al módulo</a>
-    </div>
-  </div>
-
-  <!-- ── PIN MODAL ── -->
-  <div id="pin-modal-vm" class="pin-modal" style="display:none;">
-    <div class="pin-card">
-      <div class="pin-title">Encargado</div>
-      <div class="pin-sub">Ingresá el PIN</div>
-      <div class="pin-dots">
-        <div class="pin-dot" id="vp0"></div>
-        <div class="pin-dot" id="vp1"></div>
-        <div class="pin-dot" id="vp2"></div>
-        <div class="pin-dot" id="vp3"></div>
-      </div>
-      <div class="pin-grid">
-        <button class="pin-btn" onclick="pinPress('1')">1</button>
-        <button class="pin-btn" onclick="pinPress('2')">2</button>
-        <button class="pin-btn" onclick="pinPress('3')">3</button>
-        <button class="pin-btn" onclick="pinPress('4')">4</button>
-        <button class="pin-btn" onclick="pinPress('5')">5</button>
-        <button class="pin-btn" onclick="pinPress('6')">6</button>
-        <button class="pin-btn" onclick="pinPress('7')">7</button>
-        <button class="pin-btn" onclick="pinPress('8')">8</button>
-        <button class="pin-btn" onclick="pinPress('9')">9</button>
-        <button class="pin-btn" style="visibility:hidden;"></button>
-        <button class="pin-btn" onclick="pinPress('0')">0</button>
-        <button class="pin-btn pin-del" onclick="pinDelete()">⌫</button>
-      </div>
-      <div class="pin-error" id="pin-error"></div>
-      <button class="pin-cancel" onclick="pinCancel()">Cancelar</button>
     </div>
   </div>
 
@@ -516,7 +486,7 @@
 
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="../shared/ui-utils.js?v=1.5"></script>
+<script src="../shared/ui-utils.js?v=1.7"></script>
 <script type="module" src="/vida-ministerio/app.js"></script>
 </body>
 </html>

@@ -86,7 +86,7 @@ body.light-mode {
     radial-gradient(ellipse at 18% 80%, rgba(29,158,117,0.09) 0%, transparent 48%),
     radial-gradient(ellipse at 85% 20%, rgba(127,119,221,0.16) 0%, transparent 52%),
     radial-gradient(ellipse at 40% 90%, rgba(155,143,255,0.08) 0%, transparent 46%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADhklEQVR42n1Xy7HkIAzscc3daUAiXJSLuTgMLs7FXEiEcHiHV61ta71LFeUZwEKfVkv+rLX23jsAwMzQe4eZAQByzgCAUgoA4LouXy+l4Lou5Jwx53ys1VrBUUrBGOOxTnkA8NULOXrvGGNgzolaq//mZa01nOfpl0ZFVVmOWqsrM8YAAIwx8DUzFwAAc0703t261poLoHJU+DzPV+/wHZ7nZTxLBVpr+Nz3vfMwQ6CHz/P0w1xXK6LbSykws4fF+tS7cs74qka8jEI0rtwfYzyU4eA6vTDn9HV6jM/euyvsCvCFGFcd6lqNNYWd5/nXmVIKaq24rsu9q+H+0moFniKbQ2Or7o/CqQRDYGaPS7nmY621p5T24zj2tdZ+HMeeUtrv+97XWo9nSsnPrLV8cv2+78ce3+FTJ+WAC8dx+FQBqhSfqrT+j0qrHM5owJdAUuBpXtOl3CeAiJneO3rvDsiYhpodmv+8Y+MCN+ecTjaKbKYWc7/W6nHnNDPMOf0CcgANUSzQKGj8ouu5F7EQ1zRMGlINrWJI79zotjEGeu/IOTvNttY8JGOMB8dHptM0pfeYpup+ZlitFWaGjS7XFCql+FrMaaYta4QOM/MzlKsEROWodO8dG2OpzEUioiJzTgch468Uq4P/a63IOTtWIrVT3nZdl4OGtKvMyLBQKPfVK0pKpRSfDAkvVSUJahAc/8t/JQ/N+cgBkQuU3BSsCvJPSmmnK2l1zF1NR8ZXy7JyvOKktfaIP7386B2o9RvlRtpUK2lVZL1Iy/reW1p/FRy0VuOpmmthYVqyEDGDYhfFdFPcEFNm9luM1FqNkcYv1gONo85/cX4sevy/4WUwKyIB0SPsCWutjg3lEyKc3qEsZofSNLSivVn1huq4p7FWy7UKvu2vtfZv7H4VzRo3M4M2sIpwzZK35lXpV1u5nPMfHoiaKWLjjFkQvcT5xh+RbzbSKwsHY1ZK8dqvPUIsSMwetZiMyqzQTCKmKO+TUtpJLNH92r9rK/22piFRJTU88esr5/ybhgoSBaSG5o1uI+nEfiD2hTEt7/veN+181QIz836ANV0tJ1Hp+3qG7TpBd56nf18wzGOM3+8CIpxC9aMz5rS6XOtH/FDRkqv1XzNrjIFN+zulWFrKdW1AaFG80My8XPM8vUnZ6k0A2LioFYzozjk/qhndSlfGviB+lsdaogaxY/oBE4kcK+4zutMAAAAASUVORK5CYII=");
 }
 
 /* ── Botón toggle tema ── */
@@ -541,7 +541,6 @@ else document.addEventListener('DOMContentLoaded', insertThemeToggle);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   z-index: 9500;
-  backdrop-filter: blur(4px);
   animation: uiFadeIn 0.2s ease;
   gap: 18px;
 }
@@ -1641,7 +1640,6 @@ body.light-mode .cs-module-card:hover {
       border-radius: 20px; padding: 5px 10px 5px 5px;
       cursor: pointer; font-family: system-ui, sans-serif;
       color: #aaa; font-size: 13px;
-      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
       transition: background 0.15s, border-color 0.15s;
       white-space: nowrap; max-width: 200px;
     }

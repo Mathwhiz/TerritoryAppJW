@@ -264,11 +264,11 @@ function selectCongreColor(hex) {
 }
 
 const GRUPOS_DEFAULT = [
-  { id: '1', label: 'Grupo 1',      color: '#378ADD', pin: '' },
-  { id: '2', label: 'Grupo 2',      color: '#EF9F27', pin: '' },
-  { id: '3', label: 'Grupo 3',      color: '#97C459', pin: '' },
-  { id: '4', label: 'Grupo 4',      color: '#D85A30', pin: '' },
-  { id: 'C', label: 'Congregación', color: '#7F77DD', pin: '' },
+  { id: '1', label: 'Grupo 1',      color: '#378ADD' },
+  { id: '2', label: 'Grupo 2',      color: '#EF9F27' },
+  { id: '3', label: 'Grupo 3',      color: '#97C459' },
+  { id: '4', label: 'Grupo 4',      color: '#D85A30' },
+  { id: 'C', label: 'Congregación', color: '#7F77DD' },
 ];
 
 let wizardStep        = 0;
@@ -282,7 +282,6 @@ function renderGruposConfig() {
   const showRm = wizardGrupos.length > 1;
   gc.innerHTML = wizardGrupos.map((g, i) => {
     const label = (g.label || '').replace(/"/g, '&quot;');
-    const pin   = g.pin || '';
     const color = g.color || '#888888';
     const swatches = PALETA_COLORES.map(c => `
       <div class="grupo-sw ${c.toLowerCase() === color.toLowerCase() ? 'sel' : ''}"
@@ -302,10 +301,6 @@ function renderGruposConfig() {
       <input type="hidden" class="gc-color" value="${color}">
       <div class="grupo-row-2">
         <div class="grupo-col">
-          <div class="grupo-col-lbl">PIN</div>
-          <input type="text" class="gc-pin" value="${pin}" placeholder="• • • •" maxlength="4" inputmode="numeric">
-        </div>
-        <div class="grupo-col">
           <div class="grupo-col-lbl">Color</div>
           <div class="grupo-color-mini">${swatches}</div>
         </div>
@@ -319,7 +314,6 @@ function syncGruposFromDOM() {
     if (!wizardGrupos[i]) return;
     wizardGrupos[i].color = row.querySelector('.gc-color').value;
     wizardGrupos[i].label = row.querySelector('.gc-label').value.trim();
-    wizardGrupos[i].pin   = row.querySelector('.gc-pin').value.trim();
   });
 }
 
@@ -340,7 +334,7 @@ function onGrupoColorPick(i, hex) {
 function addGrupo() {
   syncGruposFromDOM();
   const maxNum = Math.max(0, ...wizardGrupos.map(g => isNaN(g.id) ? 0 : parseInt(g.id)));
-  wizardGrupos.push({ id: String(maxNum + 1), label: `Grupo ${maxNum + 1}`, color: '#888888', pin: '' });
+  wizardGrupos.push({ id: String(maxNum + 1), label: `Grupo ${maxNum + 1}`, color: '#888888' });
   renderGruposConfig();
 }
 
@@ -360,8 +354,6 @@ function startWizard(prefill = null) {
   const isEdit = !!editingCongreId;
   document.getElementById('w-nombre').value           = prefill?.nombre            || '';
   document.getElementById('w-id').value               = isEdit ? editingCongreId : '';
-  document.getElementById('w-pin').value              = prefill?.pinEncargado       || '';
-  document.getElementById('w-pin-vm').value           = prefill?.pinVidaMinisterio  || '';
   document.getElementById('w-vm-script-url').value    = prefill?.vmScriptUrl         || '';
   document.getElementById('w-ciudad-principal').value = prefill?.ciudadPrincipal    || '';
   ciudadesExtrasKml = prefill?.ciudadesExtras?.map(c => ({ nombre: c.nombre, offset: c.offset, territories: null })) ?? [];
@@ -407,8 +399,6 @@ async function editCongre(id) {
     grupos.sort((a, b) => String(a.id) < String(b.id) ? -1 : 1);
     startWizard({
       nombre:            data.nombre,
-      pinEncargado:      privateData.pinEncargado ?? data.pinEncargado ?? '',
-      pinVidaMinisterio: privateData.pinVidaMinisterio ?? data.pinVidaMinisterio ?? '',
       vmScriptUrl:       privateData.vmScriptUrl ?? '',
       color:             data.color || null,
       ciudadPrincipal:   data.ciudadPrincipal || '',
@@ -469,22 +459,17 @@ function wizardNext() {
   if (wizardStep === 0) {
     const nombre = document.getElementById('w-nombre').value.trim();
     const id     = document.getElementById('w-id').value.trim();
-    const pin    = document.getElementById('w-pin').value.trim();
-    const pinVm  = document.getElementById('w-pin-vm').value.trim();
     if (!nombre)                             { uiAlert('Ingresá el nombre de la congregación.'); return; }
     if (!id)                                 { uiAlert('Ingresá un ID para la congregación.'); return; }
     if (!/^[a-z0-9][a-z0-9-]*$/.test(id))  {
       uiAlert('El ID solo puede tener minúsculas, números y guiones, y debe empezar con una letra o número.');
       return;
     }
-    if (!/^\d{4}$/.test(pin))               { uiAlert('El PIN del encargado debe ser 4 dígitos numéricos.'); return; }
-    if (!/^\d{4}$/.test(pinVm))             { uiAlert('El PIN de Vida y Ministerio debe ser 4 dígitos numéricos.'); return; }
   }
   if (wizardStep === 1) {
     syncGruposFromDOM();
     for (const g of wizardGrupos) {
       if (!g.label) { uiAlert('Todos los grupos deben tener un nombre.'); return; }
-      if (!/^\d{4}$/.test(g.pin)) { uiAlert(`El PIN del "${g.label}" debe ser 4 dígitos.`); return; }
     }
   }
   showWizardStep(wizardStep + 1);
@@ -787,8 +772,6 @@ async function crearCongregacion(skipKml) {
   }
 
   const nombre            = document.getElementById('w-nombre').value.trim();
-  const pinEncargado      = document.getElementById('w-pin').value.trim();
-  const pinVidaMinisterio = document.getElementById('w-pin-vm').value.trim();
   const vmScriptUrl       = document.getElementById('w-vm-script-url').value.trim();
   const ciudadPrincipal   = document.getElementById('w-ciudad-principal').value.trim();
   const status       = document.getElementById('wizard-status');
@@ -818,9 +801,9 @@ async function crearCongregacion(skipKml) {
       congreId = editingCongreId;
       const color = document.getElementById('w-color')?.value || null;
       await setDoc(privateModuleConfigRef(congreId), {
-        pinEncargado,
-        pinVidaMinisterio,
         vmScriptUrl: vmScriptUrl || null,
+        pinEncargado: deleteField(),
+        pinVidaMinisterio: deleteField(),
       }, { merge: true });
       await updateDoc(doc(db, 'congregaciones', congreId), {
         nombre,
@@ -860,8 +843,6 @@ async function crearCongregacion(skipKml) {
         creadoEn: Timestamp.now(),
       });
       await setDoc(privateModuleConfigRef(congreId), {
-        pinEncargado,
-        pinVidaMinisterio,
         vmScriptUrl: vmScriptUrl || null,
       });
       await syncPublicMapConfig(congreId, {
@@ -1332,9 +1313,14 @@ async function openUsuarios(congreId, congreNombre) {
       const roles     = u.appRoles || (u.appRol ? [u.appRol] : ['publicador']);
       const rolesStr  = roles.join(',');
       const grupoEnc  = u.grupoEncargado || '';
+      const pendienteAprobacion = roles.includes('pendiente');
       const rolesPills = roles.map(r =>
         `<span style="font-size:10px;color:#9b8fdd;background:rgba(127,119,221,0.12);border:0.5px solid rgba(127,119,221,0.25);border-radius:6px;padding:2px 7px;">${ROL_LABELS[r] || r}</span>`
       ).join('');
+      const aprobarBtn = pendienteAprobacion
+        ? `<button onclick="aprobarComoPublicador('${u.uid}')"
+             style="font-size:11px;color:#1D9E75;background:rgba(29,158,117,0.12);border:0.5px solid rgba(29,158,117,0.25);border-radius:7px;padding:3px 9px;cursor:pointer;">✓ Aprobar acceso</button>`
+        : '';
       return `
         <div class="usuario-row">
           <div class="usuario-avatar">${ini}</div>
@@ -1345,6 +1331,7 @@ async function openUsuarios(congreId, congreNombre) {
             </div>
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">
               ${rolesPills}
+              ${aprobarBtn}
               <button onclick="abrirRolesModal('${u.uid}','${nameSafe}','${rolesStr}','${grupoEnc}')"
                 style="font-size:11px;color:#888;background:#2a2a2a;border:0.5px solid #3a3a3a;border-radius:7px;padding:3px 9px;cursor:pointer;">✏ Editar roles</button>
             </div>
@@ -1428,6 +1415,29 @@ function filtrarVincPubs(q) {
       </div>
       <button class="btn-match-sel" onclick="confirmarVinculo('${p.id}','${(p.nombre||'').replace(/'/g,"\\'")}')">Vincular</button>
     </div>`).join('');
+}
+
+async function aprobarComoPublicador(uid) {
+  const ok = await uiConfirm({
+    title:       'Aprobar acceso',
+    msg:         '¿Dar acceso de publicador a este usuario?',
+    confirmText: 'Aprobar',
+    type:        'info',
+  });
+  if (!ok) return;
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', uid));
+    const data = snap.exists() ? snap.data() : {};
+    const extraRoles = (data.matchEstado === 'ok' && data.matchedPublisherId && _usuariosCongreId)
+      ? await _rolesDesdePublicador(_usuariosCongreId, data.matchedPublisherId)
+      : [];
+    const appRoles = [...new Set(['publicador', ...extraRoles])];
+    await updateDoc(doc(db, 'usuarios', uid), { appRol: 'publicador', appRoles });
+    uiToast('Usuario aprobado', 'success');
+    openUsuarios(_usuariosCongreId, _usuariosCongreNombre);
+  } catch (err) {
+    await uiAlert('Error al aprobar: ' + err.message);
+  }
 }
 
 async function confirmarVinculo(pubId, pubNombre) {
@@ -1580,6 +1590,7 @@ window.openMatches       = openMatches;
 window.resolverMatch     = resolverMatch;
 window.marcarSinMatch    = marcarSinMatch;
 window.openUsuarios      = openUsuarios;
+window.aprobarComoPublicador = aprobarComoPublicador;
 window.abrirRolesModal   = abrirRolesModal;
 window.cerrarRolesModal  = cerrarRolesModal;
 window.abrirVincularModal  = abrirVincularModal;

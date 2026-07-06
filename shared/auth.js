@@ -21,21 +21,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 import { PERMISOS } from './auth-config.js';
 
-// Roles del publicador que se sincronizan a appRoles del usuario
-const _ROL_PUB_A_APP = {
-  PRECURSOR_REGULAR:  'precursor_regular',
-  PRECURSOR_AUXILIAR: 'precursor_auxiliar',
-  ANCIANO:            'anciano',
-  SIERVO_MINISTERIAL: 'siervo_ministerial',
-};
-async function _rolesDesdePublicador(congreId, pubId) {
-  try {
-    const snap = await getDoc(doc(db, 'congregaciones', congreId, 'publicadores', pubId));
-    if (!snap.exists()) return [];
-    return (snap.data().roles || []).filter(r => _ROL_PUB_A_APP[r]).map(r => _ROL_PUB_A_APP[r]);
-  } catch { return []; }
-}
-
 // ── Detección de plataforma (Capacitor APK vs browser) ───────────
 const _isNative = () => window.Capacitor?.isNativePlatform() === true;
 
@@ -51,7 +36,7 @@ function normalizeAppRoles(data) {
   return ['publicador'];
 }
 
-const SELF_PROFILE_FIELDS = ['displayName', 'photoURL', 'birthDate', 'sexo', 'primerLogin'];
+const SELF_PROFILE_FIELDS = ['displayName', 'photoURL', 'birthDate', 'sexo', 'primerLogin', 'terminosAceptados', 'terminosVersion', 'terminosFecha'];
 
 // ── Caché de sesión (sessionStorage) ─────────────────────────────
 // Permite que authGuard resuelva inmediatamente en cada cambio de página
@@ -162,13 +147,10 @@ async function loadOrCreateUser(fbUser) {
     }
   }
 
-  // sin_match → publicador (acceso base; admin puede elevar el rol)
-  // pendiente (ambiguo) → pendiente (admin debe confirmar cuál publicador es)
-  const appRol = matchEstado === 'pendiente' ? 'pendiente' : 'publicador';
-  const extraRoles = (matchEstado === 'ok' && matchedPublisherId && congreId)
-    ? await _rolesDesdePublicador(congreId, matchedPublisherId)
-    : [];
-  const appRoles = [...new Set([appRol, ...extraRoles])];
+  // Todo usuario nuevo queda pendiente de aprobación manual del admin,
+  // sin importar el resultado del matching (que se sigue guardando como contexto).
+  const appRol = 'pendiente';
+  const appRoles = [appRol];
 
   const data = {
     uid:               fbUser.uid,
@@ -345,11 +327,8 @@ window.linkWithGoogle = async () => {
     }
   }
 
-  const appRol = matchEstado === 'pendiente' ? 'pendiente' : 'publicador';
-  const extraRoles = (matchEstado === 'ok' && matchedPublisherId && congreId)
-    ? await _rolesDesdePublicador(congreId, matchedPublisherId)
-    : [];
-  const appRoles = [...new Set([appRol, ...extraRoles])];
+  const appRol = 'pendiente';
+  const appRoles = [appRol];
 
   const updates = {
     email:             fbUser.email,

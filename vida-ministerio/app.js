@@ -68,7 +68,6 @@ const SLOT_ROL = {
 // ─────────────────────────────────────────
 let congreId    = null;
 let congreNombre = null;
-let pinVM       = null;
 let publicadores = [];
 let semanaData  = null;  // programa de la semana actualmente cargada/editada
 let _semanaModificada = false;
@@ -401,7 +400,7 @@ window.goToCover = function() {
   showView('view-cover');
 };
 
-function _canBypassVMPin() {
+function puedeVerComoEncargado() {
   const u = window.currentUser;
   if (!u) return false;
   const roles = u.appRoles || (u.appRol ? [u.appRol] : []);
@@ -409,23 +408,9 @@ function _canBypassVMPin() {
 }
 
 window.goToPin = function() {
-  if (!vmInitReady) return;
-  if (_canBypassVMPin()) {
-    modoEncargado = true;
-    document.getElementById('pin-modal-vm').style.display = 'none';
-    goToMenuEnc();
-    return;
-  }
-  pinBuffer = '';
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-  document.getElementById('pin-modal-vm').style.display = 'flex';
-};
-
-window.pinCancel = function() {
-  document.getElementById('pin-modal-vm').style.display = 'none';
-  pinBuffer = '';
-  updatePinDots();
+  if (!vmInitReady || !puedeVerComoEncargado()) return;
+  modoEncargado = true;
+  goToMenuEnc();
 };
 
 window.goToVerPrograma = async function() {
@@ -575,44 +560,6 @@ window.goToNueva = function() {
   fechaEl.dispatchEvent(new Event('change', { bubbles: true }));
   switchVmTab('generar');
 };
-
-// ─────────────────────────────────────────
-//   PIN
-// ─────────────────────────────────────────
-let pinBuffer = '';
-
-window.pinPress = function(d) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += d;
-  updatePinDots();
-  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
-};
-
-window.pinDelete = function() {
-  pinBuffer = pinBuffer.slice(0, -1);
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-};
-
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    document.getElementById('vp' + i).classList.toggle('filled', i < pinBuffer.length);
-  }
-}
-
-function checkPin() {
-  if (pinBuffer === pinVM) {
-    modoEncargado = true;
-    pinBuffer = '';
-    updatePinDots();
-    document.getElementById('pin-modal-vm').style.display = 'none';
-    goToMenuEnc();
-  } else {
-    document.getElementById('pin-error').textContent = 'PIN incorrecto';
-    pinBuffer = '';
-    updatePinDots();
-  }
-}
 
 // ─────────────────────────────────────────
 //   CARGA DE DATOS
@@ -2982,6 +2929,17 @@ window.exportarSemanaActualASheets = function() {
   document.getElementById('cover-congre').textContent = congreNombre || '—';
   showView('view-cover');
 
+  // Sin rol de encargado, el cover queda con un solo botón útil ("Ver programa") —
+  // se saltea directo en vez de mostrar una pantalla de un solo botón. Arrancamos
+  // esa carga EN PARALELO con el fetch de config de abajo (no depende de ella)
+  // para no encadenar rondas de red una detrás de la otra.
+  const esEncargadoVM = puedeVerComoEncargado();
+  let verProgramaPrefetch = null;
+  if (!esEncargadoVM) {
+    uiLoading.show('Cargando…');
+    verProgramaPrefetch = ensureVmLookupsLoaded();
+  }
+
   try {
     const [snap, privateSnap] = await Promise.all([
       getDoc(doc(db, 'congregaciones', congreId)),
@@ -2991,14 +2949,24 @@ window.exportarSemanaActualASheets = function() {
     const data = snap.data();
     const privateData = privateSnap?.exists?.() ? privateSnap.data() : {};
     const mergedConfig = { ...data, ...privateData };
-    pinVM = mergedConfig.pinVidaMinisterio || data.pinVidaMinisterio || '1234';
     tieneAuxiliar           = data.tieneAuxiliar === true;
     presidenteEsOradorFinal = data.presidenteEsOradorFinal === true;
     vmScriptUrl = mergedConfig.vmScriptUrl || null;
     vmSheetUrl  = mergedConfig.vmSheetUrl || null;  // opt-in explícito: sin esto, no se verifica (no usar sheetsUrl como fallback)
     vmInitReady = true;
+    const btnEnc = document.getElementById('btn-encargado-vm');
+    if (btnEnc) btnEnc.style.display = esEncargadoVM ? '' : 'none';
+    if (!esEncargadoVM) {
+      await verProgramaPrefetch;
+      uiLoading.hide();
+      pubFecha = lunesDeHoy();
+      showView('view-programa-pub');
+      scheduleVmMirrorSync();
+      await cargarProgramaPublico();
+    }
   } catch(e) {
     console.error('Error al inicializar:', e);
+    if (!esEncargadoVM) uiLoading.hide();
   }
 })();
 
