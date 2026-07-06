@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" href="/assets/favicon.ico" sizes="any">
   <link rel="stylesheet" href="../shared/styles-base.css">
+  <link rel="stylesheet" href="../predicacion/styles.css?v=1.3">
   <style>
     body { font-family: system-ui, sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
     .wrap { max-width: 480px; margin: 0 auto; padding: 32px 20px 60px; }
@@ -28,11 +29,45 @@
     <p class="sub">Sandbox para probar cositas nuevas antes de meterlas en el sitio de verdad. No requiere login, no está linkeada desde ningún lado.</p>
 
     <div class="sandbox">
-      <div class="sandbox-title">Todavía nada por acá</div>
-      <div class="sandbox-empty">Cuando quiera mostrarte algo lo agrego arriba de este bloque.</div>
+      <div class="sandbox-title">Confetti de meta mensual (Predicación)</div>
+      <div class="sandbox-empty" style="margin-bottom:14px;">Así se ve al cumplir la meta del mes — tocá el botón para repetirlo las veces que quieras.</div>
+
+      <div class="meta-card meta-cumplida" id="demo-meta-card" style="margin-bottom:12px;">
+        <div class="meta-head">
+          <div class="meta-title">Meta mensual</div>
+          <div class="meta-sub">Julio</div>
+        </div>
+        <div class="meta-main">
+          <div class="meta-current">52h 30m</div>
+          <div class="meta-target">de 50h</div>
+        </div>
+        <div class="meta-bar">
+          <div class="meta-bar-fill" style="width:100%;"></div>
+        </div>
+        <div class="meta-foot">🎉 ¡Meta mensual cumplida!</div>
+      </div>
+
+      <button onclick="repetirConfetti()" class="pred-btn-ghost" style="width:100%;">Repetir confetti</button>
     </div>
   </div>
 
   <script src="../shared/ui-utils.js?v=1.7"></script>
+  <script>
+    const FESTEJO_EMOJIS = ['🎉', '🎊', '🏆', '✨', '🎉', '🎊'];
+    function repetirConfetti() {
+      const card = document.getElementById('demo-meta-card');
+      card.querySelectorAll('.meta-confetti-piece').forEach(p => p.remove());
+      FESTEJO_EMOJIS.forEach((emoji, i) => {
+        const piece = document.createElement('span');
+        piece.className = 'meta-confetti-piece';
+        piece.textContent = emoji;
+        piece.style.left = `${8 + i * (84 / (FESTEJO_EMOJIS.length - 1))}%`;
+        piece.style.animationDelay = `${i * 70}ms`;
+        card.appendChild(piece);
+        setTimeout(() => piece.remove(), 1700 + i * 70);
+      });
+    }
+    repetirConfetti();
+  </script>
 </body>
 </html>
