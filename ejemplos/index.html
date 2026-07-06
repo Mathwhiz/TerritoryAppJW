@@ -49,9 +49,20 @@
 
       <button onclick="lanzarConfettiGrande()" class="pred-btn-ghost" style="width:100%;">🎉 Repetir confetti (a lo grande)</button>
     </div>
+
+    <div class="sandbox">
+      <div class="sandbox-title">Pelota rebotando (guardar salidas / semana VM)</div>
+      <div class="sandbox-empty" style="margin-bottom:14px;">Idea: cuando guardás la planificación de salidas o una semana de VM, una pelota cruza la pantalla rebotando. Elegí una:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="lanzarPelota('⚽')" class="pred-btn-ghost" style="width:100%;">⚽ Pelota de fútbol</button>
+        <button onclick="lanzarPelota('🏀')" class="pred-btn-ghost" style="width:100%;">🏀 Básquet</button>
+        <button onclick="lanzarPelota('🎾')" class="pred-btn-ghost" style="width:100%;">🎾 Tenis</button>
+      </div>
+    </div>
   </div>
 
   <canvas id="confetti-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:9999;"></canvas>
+  <canvas id="ball-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:9998;"></canvas>
 
   <script src="../shared/ui-utils.js?v=1.7"></script>
   <script>
@@ -147,6 +158,81 @@
     }
 
     lanzarConfettiGrande();
+
+    // ── Pelota rebotando de lado a lado ──
+    const ballCanvas = document.getElementById('ball-canvas');
+    const bctx = ballCanvas.getContext('2d');
+    let pelota = null;
+    let pelotaAnimando = false;
+
+    function resizeBallCanvas() {
+      ballCanvas.width = window.innerWidth;
+      ballCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeBallCanvas);
+    resizeBallCanvas();
+
+    function lanzarPelota(emoji) {
+      const groundY = ballCanvas.height - 70;
+      pelota = {
+        emoji,
+        x: -40,
+        y: groundY,
+        vx: Math.max(5, ballCanvas.width / 130),
+        vy: -18,
+        radio: 22,
+        rot: 0,
+        groundY,
+      };
+      if (!pelotaAnimando) {
+        pelotaAnimando = true;
+        requestAnimationFrame(tickPelota);
+      }
+    }
+
+    function tickPelota() {
+      bctx.clearRect(0, 0, ballCanvas.width, ballCanvas.height);
+      if (pelota) {
+        const p = pelota;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.9;
+        p.rot += p.vx * 0.03;
+
+        if (p.y >= p.groundY) {
+          p.y = p.groundY;
+          p.vy *= -0.68;
+          if (Math.abs(p.vy) < 4) p.vy = -9;
+        }
+
+        // sombra que se achica/agranda segun la altura
+        const alturaRel = Math.max(0, (p.groundY - p.y) / 180);
+        bctx.save();
+        bctx.globalAlpha = 0.25 * (1 - Math.min(alturaRel, 0.8));
+        bctx.beginPath();
+        bctx.ellipse(p.x, p.groundY + p.radio * 0.6, p.radio * (1 - alturaRel * 0.4), 6, 0, 0, Math.PI * 2);
+        bctx.fillStyle = '#000';
+        bctx.fill();
+        bctx.restore();
+
+        bctx.save();
+        bctx.translate(p.x, p.y);
+        bctx.rotate(p.rot);
+        bctx.font = `${p.radio * 2}px system-ui, sans-serif`;
+        bctx.textAlign = 'center';
+        bctx.textBaseline = 'middle';
+        bctx.fillText(p.emoji, 0, 0);
+        bctx.restore();
+
+        if (p.x > ballCanvas.width + 60) pelota = null;
+      }
+      if (pelota) {
+        requestAnimationFrame(tickPelota);
+      } else {
+        pelotaAnimando = false;
+        bctx.clearRect(0, 0, ballCanvas.width, ballCanvas.height);
+      }
+    }
   </script>
 </body>
 </html>
