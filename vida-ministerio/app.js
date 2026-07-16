@@ -1311,6 +1311,7 @@ function _ordenPrioridadNombresSlot(key, elegibles) {
   const todosSlots = construirSlotsOrdenados(semanaData);
   const slot       = todosSlots.find(s => s.key === key);
   const salaSlot   = slot ? slotSalaMinisterio(slot) : null;
+  const parejaCon  = slot ? slotParejaCon(semanaData, slot) : null;
 
   // Quiénes ya tienen alguna parte esta semana (excluyendo este mismo slot)
   const enSemana = new Set();
@@ -1332,6 +1333,13 @@ function _ordenPrioridadNombresSlot(key, elegibles) {
       const sc = stats.salaCount[cand] || { prin: 0, aux: 0 };
       const diff = salaSlot === 'aux' ? (sc.aux - sc.prin) : (sc.prin - sc.aux);
       if (diff > 0) score += VM_SALA_PESO * diff;
+    }
+    if (parejaCon && parejaCon !== cand) {
+      const ultPar = stats.ultimaPareja[_clavePareja(parejaCon, cand)];
+      if (ultPar) {
+        const dp = _diasEntre(fecha, ultPar);
+        if (dp < VM_COMPANERO_DIAS) score += VM_COMPANERO_PESO * (1 + (VM_COMPANERO_DIAS - dp) / VM_COMPANERO_DIAS);
+      }
     }
     if (enSemana.has(cand)) score += 50000;
     if (noDispEnSemana(cand, fecha)) score += 200000;
@@ -1930,6 +1938,8 @@ function calcularVmStats() {
   // Balance de salas: cuántas veces cada hermano dio en Principal vs Auxiliar
   // (solo cuenta slots de Ministerio, que es donde existe la sala auxiliar).
   const salaCount = {}; // { pubId → { prin, aux } }
+  // Última vez que dos hermanos hicieron una parte de Ministerio juntos.
+  const ultimaPareja = {}; // { 'idA|idB' (ordenado) → 'YYYY-MM-DD' }
 
   const corte = new Date();
   corte.setDate(corte.getDate() - VM_CARGA_DIAS);
@@ -1937,6 +1947,14 @@ function calcularVmStats() {
 
   const ordenadas = [...semanasLista].sort((a, b) => a.fecha.localeCompare(b.fecha));
   for (const semana of ordenadas) {
+    // Parejas de Ministerio (titular + ayudante, en cada sala) de esta semana
+    (semana.ministerio || []).forEach(p => {
+      const sa = p?.salaAux || {};
+      [[p?.pubId, p?.ayudante], [sa.pubId, sa.ayudante]].forEach(([a, b]) => {
+        if (a && b) ultimaPareja[_clavePareja(a, b)] = semana.fecha;
+      });
+    });
+
     const slots = construirSlotsOrdenados(semana);
     for (const slot of slots) {
       const pubId = getSlotPubIdFromSemana(semana, slot.key);
@@ -1957,7 +1975,7 @@ function calcularVmStats() {
     }
   }
 
-  _vmStatsCache = { version: ver, ultimaPorRol, ultimaGlobal, cargaReciente, salaCount };
+  _vmStatsCache = { version: ver, ultimaPorRol, ultimaGlobal, cargaReciente, salaCount, ultimaPareja };
   return _vmStatsCache;
 }
 
@@ -2017,6 +2035,29 @@ const VM_DESCANSO_DIAS = 21;
 // las salas pero cede ante el descanso y el privilegio.
 const VM_SALA_PESO = 15;
 
+// Variedad de compañero en Ministerio: se evita repetir la misma dupla
+// (titular + ayudante) dentro de esta ventana. Sin esto, titular y ayudante salen
+// de la misma cola y vuelven al fondo pegados → tienden a reencontrarse cada vuelta
+// (medido: duplas repitiendo cada ~90 días, y algunas 3 veces).
+const VM_COMPANERO_DIAS = 180;
+// Peso escalonado: por debajo del descanso (≥1000) para no romperlo, y por encima
+// del balance de salas (15·diff) → la variedad de compañero pesa más que la sala.
+// Va de VM_COMPANERO_PESO (hace 180 días) a 2× (la semana pasada).
+const VM_COMPANERO_PESO = 400;
+
+// Clave estable para una dupla, sin importar el orden.
+function _clavePareja(a, b) {
+  return [a, b].sort().join('|');
+}
+
+// Con quién formaría dupla este slot: solo aplica al ayudante de una parte de
+// Ministerio (el "ayudante" de la Lectura es el lector de la sala auxiliar, no un
+// compañero, así que queda afuera).
+function slotParejaCon(semana, slot) {
+  if (!slot.esAyudante || !slot.key.startsWith('ministerio.')) return null;
+  return getSlotPubIdFromSemana(semana, slot.key.replace(/\.ayudante$/, '')) || null;
+}
+
 // Sala de un slot, SOLO para partes de Ministerio (único lugar con sala auxiliar).
 // Devuelve 'prin' | 'aux' | null (null = no aplica balance/fijado de sala).
 function slotSalaMinisterio(slot) {
@@ -2052,7 +2093,7 @@ function _clonSalaCount(src) {
 //       privilegio en roles que lo requieren  (peso alto)
 //       descanso global: tuvo parte hace < VM_DESCANSO_DIAS  (peso medio)
 //       rotación por rol: orden en la cola  (desempate fino)
-function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = null, salaGlobal = null } = {}) {
+function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = null, salaGlobal = null, parejaGlobal = null } = {}) {
   const slots = construirSlotsOrdenados(semana);
   const enEstaSemana = new Set();
   const _stats  = calcularVmStats();
@@ -2060,6 +2101,8 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
   // Conteo de salas (Principal/Auxiliar) running — en generación masiva se comparte
   // entre semanas para que el balance se acumule semana a semana.
   const salaRun = salaGlobal || _clonSalaCount(_stats.salaCount);
+  // Última vez que cada dupla trabajó junta — running, igual que los anteriores.
+  const parejaRun = parejaGlobal || { ..._stats.ultimaPareja };
 
   // Semana del superintendente: el estudio es su discurso. No entra en las colas
   // (no rota con nadie) — se asigna directo al hermano marcado como Sup. de Circuito
@@ -2111,6 +2154,7 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
     const rolPriv = ROLES_VM_SOLO_PRIVILEGIADO.includes(rolId);
     const rolVaron = ROLES_VM_SOLO_VARON.includes(rolId);
     const salaSlot = slotSalaMinisterio(slot); // 'prin' | 'aux' | null
+    const parejaCon = slotParejaCon(semana, slot); // titular de la dupla, si aplica
 
     let mejor = null, mejorScore = Infinity, mejorPos = -1;
     for (let i = 0; i < cola.length; i++) {
@@ -2145,6 +2189,17 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
         const diff = salaSlot === 'aux' ? (sc.aux - sc.prin) : (sc.prin - sc.aux);
         if (diff > 0) score += VM_SALA_PESO * diff;
       }
+      // Variedad de compañero: penaliza repetir la misma dupla dentro de la ventana.
+      // Cuanto más reciente fue la última vez juntos, más pesa.
+      if (parejaCon && parejaCon !== cand) {
+        const ultPar = parejaRun[_clavePareja(parejaCon, cand)];
+        if (ultPar) {
+          const d = _diasEntre(semana.fecha, ultPar);
+          if (d < VM_COMPANERO_DIAS) {
+            score += VM_COMPANERO_PESO * (1 + (VM_COMPANERO_DIAS - d) / VM_COMPANERO_DIAS);
+          }
+        }
+      }
       if (score < mejorScore) { mejorScore = score; mejor = cand; mejorPos = i; }
     }
 
@@ -2156,6 +2211,7 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
         if (!salaRun[mejor]) salaRun[mejor] = { prin: 0, aux: 0 };
         salaRun[mejor][salaSlot]++;
       }
+      if (parejaCon) parejaRun[_clavePareja(parejaCon, mejor)] = semana.fecha;
       cola.splice(mejorPos, 1);
       cola.push(mejor);
     }
@@ -2237,6 +2293,8 @@ window.crearSemana = async function() {
   const ultGlobAA     = autoAsignar ? { ...calcularVmStats().ultimaGlobal } : null;
   // Conteo de salas compartido entre las semanas del lote (para el balance A/B)
   const salaGlobAA    = autoAsignar ? _clonSalaCount(calcularVmStats().salaCount) : null;
+  // Últimas duplas compartidas entre las semanas del lote (para la variedad de compañero)
+  const parejaGlobAA  = autoAsignar ? { ...calcularVmStats().ultimaPareja } : null;
 
   let primeraFecha = null;
 
@@ -2298,7 +2356,7 @@ window.crearSemana = async function() {
 
     // Auto-asignar hermanos si está activo
     if (autoAsignar && colasAA && !debeSkipAutoAsignar(fecha)) {
-      autoAsignarSemana(semanaData, colasAA, { ultimaGlobal: ultGlobAA, salaGlobal: salaGlobAA });
+      autoAsignarSemana(semanaData, colasAA, { ultimaGlobal: ultGlobAA, salaGlobal: salaGlobAA, parejaGlobal: parejaGlobAA });
     }
 
     // Guardar en Firestore
