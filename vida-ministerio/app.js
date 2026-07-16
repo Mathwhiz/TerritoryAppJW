@@ -63,6 +63,11 @@ const SLOT_ROL = {
   // estudio.lector: lo gestiona el módulo Asignaciones
 };
 
+// Semana de la visita del superintendente: no se abre la sala auxiliar y el
+// Estudio Bíblico de la congregación se reemplaza por su discurso.
+const ROL_SUPERINTENDENTE      = 'SUPERINTENDENTE_CIRCUITO';
+const VM_TITULO_DISCURSO_SUPER = 'Discurso del superintendente de circuito';
+
 // ─────────────────────────────────────────
 //   ESTADO
 // ─────────────────────────────────────────
@@ -281,6 +286,63 @@ function pubsConRol(rol) {
 
 function pubNombresConRol(rol) {
   return pubsConRol(rol).map(p => p.nombre);
+}
+
+function esSemanaSuper(fecha) {
+  return vmEspeciales[fecha]?.tipo === 'superintendente';
+}
+
+// Sala auxiliar efectiva de una semana: la congregación puede tenerla habilitada,
+// pero en la semana del superintendente no se abre.
+function auxEnSemana(fecha) {
+  return tieneAuxiliar && !esSemanaSuper(fecha);
+}
+
+// "Necesidades de la congregación": parte de Vida Cristiana que siempre da un anciano.
+// El título de WOL viene con variantes ("Necesidades locales", o con la duración
+// pegada: "Necesidades de la congregación(7 mins.)"), así que se matchea normalizado.
+function esNecesidadesLocales(titulo) {
+  return /necesidades\s*(de\s*la\s*congregacion|locales)/.test(norm(titulo));
+}
+
+// ¿El slot `vidaCristiana.N` de la semana abierta es la parte de Necesidades?
+function esSlotNecesidades(key) {
+  const m = /^vidaCristiana\.(\d+)$/.exec(key);
+  if (!m || !semanaData) return false;
+  return esNecesidadesLocales(semanaData.vidaCristiana?.[Number(m[1])]?.titulo);
+}
+
+function ancianosActivos() {
+  return publicadores.filter(p => p.activo !== false && (p.roles || []).includes('ANCIANO'));
+}
+
+// Superintendente de circuito cargado en la lista de hermanos (null si no hay).
+function pubSuperintendente() {
+  return publicadores.find(p =>
+    p.activo !== false && (p.roles || []).includes(ROL_SUPERINTENDENTE)
+  ) || null;
+}
+
+// Datos de la última parte de Vida Cristiana: estudio normal, o el discurso del
+// superintendente en su semana de visita.
+function estudioDeSemana(s) {
+  const est = s.estudioBiblico || {};
+  if (esSemanaSuper(s.fecha)) {
+    return {
+      esSuper:   true,
+      titulo:    VM_TITULO_DISCURSO_SUPER,
+      duracion:  est.duracion ?? 30,
+      conductor: est.conductor || null,
+      lector:    null,
+    };
+  }
+  return {
+    esSuper:   false,
+    titulo:    est.titulo || '',
+    duracion:  est.duracion ?? 30,
+    conductor: est.conductor || null,
+    lector:    est.lector || null,
+  };
 }
 
 function nombreDePub(pubId) {
@@ -535,6 +597,15 @@ window.goToSemana = async function(fecha) {
   renderSemanaEdit();
   showView('view-semana');
   updateNavBtnsSemana();
+
+  // Si la semana se marcó como del superintendente después de generarla, el estudio
+  // pudo quedar con un conductor que ya no corresponde: ese lugar es su discurso.
+  const co = esSemanaSuper(semanaData.fecha) ? pubSuperintendente() : null;
+  if (co && semanaData.estudioBiblico?.conductor !== co.id) {
+    setSlotPubId('estudio.conductor', co.id);
+    _marcarModificada();
+    renderSemanaEdit();
+  }
 };
 
 window.switchVmTab = function(tabName) {
@@ -858,9 +929,10 @@ function renderSemanaPublico(s) {
   }
 
   // Tesoros
+  const aux  = auxEnSemana(s.fecha);
   const lect = s.tesoros?.lecturaBiblica;
   let lectRow;
-  if (tieneAuxiliar && lect?.ayudante) {
+  if (aux && lect?.ayudante) {
     const lNombre    = nombreDePub(lect.pubId);
     const lAuxNombre = nombreDePub(lect.ayudante);
     lectRow = `<div class="pub-parte-row">
@@ -889,7 +961,7 @@ function renderSemanaPublico(s) {
         ? esc(nombre) + (ayNombre ? ` / ${esc(ayNombre)}` : '')
         : (ayNombre ? esc(ayNombre) : null);
       let auxStr = null;
-      if (tieneAuxiliar && p.salaAux?.pubId) {
+      if (aux && p.salaAux?.pubId) {
         const auxN   = nombreDePub(p.salaAux.pubId);
         const auxAyN = nombreDePub(p.salaAux.ayudante);
         if (auxN) auxStr = esc(auxN) + (auxAyN ? ` / ${esc(auxAyN)}` : '');
@@ -910,8 +982,8 @@ function renderSemanaPublico(s) {
 
   // Vida Cristiana
   const vcPartes = (s.vidaCristiana || []).map(p => row(p.titulo || 'Parte', p.pubId)).join('');
-  const estudio = s.estudioBiblico;
-  const estudioHtml = estudio ? `<div class="pub-parte-row">
+  const estudio  = estudioDeSemana(s);
+  const estudioHtml = (s.estudioBiblico || estudio.esSuper) ? `<div class="pub-parte-row">
     <div class="pub-parte-titulo">${esc(estudio.titulo || 'Estudio Bíblico')}</div>
     <div class="pub-parte-nombre" style="text-align:right;">
       ${estudio.conductor ? `<div>${esc(nombreDePub(estudio.conductor) || '—')}</div>` : '<div class="pub-parte-sin">—</div>'}
@@ -955,10 +1027,11 @@ function renderParteItem(key, label, parte, opts = {}) {
   const dur = parte?.duracion ? `<span class="parte-dur-badge">${parte.duracion} min</span>` : '';
 
   // Discurso de ministerio con sala auxiliar: una persona por sala, sin ayudante
+  const aux          = auxEnSemana(semanaData?.fecha);
   const esMinisterio = key.startsWith('ministerio.');
-  const spLabel = (tieneAuxiliar && esMinisterio)
+  const spLabel = (aux && esMinisterio)
     ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
-  const auxHtml = (tieneAuxiliar && esMinisterio)
+  const auxHtml = (aux && esMinisterio)
     ? `<div class="sala-divider"><span>Sala Auxiliar</span></div>
        ${renderAsigBtn(key + '.salaAux', parte?.salaAux?.pubId, 'Asignar hermano')}`
     : '';
@@ -991,15 +1064,19 @@ function renderParteItemConAyudante(key, label, parte, opts = {}) {
     : '';
   const dur         = parte?.duracion ? `<span class="parte-dur-badge">${parte.duracion} min</span>` : '';
   const isMinisterio = key.startsWith('ministerio.');
+  const aux          = auxEnSemana(semanaData?.fecha);
 
   // Cuando hay sala auxiliar, etiquetar la sala principal explícitamente
-  const spLabel  = tieneAuxiliar ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
+  const spLabel  = aux ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
   // Para lectura bíblica: el botón "ayudante" se convierte en "Sala Auxiliar"
-  const ayLabel  = (tieneAuxiliar && !isMinisterio) ? 'Sala Auxiliar' : '+ Ayudante';
+  const ayLabel  = (aux && !isMinisterio) ? 'Sala Auxiliar' : '+ Ayudante';
+  // En lectura bíblica ese botón es el lector de la sala auxiliar: si la congregación
+  // tiene auxiliar pero esta semana no se abre (superintendente), no se ofrece.
+  const sinAyudante = !isMinisterio && tieneAuxiliar && !aux;
 
   // Para ministerio: bloque extra con dos pickers para la sala auxiliar
   let auxHtml = '';
-  if (tieneAuxiliar && isMinisterio) {
+  if (aux && isMinisterio) {
     const auxKey   = key + '.salaAux';
     const auxAyKey = auxKey + '.ayudante';
     auxHtml = `
@@ -1020,10 +1097,12 @@ function renderParteItemConAyudante(key, label, parte, opts = {}) {
            value="${esc(isMinisterio ? (parte?.instruccion || '') : (parte?.titulo || ''))}"
            oninput="${isMinisterio ? `onInstruccionChange('${key}', this.value)` : `onTituloChange('${key}', this.value)`}">
     ${spLabel}
-    <div class="asig-double-row">
+    ${sinAyudante
+      ? renderAsigBtn(key, parte?.pubId, 'Asignar hermano')
+      : `<div class="asig-double-row">
       ${renderAsigBtn(key, parte?.pubId, 'Asignar hermano')}
       ${renderAsigBtn(ayKey, parte?.ayudante, ayLabel)}
-    </div>
+    </div>`}
     ${auxHtml}
   </div>`;
 }
@@ -1104,8 +1183,18 @@ function renderSemanaEdit() {
   const btnAddVC = (s.vidaCristiana?.length || 0) < 3
     ? `<button class="btn-agregar-parte" onclick="agregarParte('vidaCristiana')">+ Agregar parte</button>` : '';
 
-  const est = s.estudioBiblico || {};
-  const estudioHtml = `<div class="parte-item estudio-item">
+  const est = estudioDeSemana(s);
+  // Semana del superintendente: el estudio se reemplaza por su discurso — un solo
+  // orador (él), sin lector y con el título fijo.
+  const estudioHtml = est.esSuper
+    ? `<div class="parte-item estudio-item">
+    <div class="parte-meta-row">
+      <span class="parte-label-text">${esc(VM_TITULO_DISCURSO_SUPER)}</span>
+      <span class="parte-dur-badge">${est.duracion} min</span>
+    </div>
+    ${renderAsigBtn('estudio.conductor', est.conductor, 'Superintendente')}
+  </div>`
+    : `<div class="parte-item estudio-item">
     <div class="parte-meta-row">
       <span class="parte-label-text">Estudio Bíblico Congregacional</span>
       <span class="parte-dur-badge">30 min</span>
@@ -1174,6 +1263,20 @@ window.onInstruccionChange = function(key, value) {
 //     mujer→solo mujeres, varón→solo varones). Sexo desconocido (null) pasa.
 // Devuelve array de pubs.
 function _elegiblesParaSlot(key) {
+  // Semana del superintendente: el estudio es su discurso → solo él es elegible
+  // (si no está cargado en la lista de hermanos, se cae al filtro normal).
+  if (key === 'estudio.conductor' && esSemanaSuper(semanaData?.fecha)) {
+    const co = pubSuperintendente();
+    if (co) return [co];
+  }
+
+  // Necesidades de la congregación: siempre la da un anciano (filtro duro, sin
+  // fallback a siervos ministeriales como el resto de los roles privilegiados).
+  if (esSlotNecesidades(key)) {
+    const ancianos = ancianosActivos();
+    if (ancianos.length) return ancianos;
+  }
+
   const rol = getRolParaSlot(key);
   let base = rol ? pubsConRol(rol) : publicadores.filter(p => p.activo !== false);
 
@@ -1255,7 +1358,11 @@ window.asignarSlot = async function(key) {
   // Actualizar solo el texto del botón (sin re-render completo)
   const el = document.getElementById('asig-' + keyToId(key));
   if (el) {
-    el.textContent = result || (key.includes('ayudante') ? '+ Ayudante' : (key === 'estudio.lector' ? 'Lector' : key === 'estudio.conductor' ? 'Conductor' : 'Asignar hermano'));
+    const vacio = key.includes('ayudante') ? '+ Ayudante'
+      : key === 'estudio.lector'    ? 'Lector'
+      : key === 'estudio.conductor' ? (esSemanaSuper(semanaData?.fecha) ? 'Superintendente' : 'Conductor')
+      : 'Asignar hermano';
+    el.textContent = result || vacio;
     el.closest('.asignar-btn')?.classList.toggle('empty', !result);
   }
 };
@@ -1637,7 +1744,7 @@ function aplicarWOLaSemana(importado) {
     instruccion: p.instruccion ?? null,
     pubId:    minOld[i]?.pubId    ?? null,
     ayudante: minOld[i]?.ayudante ?? null,
-    ...(tieneAuxiliar ? { salaAux: minOld[i]?.salaAux ?? { pubId: null, ayudante: null } } : {}),
+    ...(auxEnSemana(semanaData.fecha) ? { salaAux: minOld[i]?.salaAux ?? { pubId: null, ayudante: null } } : {}),
   }));
 
   // Vida Cristiana: ídem
@@ -1662,6 +1769,7 @@ function aplicarWOLaSemana(importado) {
 // [{ key, rolRequerido, esAyudante, esSalaAux }, ...]
 function construirSlotsOrdenados(semana) {
   const slots = [];
+  const aux   = auxEnSemana(semana.fecha); // en la semana del super no hay sala auxiliar
 
   slots.push({ key: 'presidente',      rolRequerido: 'VM_PRESIDENTE' });
   slots.push({ key: 'oracionApertura', rolRequerido: 'VM_ORACION' });
@@ -1669,7 +1777,7 @@ function construirSlotsOrdenados(semana) {
   slots.push({ key: 'tesoros.discurso',       rolRequerido: 'VM_TESOROS' });
   slots.push({ key: 'tesoros.joyas',          rolRequerido: 'VM_JOYAS' });
   slots.push({ key: 'tesoros.lecturaBiblica', rolRequerido: 'VM_LECTURA' });
-  if (tieneAuxiliar) {
+  if (aux) {
     slots.push({ key: 'tesoros.lecturaBiblica.ayudante', rolRequerido: 'VM_LECTURA', esAyudante: true });
   }
 
@@ -1679,12 +1787,12 @@ function construirSlotsOrdenados(semana) {
     slots.push({ key: `ministerio.${i}`, rolRequerido: rol });
     if (parte.tipo === 'discurso') {
       // Discurso: sin ayudante, pero sala auxiliar sí tiene su propia persona
-      if (tieneAuxiliar) {
+      if (aux) {
         slots.push({ key: `ministerio.${i}.salaAux`, rolRequerido: rol, esSalaAux: true });
       }
     } else {
       slots.push({ key: `ministerio.${i}.ayudante`, rolRequerido: rol, esAyudante: true });
-      if (tieneAuxiliar) {
+      if (aux) {
         slots.push({ key: `ministerio.${i}.salaAux`,          rolRequerido: rol, esSalaAux: true });
         slots.push({ key: `ministerio.${i}.salaAux.ayudante`, rolRequerido: rol, esSalaAux: true, esAyudante: true });
       }
@@ -1692,8 +1800,15 @@ function construirSlotsOrdenados(semana) {
   });
 
   const vc = semana.vidaCristiana || [];
-  vc.forEach((_, i) => {
-    slots.push({ key: `vidaCristiana.${i}`, rolRequerido: 'VM_VIDA_CRISTIANA' });
+  vc.forEach((parte, i) => {
+    // Necesidades de la congregación: siempre un anciano y por defecto el presidente
+    // de la reunión → no rota por cola ni cuenta para la rotación de Vida Cristiana.
+    const nec = esNecesidadesLocales(parte?.titulo);
+    slots.push({
+      key: `vidaCristiana.${i}`,
+      rolRequerido: 'VM_VIDA_CRISTIANA',
+      ...(nec ? { esNecesidades: true, noRota: true } : {}),
+    });
   });
 
   // Fix #2: en la semana del superintendente el estudio se reemplaza por su
@@ -1826,8 +1941,12 @@ function calcularVmStats() {
     for (const slot of slots) {
       const pubId = getSlotPubIdFromSemana(semana, slot.key);
       if (!pubId) continue;
-      if (!ultimaPorRol[slot.rolRequerido]) ultimaPorRol[slot.rolRequerido] = {};
-      ultimaPorRol[slot.rolRequerido][pubId] = semana.fecha;
+      // slot.noRota (Necesidades): no mueve la cola de su rol — no es una parte que
+      // se reparta por rotación. Sí cuenta para recencia global y carga.
+      if (!slot.noRota) {
+        if (!ultimaPorRol[slot.rolRequerido]) ultimaPorRol[slot.rolRequerido] = {};
+        ultimaPorRol[slot.rolRequerido][pubId] = semana.fecha;
+      }
       if (!ultimaGlobal[pubId] || semana.fecha > ultimaGlobal[pubId]) ultimaGlobal[pubId] = semana.fecha;
       if (semana.fecha >= corteISO) cargaReciente[pubId] = (cargaReciente[pubId] || 0) + 1;
       const sala = slotSalaMinisterio(slot);
@@ -1942,6 +2061,17 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
   // entre semanas para que el balance se acumule semana a semana.
   const salaRun = salaGlobal || _clonSalaCount(_stats.salaCount);
 
+  // Semana del superintendente: el estudio es su discurso. No entra en las colas
+  // (no rota con nadie) — se asigna directo al hermano marcado como Sup. de Circuito
+  // en la lista de hermanos, y queda excluido del resto de las partes de la semana.
+  if (esSemanaSuper(semana.fecha)) {
+    const co = pubSuperintendente();
+    if (co) {
+      setSlotPubIdOnSemana(semana, 'estudio.conductor', co.id);
+      enEstaSemana.add(co.id);
+    }
+  }
+
   if (soloVacios) {
     for (const slot of slots) {
       const actual = getSlotPubIdFromSemana(semana, slot.key);
@@ -1956,6 +2086,15 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
     if (presidenteEsOradorFinal && slot.key === 'oracionCierre') {
       const presId = getSlotPubIdFromSemana(semana, 'presidente');
       if (presId) setSlotPubIdOnSemana(semana, 'oracionCierre', presId);
+      continue;
+    }
+
+    // Necesidades de la congregación: la da un anciano y por defecto el presidente
+    // de la reunión. No sale de la cola — depende de variantes que el encargado
+    // resuelve a mano después (el picker solo le ofrece ancianos).
+    if (slot.esNecesidades) {
+      const presId = getSlotPubIdFromSemana(semana, 'presidente');
+      if (presId) setSlotPubIdOnSemana(semana, slot.key, presId);
       continue;
     }
 
@@ -2137,7 +2276,7 @@ window.crearSemana = async function() {
       },
       ministerio:    Array.from({ length: 3 }, () => ({
         titulo: '', tipo: 'conversacion', duracion: null, pubId: null, ayudante: null,
-        ...(tieneAuxiliar ? { salaAux: { pubId: null, ayudante: null } } : {}),
+        ...(auxEnSemana(fecha) ? { salaAux: { pubId: null, ayudante: null } } : {}),
       })),
       vidaCristiana: [{ titulo: '', tipo: 'parte', duracion: null, pubId: null }],
       estudioBiblico: { titulo: '', duracion: 30, conductor: null, lector: null },
@@ -2438,6 +2577,7 @@ function _modalidadMin(p) {
 
 function formatSemanaParaSheets(s) {
   const rows = [];
+  const aux = auxEnSemana(s.fecha);
   const wk  = _semanaHeaderText(s.fecha);
   const n   = id => (id && nombreDePub(id)) || '';
   const par = (pid, aid) => { const sp = n(pid); const ay = n(aid); return sp ? (ay ? `${sp} - ${ay}` : sp) : ''; };
@@ -2455,16 +2595,16 @@ function formatSemanaParaSheets(s) {
   const lb    = s.tesoros?.lecturaBiblica  || {};
   push(`1. ${disc.duracion  ?? 10} mins. ${disc.titulo  || 'Discurso'}`, n(disc.pubId));
   push(`2. ${joyas.duracion ?? 10} mins. Busquemos perlas escondidas`,   n(joyas.pubId));
-  if (tieneAuxiliar) push('', 'Sala Principal', 'Sala Auxiliar');
+  if (aux) push('', 'Sala Principal', 'Sala Auxiliar');
   push(`3. ${lb.duracion ?? 4} mins. Lectura de la Biblia`,
-    n(lb.pubId), tieneAuxiliar ? n(lb.ayudante) : '');
+    n(lb.pubId), aux ? n(lb.ayudante) : '');
 
   push('Seamos Mejores Maestros', '', '');
   let num = 4;
   (s.ministerio || []).forEach(p => {
     const t  = `${num}. ${p.duracion ?? 3} mins. ${p.titulo || 'Parte'}${_modalidadMin(p)}`;
     const sp = par(p.pubId, p.ayudante);
-    const sa = tieneAuxiliar ? (p.tipo === 'discurso' ? n(p.salaAux?.pubId) : par(p.salaAux?.pubId, p.salaAux?.ayudante)) : '';
+    const sa = aux ? (p.tipo === 'discurso' ? n(p.salaAux?.pubId) : par(p.salaAux?.pubId, p.salaAux?.ayudante)) : '';
     push(t, sp, sa);
     num++;
   });
@@ -2474,8 +2614,9 @@ function formatSemanaParaSheets(s) {
     push(`${num}. ${p.duracion ?? 10} mins. ${p.titulo || 'Parte'}`, n(p.pubId));
     num++;
   });
-  const est = s.estudioBiblico || {};
-  push(`${num}. ${est.duracion ?? 30} mins. Estudio bíblico de la congregación`, n(est.conductor));
+  const est = estudioDeSemana(s);
+  const estTitulo = est.esSuper ? VM_TITULO_DISCURSO_SUPER : 'Estudio bíblico de la congregación';
+  push(`${num}. ${est.duracion} mins. ${estTitulo}`, n(est.conductor));
 
   push('3 mins. Palabras de conclusión', n(s.presidente));
   push('Oración',                        n(s.oracionCierre));
@@ -2586,7 +2727,7 @@ window.exportarMesImagen = async function(mesISO) {
 
 function s89FechaReunion(semana) {
   // Reunión VM: miércoles (+2); semana de superintendente → martes (+1)
-  const offset = semana.tipoEspecial === 'superintendente' ? 1 : 2;
+  const offset = esSemanaSuper(semana.fecha) ? 1 : 2;
   const d = new Date(semana.fecha + 'T12:00:00');
   d.setDate(d.getDate() + offset);
   const p = n => String(n).padStart(2, '0');
@@ -2596,6 +2737,7 @@ function s89FechaReunion(semana) {
 function s89SlipsDeSemana(semana) {
   const slips = [];
   const fecha = s89FechaReunion(semana);
+  const aux   = auxEnSemana(semana.fecha);
 
   const add = (pubId, ayudanteId, intervencion, sala) => {
     const nombre = nombreDePub(pubId);
@@ -2606,7 +2748,7 @@ function s89SlipsDeSemana(semana) {
   // Lectura Bíblica → intervención 3
   // SP: pubId; SA: ayudante (así lo almacena el app cuando tieneAuxiliar)
   add(semana.tesoros?.lecturaBiblica?.pubId, null, 3, 'principal');
-  if (tieneAuxiliar) {
+  if (aux) {
     add(semana.tesoros?.lecturaBiblica?.ayudante, null, 3, 'auxiliar');
   }
 
@@ -2615,7 +2757,7 @@ function s89SlipsDeSemana(semana) {
     const num = 4 + i;
     const conAyudante = parte.tipo !== 'discurso';
     add(parte.pubId, conAyudante ? parte.ayudante : null, num, 'principal');
-    if (tieneAuxiliar && parte.salaAux?.pubId) {
+    if (aux && parte.salaAux?.pubId) {
       add(parte.salaAux.pubId, conAyudante ? parte.salaAux.ayudante : null, num, 'auxiliar');
     }
   });

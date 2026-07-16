@@ -24,6 +24,18 @@ const VM_TIPO_COLORS = {
   asamblea:        '#F09595',
 };
 
+// En la semana del superintendente no se abre la sala auxiliar y el Estudio
+// Bíblico se reemplaza por su discurso (ver vida-ministerio/app.js).
+const VM_TITULO_DISCURSO_SUPER = 'Discurso del superintendente de circuito';
+
+function esSemanaSuper(fecha) {
+  return vmEspeciales[fecha]?.tipo === 'superintendente';
+}
+
+function auxEnSemana(fecha) {
+  return tieneAuxiliar && !esSemanaSuper(fecha);
+}
+
 // ─────────────────────────────────────────
 //   UTILS
 // ─────────────────────────────────────────
@@ -207,9 +219,10 @@ function renderPrograma(s) {
   }
 
   // Tesoros
+  const aux  = auxEnSemana(s.fecha);
   const lect = s.tesoros?.lecturaBiblica;
   let lectRow;
-  if (tieneAuxiliar && lect?.ayudante) {
+  if (aux && lect?.ayudante) {
     const lNombre    = nombreDePub(lect.pubId);
     const lAuxNombre = nombreDePub(lect.ayudante);
     lectRow = `<div class="pub-parte-row">
@@ -238,7 +251,7 @@ function renderPrograma(s) {
         ? esc(nombre) + (ayNombre ? ` / ${esc(ayNombre)}` : '')
         : (ayNombre ? esc(ayNombre) : null);
       let auxStr = null;
-      if (tieneAuxiliar && p.salaAux?.pubId) {
+      if (aux && p.salaAux?.pubId) {
         const auxN   = nombreDePub(p.salaAux.pubId);
         const auxAyN = nombreDePub(p.salaAux.ayudante);
         if (auxN) auxStr = esc(auxN) + (auxAyN ? ` / ${esc(auxAyN)}` : '');
@@ -259,12 +272,15 @@ function renderPrograma(s) {
 
   // Vida Cristiana
   const vcPartes = (s.vidaCristiana || []).map(p => row(p.titulo || 'Parte', p.pubId)).join('');
-  const estudio  = s.estudioBiblico;
-  const estudioHtml = estudio ? `<div class="pub-parte-row">
-    <div class="pub-parte-titulo">${esc(estudio.titulo || 'Estudio Bíblico')}</div>
+  const estudio   = s.estudioBiblico || {};
+  const esSuper   = esSemanaSuper(s.fecha);
+  const estTitulo = esSuper ? VM_TITULO_DISCURSO_SUPER : (estudio.titulo || 'Estudio Bíblico');
+  const estLector = esSuper ? null : estudio.lector;
+  const estudioHtml = (s.estudioBiblico || esSuper) ? `<div class="pub-parte-row">
+    <div class="pub-parte-titulo">${esc(estTitulo)}</div>
     <div class="pub-parte-nombre" style="text-align:right;">
       ${estudio.conductor ? `<div>${esc(nombreDePub(estudio.conductor) || '—')}</div>` : '<div class="pub-parte-sin">—</div>'}
-      ${estudio.lector ? `<div style="font-size:11px;color:#888;">Lec. ${esc(nombreDePub(estudio.lector) || '')}</div>` : ''}
+      ${estLector ? `<div style="font-size:11px;color:#888;">Lec. ${esc(nombreDePub(estLector) || '')}</div>` : ''}
     </div>
   </div>` : '';
   html += `<div class="pub-seccion">
