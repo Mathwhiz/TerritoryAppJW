@@ -1329,7 +1329,9 @@ function _ordenPrioridadNombresSlot(key, elegibles) {
       const d = _diasEntre(fecha, ult);
       if (d < VM_DESCANSO_DIAS) score += 1000 + (VM_DESCANSO_DIAS - d);
     }
-    if (salaSlot) {
+    // Igual que en autoAsignarSemana: a quien tiene la sala fijada no se le aplica
+    // el balance de salas (su diff solo crece y lo dejaría sin partes).
+    if (salaSlot && !salaFijaDePub(cand)) {
       const sc = stats.salaCount[cand] || { prin: 0, aux: 0 };
       const diff = salaSlot === 'aux' ? (sc.aux - sc.prin) : (sc.prin - sc.aux);
       if (diff > 0) score += VM_SALA_PESO * diff;
@@ -2184,7 +2186,11 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
       }
       // Balance de salas: penaliza darle a alguien la sala en la que ya está
       // sobre-representado, para que con el tiempo nadie quede atrapado en A o B.
-      if (salaSlot) {
+      // Balance de salas: NO aplica a quien tiene la sala fijada (vmSala). Su diff
+      // prin-aux solo puede crecer, así que la penalización lo iría dejando sin
+      // partes (medido: de ~10 a ~1 al año). Balancear salas a quien solo puede
+      // estar en una no tiene sentido.
+      if (salaSlot && !salaFijaDePub(cand)) {
         const sc = salaRun[cand] || { prin: 0, aux: 0 };
         const diff = salaSlot === 'aux' ? (sc.aux - sc.prin) : (sc.prin - sc.aux);
         if (diff > 0) score += VM_SALA_PESO * diff;
