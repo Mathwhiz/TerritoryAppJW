@@ -328,6 +328,7 @@ function goToCover() {
   selected = [];
   hide('view-config'); hide('view-preview');
   hide('view-modo');   hide('view-registrar'); hide('view-info');
+  hide('view-informe');
   hideChatFab();
   show('view-cover');
   document.getElementById('step-bar').style.display = 'none';
@@ -339,6 +340,7 @@ function goToModo() {
   document.getElementById('btn-mapa-float')?.classList.remove('visible');
   hide('view-cover'); hide('view-config'); hide('view-preview');
   hide('view-registrar'); hide('view-info'); hide('view-historial');
+  hide('view-informe');
   showChatFab();
 
   const grupoObj = GRUPOS.find(g => String(g.id) === String(selectedGrupo));
@@ -1376,7 +1378,7 @@ async function guardarRegistros() {
 //   INFO GRUPO / MODAL
 // ─────────────────────────────────────────
 async function goToInfoGrupo() {
-  hide('view-modo'); show('view-info');
+  hide('view-modo'); hide('view-informe'); show('view-info');
 
   const gc = GCOLORS[selectedGrupo] || '#97C459';
   document.getElementById('view-info').style.setProperty('--grupo-color', gc);
@@ -1413,25 +1415,41 @@ async function goToInfoGrupo() {
 
 async function goToInforme() {
   hide('view-info'); show('view-informe');
+  // Los flotantes se superponen al informe (y al PDF) — se ocultan mientras está abierto
+  document.getElementById('btn-home')?.classList.remove('visible');
+  document.getElementById('btn-mapa-float')?.classList.remove('visible');
+  hideChatFab();
   show('informe-loading'); hide('informe-content');
 
-  // Determinar período: últimas dos visitas del superintendente
+  // Determinar período: de la última visita del super ya ocurrida a la próxima
   const especSnap = await getDocs(collection(db, 'congregaciones', CONGRE_ID, 'semanasEspeciales'));
   const superFechas = [];
   especSnap.forEach(d => { if (d.data().tipo === 'superintendente') superFechas.push(d.id); });
   superFechas.sort();
 
   const hoy = window.fmtDateLocal(new Date());
-  let desdeISO, hastaISO;
-  if (superFechas.length >= 2) {
-    desdeISO = superFechas[superFechas.length - 2];
-    hastaISO = superFechas[superFechas.length - 1];
-  } else if (superFechas.length === 1) {
-    desdeISO = superFechas[0]; hastaISO = hoy;
+
+  // Una visita cuenta como "ya ocurrida" solo si su semana terminó (domingo < hoy).
+  // La semana en curso y las futuras son la visita que se está preparando.
+  const semanaTerminada = (lunes) => {
+    const d = new Date(lunes + 'T00:00:00');
+    d.setDate(d.getDate() + 6);
+    return window.fmtDateLocal(d) < hoy;
+  };
+  const pasadas = superFechas.filter(semanaTerminada);
+  const proximas = superFechas.filter(f => !semanaTerminada(f));
+
+  // desde = última visita ya ocurrida; sin ninguna, 6 meses atrás
+  let desdeISO;
+  if (pasadas.length) {
+    desdeISO = pasadas[pasadas.length - 1];
   } else {
     const d = new Date(); d.setMonth(d.getMonth() - 6);
-    desdeISO = window.fmtDateLocal(d); hastaISO = hoy;
+    desdeISO = window.fmtDateLocal(d);
   }
+  // hasta = próxima visita si ya está agendada a futuro; si no, hoy
+  let hastaISO = (proximas.length && proximas[0] > hoy) ? proximas[0] : hoy;
+  if (hastaISO < desdeISO) hastaISO = hoy;   // red de seguridad: nunca invertido
 
   // Territorios del grupo ordenados por número
   const terrIds = Object.keys(territoriosData).sort((a, b) => {
@@ -1502,6 +1520,13 @@ async function goToInforme() {
 
 window.goToInforme = goToInforme;
 window.descargarInformePDF = function() { window.print(); };
+
+// Volver del informe a "ver mi grupo" sin recargar territorios (los datos ya están en memoria)
+window.salirDelInforme = function() {
+  hide('view-informe');
+  show('view-info');          // show() reactiva btn-home y btn-mapa-float
+  showChatFab();
+};
 
 function daysClass(d) {
   if (d === null || d === undefined) return '';
