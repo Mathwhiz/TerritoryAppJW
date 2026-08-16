@@ -82,6 +82,27 @@
   .terr-popup-val { color: #eee; font-weight: 500; }
   .badge-progreso { margin-top: 8px; background: rgba(239,159,39,0.2); color: #EF9F27; border: 0.5px solid #EF9F27; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 600; text-align: center; }
 
+  /* Salón del Reino */
+  .salon-pin {
+    position: relative; width: 28px; height: 28px; border-radius: 50%;
+    background: #232628; border: 2px solid #E8E8E8;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.55);
+  }
+  .salon-pin::after {
+    content: ''; position: absolute; left: 50%; top: 100%;
+    transform: translate(-50%, -2px);
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 7px solid #E8E8E8;
+  }
+  .salon-pin svg { width: 15px; height: 15px; display: block; }
+  .leaflet-tooltip.salon-tooltip {
+    background: rgba(18,18,18,0.92); border: 1.5px solid #E8E8E8; color: #E8E8E8;
+    border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 600;
+    font-family: system-ui, sans-serif; box-shadow: none;
+  }
+  .leaflet-tooltip.salon-tooltip::before { display: none; }
+
   /* Zoom control — esquina inferior derecha, estilo oscuro */
   .leaflet-control-zoom {
     margin-bottom: 14px !important;
@@ -263,6 +284,7 @@ function renderFilterButtons() {
 // Territorios cargados desde Firestore — formato: [{num, grupo, coords, punto, tipo, ciudad}]
 let TERRITORIOS  = [];
 let ciudadesExtras = []; // [{ nombre, offset }] — cargado del doc de congregación
+let salonDelReino  = null; // { lat, lng, nombre } — cargado del doc de congregación
 
 let map;
 let allLayers = [];
@@ -355,23 +377,61 @@ async function cargarHistorialInfo() {
   }
 }
 
-// ── Carga ciudades extra del doc de congregación ──
+// ── Carga ciudades extra y Salón del Reino del doc de congregación ──
+function normSalon(s) {
+  if (!s) return null;
+  const lat = Number(s.lat), lng = Number(s.lng);
+  if (!isFinite(lat) || !isFinite(lng)) return null;
+  return { lat, lng, nombre: s.nombre || 'Salón del Reino' };
+}
+
 async function cargarCiudadesExtras() {
   try {
+    let publicCities = null;
     if (isPublicMapMode()) {
       const publicSnap = await getDoc(doc(db, 'congregaciones', CONGRE_ID, 'mapa_config', 'publico'));
       if (publicSnap.exists()) {
-        const publicCities = publicSnap.data().ciudadesExtras || [];
-        if (Array.isArray(publicCities) && publicCities.length > 0) {
-          ciudadesExtras = publicCities;
-          return;
-        }
+        const pd = publicSnap.data();
+        salonDelReino = normSalon(pd.salonDelReino);
+        const cities = pd.ciudadesExtras;
+        if (Array.isArray(cities) && cities.length > 0) publicCities = cities;
       }
+      // Solo se evita leer el doc de congregación si el espejo público ya trae todo
+      if (publicCities && salonDelReino) { ciudadesExtras = publicCities; return; }
     }
 
     const snap = await getDoc(doc(db, 'congregaciones', CONGRE_ID));
-    if (snap.exists()) ciudadesExtras = snap.data().ciudadesExtras || [];
-  } catch(e) { /* sin ciudades extras */ }
+    if (snap.exists()) {
+      const d = snap.data();
+      ciudadesExtras = publicCities || d.ciudadesExtras || [];
+      if (!salonDelReino) salonDelReino = normSalon(d.salonDelReino);
+    } else if (publicCities) {
+      ciudadesExtras = publicCities;
+    }
+  } catch(e) { /* sin ciudades extras ni salón */ }
+}
+
+// Marcador del Salón del Reino — independiente de los filtros de grupo/ciudad
+function renderSalon() {
+  if (!salonDelReino) return;
+  // En picker/encuentro el click en el mapa es la interacción principal: el pin no la intercepta
+  const interactivo = _modoParam === 'full' || _modoParam === 'info' || isPublicMapMode();
+  const marker = L.marker([salonDelReino.lat, salonDelReino.lng], {
+    interactive: interactivo,
+    keyboard: false,
+    zIndexOffset: 500,
+    icon: L.divIcon({
+      className: '',
+      html: `<div class="salon-pin"><svg viewBox="0 0 24 24" fill="none" stroke="#E8E8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 3l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg></div>`,
+      iconSize: [28, 35], iconAnchor: [14, 35],
+    })
+  });
+  if (interactivo) {
+    marker.bindTooltip(salonDelReino.nombre, {
+      className: 'salon-tooltip', direction: 'top', offset: [0, -34],
+    });
+  }
+  marker.addTo(map);
 }
 
 // ── Init ──
@@ -414,6 +474,8 @@ async function initMap() {
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
   setTimeout(() => { map.invalidateSize(); }, 100);
+
+  renderSalon();
 
   // En modo encuentro el render se hace después de cargar el historial
   if (_modoParam !== 'encuentro') {
