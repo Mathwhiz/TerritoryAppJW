@@ -634,7 +634,8 @@ function renderTerritories() {
       const c = GRUPO_COLORS[t.grupo] || { fill:'#888', border:'#555' };
       const polygon = L.polygon(t.coords, { color:c.border, fillColor:c.fill, fillOpacity:0.22, weight:2, opacity:0.9 });
       const label   = makeLabel(t.coords, c.fill, t.num);
-      polygon.on('click',     () => openPopup(polygon, t.num, t.grupo));
+      // Sin popup: el mapa público solo muestra los límites y el número del territorio,
+      // ningún dato interno (último uso, conductor, notas, etc.)
       polygon.on('mouseover', () => polygon.setStyle({ fillOpacity:0.45, weight:2.5 }));
       polygon.on('mouseout',  () => polygon.setStyle({ fillOpacity:0.22, weight:2 }));
       allLayers.push({ polygon, label, group:t.grupo, numero:t.num, ciudad:t.ciudad||null, coords:t.coords });
@@ -853,22 +854,9 @@ function showToast(msg, isRemove = false) {
 
 // ── Popup normal ──
 function openPopup(layer, numero, grupo) {
+  // Modo público: nunca se muestra información del territorio
+  if (isPublicMapMode()) return;
   const c = GRUPO_COLORS[grupo] || { fill:'#888' };
-  if (isPublicMapMode()) {
-    const terrEntry = TERRITORIOS.find(t => baseNum(t.num) === baseNum(numero));
-    const ciudadHtml = terrEntry?.ciudad
-      ? `<div class="terr-popup-row"><span class="terr-popup-label">Ciudad</span><span class="terr-popup-val">${terrEntry.ciudad}</span></div>`
-      : '';
-    const html = `
-      <div>
-        <div class="terr-popup-num" style="color:${c.fill};">${numero}</div>
-        <div class="terr-popup-group" style="color:${c.fill};">${GRUPO_LABEL[grupo] || ''}</div>
-        ${ciudadHtml}
-      </div>`;
-    const center = layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng();
-    L.popup({ maxWidth: 220, closeButton: true }).setLatLng(center).setContent(html).openOn(map);
-    return;
-  }
   const info = territoriosInfo[baseNum(numero)] || {};
   const lastDate = info.lastFin || info.lastIni;
   const dias = lastDate ? daysSince(lastDate) : null;
