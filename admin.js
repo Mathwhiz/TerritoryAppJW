@@ -276,6 +276,233 @@ let kmlTerritories    = null;
 let wizardGrupos      = [];
 let editingCongreId   = null;
 let ciudadesExtrasKml = []; // [{ nombre, offset, territories }]
+let wizardSalon       = null; // { lat, lng } — Salón del Reino (marcador del mapa)
+
+// ─────────────────────────────────────────
+//   SALÓN DEL REINO (marcador del mapa)
+// ─────────────────────────────────────────
+const SALON_NOMBRE = 'Salón del Reino';
+const SALON_PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 3l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>';
+
+// El pin usa el color del grupo "Congregación" (mismo criterio que mapa.html)
+function salonPinColor() {
+  const congre = wizardGrupos.find(g => String(g.id) === 'C');
+  return congre?.color || document.getElementById('w-color')?.value || '#E8E8E8';
+}
+
+function salonParaGuardar() {
+  if (!wizardSalon) return null;
+  return { lat: wizardSalon.lat, lng: wizardSalon.lng, nombre: SALON_NOMBRE };
+}
+
+function renderSalonField() {
+  const txt = document.getElementById('w-salon-txt');
+  const rm  = document.getElementById('w-salon-rm');
+  if (!txt) return;
+  if (wizardSalon) {
+    txt.textContent = `${wizardSalon.lat.toFixed(6)}, ${wizardSalon.lng.toFixed(6)}`;
+    txt.classList.remove('empty');
+    if (rm) rm.style.display = '';
+  } else {
+    txt.textContent = 'Sin ubicación';
+    txt.classList.add('empty');
+    if (rm) rm.style.display = 'none';
+  }
+}
+
+function quitarSalon() {
+  wizardSalon = null;
+  renderSalonField();
+}
+
+// Leaflet se carga sólo cuando se abre el picker (no hace falta en el resto del panel)
+let _leafletPromise = null;
+function cargarLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (_leafletPromise) return _leafletPromise;
+  _leafletPromise = new Promise((resolve, reject) => {
+    const css = document.createElement('link');
+    css.rel  = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src     = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    js.onload  = () => resolve();
+    js.onerror = () => reject(new Error('No se pudo cargar el mapa'));
+    document.head.appendChild(js);
+  });
+  return _leafletPromise;
+}
+
+let _salonMap    = null;
+let _salonMarker = null;
+let _salonSel    = null;
+
+function cerrarSalonPicker() {
+  const m = document.getElementById('salon-modal');
+  if (m) m.remove();
+  _salonMap = _salonMarker = _salonSel = null;
+}
+
+async function abrirSalonPicker() {
+  cerrarSalonPicker();
+
+  const modal = document.createElement('div');
+  modal.id = 'salon-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  modal.innerHTML = `
+    <div class="salon-sheet">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#eee;">Salón del Reino</div>
+          <div style="font-size:12px;color:#666;margin-top:2px;">Arrastrá el marcador o tocá el mapa</div>
+        </div>
+        <button onclick="cerrarSalonPicker()" style="background:#333;border:none;border-radius:8px;width:32px;height:32px;color:#aaa;font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <input class="vincular-search" id="salon-search" type="text" autocomplete="off"
+             placeholder="Buscar dirección o esquina…" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccionSalon();}">
+      <div id="salon-map"></div>
+      <div class="salon-hint" id="salon-coords">Sin ubicación elegida</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sec" style="flex:1;" onclick="cerrarSalonPicker()">Cancelar</button>
+        <button class="btn-pri" style="flex:1;" id="salon-ok" onclick="confirmarSalon()">Usar esta ubicación</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) cerrarSalonPicker(); });
+  document.body.appendChild(modal);
+
+  try {
+    await cargarLeaflet();
+  } catch (err) {
+    await uiAlert('No se pudo cargar el mapa: ' + err.message);
+    cerrarSalonPicker();
+    return;
+  }
+  if (!document.getElementById('salon-modal')) return; // se cerró mientras cargaba
+
+  _salonMap = L.map('salon-map', { zoomControl: true, attributionControl: false })
+    .setView([-38.4, -63.6], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(_salonMap);
+  setTimeout(() => _salonMap && _salonMap.invalidateSize(), 60);
+  _salonMap.on('click', e => ponerSalonEn(e.latlng.lat, e.latlng.lng, null));
+
+  if (wizardSalon) {
+    ponerSalonEn(wizardSalon.lat, wizardSalon.lng, 17);
+  } else {
+    // Sin ubicación previa: centrar en la ciudad principal y dejar el pin listo para arrastrar
+    const ciudad = document.getElementById('w-ciudad-principal')?.value.trim();
+    if (ciudad) {
+      const p = await geocodificar(ciudad + ', Argentina');
+      if (p && _salonMap) ponerSalonEn(p.lat, p.lng, 15);
+    }
+  }
+}
+
+function ponerSalonEn(lat, lng, zoom) {
+  if (!_salonMap) return;
+  _salonSel = { lat, lng };
+  if (_salonMarker) {
+    _salonMarker.setLatLng([lat, lng]);
+  } else {
+    _salonMarker = L.marker([lat, lng], {
+      draggable: true,
+      autoPan: true,
+      icon: L.divIcon({
+        className: '',
+        html: `<div class="salon-pin" style="--sc:${salonPinColor()}">${SALON_PIN_SVG}</div>`,
+        iconSize: [28, 35], iconAnchor: [14, 35],
+      })
+    }).addTo(_salonMap);
+    _salonMarker.on('drag dragend', e => {
+      const p = e.target.getLatLng();
+      _salonSel = { lat: p.lat, lng: p.lng };
+      mostrarCoordsSalon(p.lat, p.lng);
+    });
+  }
+  if (zoom) _salonMap.setView([lat, lng], zoom);
+  mostrarCoordsSalon(lat, lng);
+}
+
+function mostrarCoordsSalon(lat, lng) {
+  const coords = document.getElementById('salon-coords');
+  if (coords) coords.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+}
+
+async function geocodificar(q) {
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+      { headers: { 'Accept-Language': 'es' } }
+    );
+    const data = await resp.json();
+    if (!data?.length) return null;
+    const r  = data[0];
+    const bb = r.boundingbox?.map(Number); // [sur, norte, oeste, este]
+    return {
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      bbox: bb?.length === 4 ? { s: bb[0], n: bb[1], o: bb[2], e: bb[3] } : null,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+// Nominatim no resuelve esquinas ("calle A y calle B"): se busca el nodo que
+// comparten las dos calles con Overpass, acotado al bbox de la ciudad.
+async function buscarEsquina(calleA, calleB, bbox) {
+  const esc  = s => s.replace(/["\\\n]/g, ' ').trim();
+  const area = `${bbox.s},${bbox.o},${bbox.n},${bbox.e}`;
+  const q = `[out:json][timeout:20];`
+    + `way["highway"]["name"~"${esc(calleA)}",i](${area});node(w)->.a;`
+    + `way["highway"]["name"~"${esc(calleB)}",i](${area});node(w)->.b;`
+    + `node.a.b;out 1;`;
+  try {
+    const resp = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: q });
+    const data = await resp.json();
+    const n = (data.elements || [])[0];
+    return n ? { lat: n.lat, lng: n.lon } : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function buscarDireccionSalon() {
+  const q = document.getElementById('salon-search')?.value.trim();
+  if (!q) return;
+  const ciudad = document.getElementById('w-ciudad-principal')?.value.trim();
+  const coords = document.getElementById('salon-coords');
+  if (coords) coords.textContent = 'Buscando…';
+
+  const esquina = q.split(/\s+(?:y|esq\.?|esquina)\s+/i);
+  if (esquina.length === 2 && ciudad) {
+    const ref = await geocodificar(`${ciudad}, Argentina`);
+    if (ref?.bbox) {
+      const p = await buscarEsquina(esquina[0], esquina[1], ref.bbox);
+      if (p) {
+        ponerSalonEn(p.lat, p.lng, 18);
+        return;
+      }
+    }
+  }
+
+  const p = await geocodificar(ciudad ? `${q}, ${ciudad}, Argentina` : q) || await geocodificar(q);
+  if (!p) {
+    if (coords) coords.textContent = 'No se encontró — probá con calle y número, o tocá el mapa';
+    return;
+  }
+  ponerSalonEn(p.lat, p.lng, 17);
+}
+
+async function confirmarSalon() {
+  if (!_salonSel) {
+    await uiAlert('Tocá el mapa para elegir dónde está el Salón.');
+    return;
+  }
+  wizardSalon = { lat: _salonSel.lat, lng: _salonSel.lng };
+  cerrarSalonPicker();
+  renderSalonField();
+}
 
 function renderGruposConfig() {
   const gc = document.getElementById('grupos-config');
@@ -358,6 +585,9 @@ function startWizard(prefill = null) {
   document.getElementById('w-ciudad-principal').value = prefill?.ciudadPrincipal    || '';
   ciudadesExtrasKml = prefill?.ciudadesExtras?.map(c => ({ nombre: c.nombre, offset: c.offset, territories: null })) ?? [];
   renderCiudadesExtra();
+  const ps = prefill?.salonDelReino;
+  wizardSalon = (ps && isFinite(ps.lat) && isFinite(ps.lng)) ? { lat: Number(ps.lat), lng: Number(ps.lng) } : null;
+  renderSalonField();
   const initColor = prefill?.color || PALETA_COLORES[Math.floor(Math.random() * PALETA_COLORES.length)];
   renderColorSwatches(initColor);
   setWizardCC(initColor);
@@ -403,6 +633,7 @@ async function editCongre(id) {
       color:             data.color || null,
       ciudadPrincipal:   data.ciudadPrincipal || '',
       ciudadesExtras:    data.ciudadesExtras || [],
+      salonDelReino:     data.salonDelReino || null,
       grupos,
     });
   } catch(e) {
@@ -664,6 +895,7 @@ async function syncPublicMapConfig(congreId, data) {
     color: data.color || null,
     ciudadPrincipal: data.ciudadPrincipal || null,
     ciudadesExtras: data.ciudadesExtras || [],
+    salonDelReino: data.salonDelReino || null,
     updatedAt: Timestamp.now(),
   });
 }
@@ -716,6 +948,7 @@ async function ensurePublicMapMirror(congreId, congreData, grupos, territorios) 
     color: congreData?.color || null,
     ciudadPrincipal: congreData?.ciudadPrincipal || null,
     ciudadesExtras: congreData?.ciudadesExtras || [],
+    salonDelReino: congreData?.salonDelReino || null,
   });
   await replacePublicMapGroups(congreId, grupos || []);
   await replacePublicMapTerritories(congreId, territorios || []);
@@ -781,6 +1014,7 @@ async function crearCongregacion(skipKml) {
   const ciudadesExtrasMetadata = ciudadesExtrasKml
     .filter(ec => ec.nombre)
     .map(ec => ({ nombre: ec.nombre, offset: ec.offset }));
+  const salon = salonParaGuardar();
 
   const grupos = wizardGrupos;
 
@@ -809,6 +1043,7 @@ async function crearCongregacion(skipKml) {
         nombre,
         ciudadPrincipal: ciudadPrincipal || null,
         ciudadesExtras: ciudadesExtrasMetadata,
+        salonDelReino: salon || deleteField(),
         ...(color && { color }),
         pinEncargado: deleteField(),
         pinVidaMinisterio: deleteField(),
@@ -818,6 +1053,7 @@ async function crearCongregacion(skipKml) {
         color,
         ciudadPrincipal: ciudadPrincipal || null,
         ciudadesExtras: ciudadesExtrasMetadata,
+        salonDelReino: salon,
       });
 
       // Reemplazar grupos: borrar existentes y crear los nuevos
@@ -839,6 +1075,7 @@ async function crearCongregacion(skipKml) {
         nombre,
         ciudadPrincipal: ciudadPrincipal || null,
         ciudadesExtras: ciudadesExtrasMetadata,
+        ...(salon && { salonDelReino: salon }),
         color,
         creadoEn: Timestamp.now(),
       });
@@ -850,6 +1087,7 @@ async function crearCongregacion(skipKml) {
         color,
         ciudadPrincipal: ciudadPrincipal || null,
         ciudadesExtras: ciudadesExtrasMetadata,
+        salonDelReino: salon,
       });
     }
 
@@ -1581,6 +1819,11 @@ window.onKmlFile             = onKmlFile;
 window.addCiudadExtra        = addCiudadExtra;
 window.removeCiudadExtra     = removeCiudadExtra;
 window.onCiudadExtraKmlFile  = onCiudadExtraKmlFile;
+window.abrirSalonPicker      = abrirSalonPicker;
+window.cerrarSalonPicker     = cerrarSalonPicker;
+window.buscarDireccionSalon  = buscarDireccionSalon;
+window.confirmarSalon        = confirmarSalon;
+window.quitarSalon           = quitarSalon;
 window.crearCongregacion     = crearCongregacion;
 window.openTerritorios   = openTerritorios;
 window.setTerrFiltro     = setTerrFiltro;

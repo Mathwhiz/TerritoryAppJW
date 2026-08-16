@@ -82,10 +82,11 @@
   .terr-popup-val { color: #eee; font-weight: 500; }
   .badge-progreso { margin-top: 8px; background: rgba(239,159,39,0.2); color: #EF9F27; border: 0.5px solid #EF9F27; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 600; text-align: center; }
 
-  /* Salón del Reino */
+  /* Salón del Reino — color de la congregación via --sc */
   .salon-pin {
     position: relative; width: 28px; height: 28px; border-radius: 50%;
-    background: #232628; border: 2px solid #E8E8E8;
+    background: #232628; border: 2px solid var(--sc, #E8E8E8);
+    color: var(--sc, #E8E8E8);
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 6px rgba(0,0,0,0.55);
   }
@@ -93,11 +94,11 @@
     content: ''; position: absolute; left: 50%; top: 100%;
     transform: translate(-50%, -2px);
     border-left: 5px solid transparent; border-right: 5px solid transparent;
-    border-top: 7px solid #E8E8E8;
+    border-top: 7px solid var(--sc, #E8E8E8);
   }
   .salon-pin svg { width: 15px; height: 15px; display: block; }
   .leaflet-tooltip.salon-tooltip {
-    background: rgba(18,18,18,0.92); border: 1.5px solid #E8E8E8; color: #E8E8E8;
+    background: rgba(18,18,18,0.92); border: 1.5px solid var(--sc, #E8E8E8); color: var(--sc, #E8E8E8);
     border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 600;
     font-family: system-ui, sans-serif; box-shadow: none;
   }
@@ -285,6 +286,7 @@ function renderFilterButtons() {
 let TERRITORIOS  = [];
 let ciudadesExtras = []; // [{ nombre, offset }] — cargado del doc de congregación
 let salonDelReino  = null; // { lat, lng, nombre } — cargado del doc de congregación
+let congreColor    = null; // color de la congregación — usado por el pin del salón
 
 let map;
 let allLayers = [];
@@ -393,6 +395,7 @@ async function cargarCiudadesExtras() {
       if (publicSnap.exists()) {
         const pd = publicSnap.data();
         salonDelReino = normSalon(pd.salonDelReino);
+        congreColor   = pd.color || null;
         const cities = pd.ciudadesExtras;
         if (Array.isArray(cities) && cities.length > 0) publicCities = cities;
       }
@@ -405,6 +408,7 @@ async function cargarCiudadesExtras() {
       const d = snap.data();
       ciudadesExtras = publicCities || d.ciudadesExtras || [];
       if (!salonDelReino) salonDelReino = normSalon(d.salonDelReino);
+      if (!congreColor)   congreColor   = d.color || null;
     } else if (publicCities) {
       ciudadesExtras = publicCities;
     }
@@ -416,13 +420,15 @@ function renderSalon() {
   if (!salonDelReino) return;
   // En picker/encuentro el click en el mapa es la interacción principal: el pin no la intercepta
   const interactivo = _modoParam === 'full' || _modoParam === 'info' || isPublicMapMode();
+  // Color del grupo "Congregación" (los territorios de congregación) — fallback al color del doc
+  const color = GRUPO_COLORS['C']?.fill || congreColor || '#E8E8E8';
   const marker = L.marker([salonDelReino.lat, salonDelReino.lng], {
     interactive: interactivo,
     keyboard: false,
     zIndexOffset: 500,
     icon: L.divIcon({
       className: '',
-      html: `<div class="salon-pin"><svg viewBox="0 0 24 24" fill="none" stroke="#E8E8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 3l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg></div>`,
+      html: `<div class="salon-pin" style="--sc:${color}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 3l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg></div>`,
       iconSize: [28, 35], iconAnchor: [14, 35],
     })
   });
@@ -430,6 +436,7 @@ function renderSalon() {
     marker.bindTooltip(salonDelReino.nombre, {
       className: 'salon-tooltip', direction: 'top', offset: [0, -34],
     });
+    marker.on('tooltipopen', e => { e.tooltip.getElement()?.style.setProperty('--sc', color); });
   }
   marker.addTo(map);
 }
