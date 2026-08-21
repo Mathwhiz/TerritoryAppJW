@@ -45,6 +45,9 @@ const ROLES_VM = [
   { id: 'VM_MINISTERIO_DISCURSO',      label: 'Min. Discurso' },
   { id: 'VM_VIDA_CRISTIANA',           label: 'Vida Cristiana' },
   { id: 'VM_ESTUDIO_CONDUCTOR',        label: 'Conductor Estudio' },
+  // "¿Qué diría?": solo hace falta marcarlo en siervos ministeriales — los ancianos
+  // ya son elegibles sin él (ver pubsQueDiria() en vida-ministerio/app.js).
+  { id: 'VM_QUE_DIRIA',                label: '¿Qué diría? (s. min.)' },
 ];
 
 // Se reconstruye en buildConductorUI() después de cargar grupos

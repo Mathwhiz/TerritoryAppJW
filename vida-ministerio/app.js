@@ -22,12 +22,17 @@ const ROLES_VM = [
   { id: 'VM_MINISTERIO_DISCURSO',       label: 'Min. Discurso' },
   { id: 'VM_VIDA_CRISTIANA',            label: 'Vida Cristiana' },
   { id: 'VM_ESTUDIO_CONDUCTOR',         label: 'Conductor Estudio' },
+  // "¿Qué diría?" (análisis con el auditorio en Seamos Mejores Maestros).
+  // Los ancianos son elegibles siempre, tengan o no el rol marcado; el rol sirve
+  // para habilitar a un siervo ministerial concreto. Ver pubsQueDiria().
+  { id: 'VM_QUE_DIRIA',                 label: '¿Qué diría?' },
 ];
 
 // Roles VM que requieren ser varón (mujeres nunca pueden ocuparlos)
 const ROLES_VM_SOLO_VARON = [
   'VM_PRESIDENTE','VM_ORACION','VM_TESOROS','VM_JOYAS','VM_LECTURA',
   'VM_MINISTERIO_DISCURSO','VM_VIDA_CRISTIANA','VM_ESTUDIO_CONDUCTOR',
+  'VM_QUE_DIRIA',
 ];
 
 // Roles VM que además requieren privilegio (anciano o siervo ministerial).
@@ -37,7 +42,7 @@ const ROLES_VM_SOLO_VARON = [
 // (≠ del Discurso de Tesoros de 10 min, que sí es VM_TESOROS y privilegiado).
 const ROLES_VM_SOLO_PRIVILEGIADO = [
   'VM_PRESIDENTE','VM_ORACION','VM_TESOROS','VM_JOYAS',
-  'VM_VIDA_CRISTIANA','VM_ESTUDIO_CONDUCTOR',
+  'VM_VIDA_CRISTIANA','VM_ESTUDIO_CONDUCTOR','VM_QUE_DIRIA',
 ];
 
 // Tipo de parte ministerio → rol VM requerido
@@ -46,6 +51,11 @@ const TIPO_MIN_ROL = {
   'revisita':       'VM_MINISTERIO_REVISITA',
   'escenificacion': 'VM_MINISTERIO_ESCENIFICACION',
   'discurso':       'VM_MINISTERIO_DISCURSO',
+  // "¿Qué diría?" y cualquier otro análisis con el auditorio dentro de Seamos
+  // Mejores Maestros: NO es parte de estudiante. Solo sala principal y sin ayudante.
+  // Rol propio (no comparte cola con Vida Cristiana) para poder acotar quién la da:
+  // ancianos + los siervos ministeriales con el rol marcado. Ver pubsQueDiria().
+  'analisis':       'VM_QUE_DIRIA',
 };
 
 // Qué rol VM se requiere para cada tipo de slot (slots estáticos)
@@ -275,6 +285,10 @@ function esc(s) {
 //   PUBLICADORES
 // ─────────────────────────────────────────
 function pubsConRol(rol) {
+  // "¿Qué diría?" tiene su propio criterio y NO usa el fallback de abajo:
+  // si no hay nadie habilitado, el slot queda vacío en vez de ofrecerse a cualquiera.
+  if (rol === 'VM_QUE_DIRIA') return pubsQueDiria();
+
   let base = publicadores.filter(p => p.activo !== false && (p.roles || []).includes(rol));
   // Fallback a todos los activos si nadie tiene ese rol VM todavía
   if (base.length === 0) base = publicadores.filter(p => p.activo !== false);
@@ -305,6 +319,47 @@ function esNecesidadesLocales(titulo) {
   return /necesidades\s*(de\s*la\s*congregacion|locales)/.test(norm(titulo));
 }
 
+// Análisis con el auditorio dentro de "Seamos Mejores Maestros" — hoy es "¿Qué diría?"
+// (aparece por primera vez la semana del 21-27 sep 2026). WOL la numera como una parte
+// más de la sección, pero no la da un estudiante: la presenta el presidente de la reunión
+// u otro anciano o siervo ministerial capacitado, sin ayudante y solo en la sala principal.
+// Se detecta por título ("¿Qué diría?" / "¿Qué dirías?") o por la instrucción
+// ("Análisis con el auditorio"), que es el marcador genérico de este formato.
+function esAnalisisAuditorio(titulo, instruccion) {
+  const t = norm(`${titulo || ''} ${instruccion || ''}`);
+  return /\bque\s+diria(s|n)?\b/.test(t) || /analisis\s+con\s+el\s+auditorio/.test(t);
+}
+
+function esAnalisisMin(parte) {
+  return parte?.tipo === 'analisis';
+}
+
+// Partes de ministerio de una sola persona (sin ayudante)
+function minSinAyudante(parte) {
+  return parte?.tipo === 'discurso' || esAnalisisMin(parte);
+}
+
+// Partes de ministerio que no se dan en la sala auxiliar
+function minSinSalaAux(parte) {
+  return esAnalisisMin(parte);
+}
+
+// Semanas generadas antes de que existiera el tipo 'analisis' tienen "¿Qué diría?"
+// guardada como conversación, con ayudante y sala auxiliar. Se reclasifica al abrirlas
+// y se limpian esos campos. Devuelve true si tocó algo (para marcar el dirty state).
+function reclasificarAnalisisMin(semana) {
+  let cambio = false;
+  (semana?.ministerio || []).forEach(p => {
+    if (!p || esAnalisisMin(p)) return;
+    if (!esAnalisisAuditorio(p.titulo, p.instruccion)) return;
+    p.tipo = 'analisis';
+    delete p.ayudante;
+    delete p.salaAux;
+    cambio = true;
+  });
+  return cambio;
+}
+
 // ¿El slot `vidaCristiana.N` de la semana abierta es la parte de Necesidades?
 function esSlotNecesidades(key) {
   const m = /^vidaCristiana\.(\d+)$/.exec(key);
@@ -314,6 +369,19 @@ function esSlotNecesidades(key) {
 
 function ancianosActivos() {
   return publicadores.filter(p => p.activo !== false && (p.roles || []).includes('ANCIANO'));
+}
+
+// Quiénes pueden dar "¿Qué diría?": todos los ancianos activos (sin necesidad de
+// marcarles nada) más los siervos ministeriales que tengan el rol `VM_QUE_DIRIA`
+// marcado en su ficha. El resto no entra, ni siquiera por fallback.
+// El presidente de la reunión queda excluido aparte, en la auto-asignación.
+function pubsQueDiria() {
+  return publicadores.filter(p => {
+    if (p.activo === false || p.sexo === 'M') return false;
+    const roles = p.roles || [];
+    if (roles.includes('ANCIANO')) return true;
+    return roles.includes('SIERVO_MINISTERIAL') && roles.includes('VM_QUE_DIRIA');
+  });
 }
 
 // Superintendente de circuito cargado en la lista de hermanos (null si no hay).
@@ -593,6 +661,9 @@ window.goToSemana = async function(fecha) {
     }
   }
   _semanaModificada = false;
+  // Antes de renderizar: reclasificar "¿Qué diría?" si la semana se generó con una
+  // versión anterior que la guardaba como conversación.
+  const _reclas = reclasificarAnalisisMin(semanaData);
   document.getElementById('semana-titulo-display').textContent = 'Semana del ' + fmtDisplay(semanaData.fecha);
   renderSemanaEdit();
   showView('view-semana');
@@ -606,6 +677,8 @@ window.goToSemana = async function(fecha) {
     _marcarModificada();
     renderSemanaEdit();
   }
+
+  if (_reclas) _marcarModificada();
 };
 
 window.switchVmTab = function(tabName) {
@@ -956,12 +1029,14 @@ function renderSemanaPublico(s) {
   if (s.ministerio?.length) {
     const minRows = s.ministerio.map(p => {
       const nombre   = nombreDePub(p.pubId);
-      const ayNombre = nombreDePub(p.ayudante);
+      // Discurso / análisis con el auditorio: una sola persona. Se ignora cualquier
+      // ayudante o sala auxiliar que haya quedado guardado de un tipo anterior.
+      const ayNombre = minSinAyudante(p) ? null : nombreDePub(p.ayudante);
       const mainStr  = nombre
         ? esc(nombre) + (ayNombre ? ` / ${esc(ayNombre)}` : '')
         : (ayNombre ? esc(ayNombre) : null);
       let auxStr = null;
-      if (aux && p.salaAux?.pubId) {
+      if (aux && !minSinSalaAux(p) && p.salaAux?.pubId) {
         const auxN   = nombreDePub(p.salaAux.pubId);
         const auxAyN = nombreDePub(p.salaAux.ayudante);
         if (auxN) auxStr = esc(auxN) + (auxAyN ? ` / ${esc(auxAyN)}` : '');
@@ -1026,8 +1101,10 @@ function renderParteItem(key, label, parte, opts = {}) {
     : '';
   const dur = parte?.duracion ? `<span class="parte-dur-badge">${parte.duracion} min</span>` : '';
 
-  // Discurso de ministerio con sala auxiliar: una persona por sala, sin ayudante
-  const aux          = auxEnSemana(semanaData?.fecha);
+  // Discurso de ministerio con sala auxiliar: una persona por sala, sin ayudante.
+  // El análisis con el auditorio ("¿Qué diría?") es la excepción: solo sala principal,
+  // así que no lleva ni divisor de salas ni picker de auxiliar.
+  const aux          = auxEnSemana(semanaData?.fecha) && !minSinSalaAux(parte);
   const esMinisterio = key.startsWith('ministerio.');
   const spLabel = (aux && esMinisterio)
     ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
@@ -1156,11 +1233,11 @@ function renderSemanaEdit() {
   </div>`;
 
   // ── Ministerio
-  // tipo === 'discurso' → 1 participante (sin ayudante)
+  // tipo 'discurso' / 'analisis' → 1 participante (sin ayudante)
   const minPartes = (s.ministerio || []).map((p, i) => {
     const key  = `ministerio.${i}`;
     const opts = { onRemove: `quitarParte('ministerio',${i})` };
-    return p.tipo === 'discurso'
+    return minSinAyudante(p)
       ? renderParteItem(key, `Parte ${i + 1}`, p, opts)
       : renderParteItemConAyudante(key, `Parte ${i + 1}`, p, opts);
   }).join('');
@@ -1571,8 +1648,8 @@ function wolUrl(fecha) {
 }
 
 
-const TIPO_MIN_LABELS = { conversacion: 'De casa en casa', revisita: 'Revisita', escenificacion: 'Escenificación', discurso: 'Discurso' };
-const TIPO_MIN_COLORS = { conversacion: '#5BA3D9', revisita: '#EF9F27', escenificacion: '#97C459', discurso: '#7F77DD' };
+const TIPO_MIN_LABELS = { conversacion: 'De casa en casa', revisita: 'Revisita', escenificacion: 'Escenificación', discurso: 'Discurso', analisis: 'Análisis con el auditorio' };
+const TIPO_MIN_COLORS = { conversacion: '#5BA3D9', revisita: '#EF9F27', escenificacion: '#97C459', discurso: '#7F77DD', analisis: '#D85A30' };
 
 function renderTipoInstruccionHtml(key, parte) {
   if (!key.startsWith('ministerio.')) return '';
@@ -1599,9 +1676,13 @@ function limpiaTitulo(text) {
 }
 
 // Detecta el tipo de parte de "Seamos mejores maestros" desde el título e instrucción.
-// tipo === 'discurso' → solo 1 participante (sin ayudante)
+// tipo 'discurso' / 'analisis' → solo 1 participante (sin ayudante)
 // los demás → estudiante principal + ayudante
 function tipoMinisterioDesdeWOL(titulo, instruccion) {
+  // Primero: análisis con el auditorio ("¿Qué diría?"). Va antes que el resto porque
+  // su instrucción incluye el modo de predicación ("DE CASA EN CASA", etc.) y si no
+  // caería en 'conversacion' por el fallback.
+  if (esAnalisisAuditorio(titulo, instruccion)) return 'analisis';
   const t = (titulo + ' ' + (instruccion || '')).toLowerCase();
   if (t.includes('conversación') || t.includes('conversacion')) return 'conversacion';
   if (t.includes('revisita'))                                    return 'revisita';
@@ -1677,7 +1758,7 @@ function parseWOL(html) {
     ? ministrioParts.map(p => {
         const tipo = tipoMinisterioDesdeWOL(p.titulo, p.instruccion);
         const base = { titulo: p.titulo, tipo, duracion: p.duracion, instruccion: p.instruccion ?? null, pubId: null };
-        return tipo === 'discurso' ? base : { ...base, ayudante: null };
+        return minSinAyudante(base) ? base : { ...base, ayudante: null };
       })
     : [
         { titulo: '', tipo: 'conversacion', duracion: null, instruccion: null, pubId: null, ayudante: null },
@@ -1749,13 +1830,20 @@ function aplicarWOLaSemana(importado) {
 
   // Ministerio: reemplaza la lista completa de títulos/duraciones, conserva pubIds
   const minOld = semanaData.ministerio || [];
-  semanaData.ministerio = importado.ministerio.map((p, i) => ({
-    ...p,
-    instruccion: p.instruccion ?? null,
-    pubId:    minOld[i]?.pubId    ?? null,
-    ayudante: minOld[i]?.ayudante ?? null,
-    ...(auxEnSemana(semanaData.fecha) ? { salaAux: minOld[i]?.salaAux ?? { pubId: null, ayudante: null } } : {}),
-  }));
+  semanaData.ministerio = importado.ministerio.map((p, i) => {
+    // El tipo puede cambiar respecto de lo que había guardado (ej: una parte que
+    // estaba como 'conversacion' y ahora se detecta como análisis con el auditorio):
+    // solo se conservan los campos que el tipo nuevo realmente usa.
+    const conAyudante = !minSinAyudante(p);
+    const conSalaAux  = auxEnSemana(semanaData.fecha) && !minSinSalaAux(p);
+    return {
+      ...p,
+      instruccion: p.instruccion ?? null,
+      pubId: minOld[i]?.pubId ?? null,
+      ...(conAyudante ? { ayudante: minOld[i]?.ayudante ?? null } : {}),
+      ...(conSalaAux  ? { salaAux:  minOld[i]?.salaAux  ?? { pubId: null, ayudante: null } } : {}),
+    };
+  });
 
   // Vida Cristiana: ídem
   const vcOld = semanaData.vidaCristiana || [];
@@ -1794,6 +1882,15 @@ function construirSlotsOrdenados(semana) {
   const ministerio = semana.ministerio || [];
   ministerio.forEach((parte, i) => {
     const rol = TIPO_MIN_ROL[parte.tipo] || 'VM_MINISTERIO_CONVERSACION';
+    if (minSinSalaAux(parte)) {
+      // Análisis con el auditorio ("¿Qué diría?"): una sola persona, sala principal.
+      // `sinSala` la deja fuera del balance de salas — no tiene contraparte en la
+      // auxiliar, así que contarla como "Principal" desbalancearía a quien la dé.
+      // `noPresidente`: la auto-asignación siempre la da a otro anciano/siervo, no
+      // al presidente de la reunión (el encargado sí puede asignársela a mano).
+      slots.push({ key: `ministerio.${i}`, rolRequerido: rol, sinSala: true, noPresidente: true });
+      return;
+    }
     slots.push({ key: `ministerio.${i}`, rolRequerido: rol });
     if (parte.tipo === 'discurso') {
       // Discurso: sin ayudante, pero sala auxiliar sí tiene su propia persona
@@ -2064,6 +2161,7 @@ function slotParejaCon(semana, slot) {
 // Devuelve 'prin' | 'aux' | null (null = no aplica balance/fijado de sala).
 function slotSalaMinisterio(slot) {
   if (!slot.key.startsWith('ministerio.')) return null;
+  if (slot.sinSala) return null; // análisis con el auditorio: no hay sala A/B que balancear
   return slot.esSalaAux ? 'aux' : 'prin';
 }
 
@@ -2155,6 +2253,9 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
     }
     const rolPriv = ROLES_VM_SOLO_PRIVILEGIADO.includes(rolId);
     const rolVaron = ROLES_VM_SOLO_VARON.includes(rolId);
+    // "¿Qué diría?": nunca al presidente de la reunión. `enEstaSemana` ya lo excluye
+    // (se asigna antes), pero se deja explícito para que no dependa del orden de slots.
+    const presExcluido = slot.noPresidente ? getSlotPubIdFromSemana(semana, 'presidente') : null;
     const salaSlot = slotSalaMinisterio(slot); // 'prin' | 'aux' | null
     const parejaCon = slotParejaCon(semana, slot); // titular de la dupla, si aplica
 
@@ -2163,6 +2264,7 @@ function autoAsignarSemana(semana, colas, { soloVacios = false, ultimaGlobal = n
       const cand = cola[i];
       // ── Restricciones DURAS ──
       if (enEstaSemana.has(cand)) continue;
+      if (presExcluido && cand === presExcluido) continue;
       if (noDispEnSemana(cand, semana.fecha)) continue;
       if (rolVaron && sexoDePub(cand) === 'M') continue;
       if (sexoRequerido) {
@@ -2667,8 +2769,11 @@ function formatSemanaParaSheets(s) {
   let num = 4;
   (s.ministerio || []).forEach(p => {
     const t  = `${num}. ${p.duracion ?? 3} mins. ${p.titulo || 'Parte'}${_modalidadMin(p)}`;
-    const sp = par(p.pubId, p.ayudante);
-    const sa = aux ? (p.tipo === 'discurso' ? n(p.salaAux?.pubId) : par(p.salaAux?.pubId, p.salaAux?.ayudante)) : '';
+    const sp = minSinAyudante(p) ? n(p.pubId) : par(p.pubId, p.ayudante);
+    // Análisis con el auditorio ("¿Qué diría?"): solo sala principal → columna SA vacía
+    const sa = (aux && !minSinSalaAux(p))
+      ? (p.tipo === 'discurso' ? n(p.salaAux?.pubId) : par(p.salaAux?.pubId, p.salaAux?.ayudante))
+      : '';
     push(t, sp, sa);
     num++;
   });
@@ -2819,7 +2924,10 @@ function s89SlipsDeSemana(semana) {
   // Seamos Mejores Maestros → intervenciones 4, 5, 6 …
   (semana.ministerio || []).forEach((parte, i) => {
     const num = 4 + i;
-    const conAyudante = parte.tipo !== 'discurso';
+    // Análisis con el auditorio ("¿Qué diría?"): no es asignación de estudiante,
+    // la da el presidente u otro anciano/siervo ministerial → no lleva S-89.
+    if (esAnalisisMin(parte)) return;
+    const conAyudante = !minSinAyudante(parte);
     add(parte.pubId, conAyudante ? parte.ayudante : null, num, 'principal');
     if (aux && parte.salaAux?.pubId) {
       add(parte.salaAux.pubId, conAyudante ? parte.salaAux.ayudante : null, num, 'auxiliar');
@@ -3198,6 +3306,9 @@ const LH_ROLES_VM = [
   { id: 'VM_MINISTERIO_DISCURSO', label: 'Min. Discurso' },
   { id: 'VM_VIDA_CRISTIANA', label: 'Vida Cristiana' },
   { id: 'VM_ESTUDIO_CONDUCTOR', label: 'Conductor Estudio' },
+  // Solo hace falta marcarlo en siervos ministeriales: los ancianos ya son
+  // elegibles para "¿Qué diría?" sin tenerlo. Ver pubsQueDiria().
+  { id: 'VM_QUE_DIRIA', label: '¿Qué diría? (s. min.)' },
 ];
 const LH_TODOS_ROLES = [...LH_ROLES_ASIGN, ...LH_ROLES_VM];
 
