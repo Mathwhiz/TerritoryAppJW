@@ -727,15 +727,30 @@ window.cerrarModal = function() {
   editandoId = null;
 };
 
+// Roles a guardar desde el modal de hermano.
+// El modal solo tiene checkbox para TODOS_LOS_ROLES (asignaciones + VM). ANCIANO,
+// SIERVO_MINISTERIAL, los precursores y los roles de congregación se editan en la
+// vista Responsabilidades y NO tienen checkbox acá, así que hay que conservarlos:
+// reconstruir el array solo desde los checkboxes los borraba en silencio (bastaba
+// con abrir a un anciano y tocar Guardar para dejarlo sin el rol, y con eso sin
+// privilegio para Tesoros/Perlas/Presidente/"¿Qué diría?" en Vida y Ministerio).
+function _rolesParaGuardar(pubId) {
+  const conCheckbox = new Set(TODOS_LOS_ROLES.map(r => r.id));
+  const marcados    = TODOS_LOS_ROLES
+    .filter(r => document.getElementById('hcb-' + r.id)?.checked)
+    .map(r => r.id);
+  const existentes  = publicadores.find(p => p.id === pubId)?.roles || [];
+  const preservados = existentes.filter(rid => !conCheckbox.has(rid));
+  return [...new Set([...preservados, ...marcados])];
+}
+
 // Guarda el hermano actual en Firestore sin cerrar el modal ni mostrar toast.
 // Retorna true si éxito, false si error. Solo funciona si editandoId está seteado.
 async function _guardarSilencioso() {
   if (!editandoId) return true;
   const nombre = document.getElementById('modal-nombre').value.trim();
   if (!nombre) return false;
-  const roles = TODOS_LOS_ROLES
-    .filter(r => document.getElementById('hcb-' + r.id)?.checked)
-    .map(r => r.id);
+  const roles = _rolesParaGuardar(editandoId);
   const data = { nombre, roles };
   if (_modalSexo) data.sexo = _modalSexo;
   if (!_modalSexo) {
