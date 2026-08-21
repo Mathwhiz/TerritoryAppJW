@@ -32,8 +32,10 @@ function esSemanaSuper(fecha) {
   return vmEspeciales[fecha]?.tipo === 'superintendente';
 }
 
-function auxEnSemana(fecha) {
-  return tieneAuxiliar && !esSemanaSuper(fecha);
+function auxEnSemana(fecha, semana) {
+  if (!tieneAuxiliar || esSemanaSuper(fecha)) return false;
+  // Marca por semana (ver vida-ministerio/app.js): casos puntuales sin sala auxiliar.
+  return semana?.sinSalaAux !== true;
 }
 
 // ─────────────────────────────────────────
@@ -219,7 +221,7 @@ function renderPrograma(s) {
   }
 
   // Tesoros
-  const aux  = auxEnSemana(s.fecha);
+  const aux  = auxEnSemana(s.fecha, s);
   const lect = s.tesoros?.lecturaBiblica;
   let lectRow;
   if (aux && lect?.ayudante) {

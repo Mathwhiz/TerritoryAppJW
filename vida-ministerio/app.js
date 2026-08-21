@@ -135,6 +135,7 @@ function toPublicVmSemana(semana) {
     oracionCierre: semana.oracionCierre || null,
     tesoros: semana.tesoros || {},
     ministerio: semana.ministerio || [],
+    sinSalaAux: semana.sinSalaAux === true,
     vidaCristiana: semana.vidaCristiana || [],
     estudioBiblico: semana.estudioBiblico || {},
     updatedAt: Date.now(),
@@ -308,8 +309,20 @@ function esSemanaSuper(fecha) {
 
 // Sala auxiliar efectiva de una semana: la congregación puede tenerla habilitada,
 // pero en la semana del superintendente no se abre.
-function auxEnSemana(fecha) {
-  return tieneAuxiliar && !esSemanaSuper(fecha);
+// `semana` es opcional: pasarla siempre que se tenga a mano (es lo más confiable).
+// Sin ella se busca por fecha en la semana abierta o en el cache de navegación.
+function auxEnSemana(fecha, semana) {
+  if (!tieneAuxiliar || esSemanaSuper(fecha)) return false;
+  // Marca por semana: casos puntuales en que no se abre la auxiliar (ej. un problema
+  // en el Salón). Se guarda en el doc de la semana, no en la congregación.
+  const s = semana || semanaPorFecha(fecha);
+  return s?.sinSalaAux !== true;
+}
+
+// Doc de una semana: la abierta si coincide, o la del cache de navegación.
+function semanaPorFecha(fecha) {
+  if (semanaData && semanaData.fecha === fecha) return semanaData;
+  return semanasLista.find(s => s.fecha === fecha) || null;
 }
 
 // "Necesidades de la congregación": parte de Vida Cristiana que siempre da un anciano.
@@ -1009,7 +1022,7 @@ function renderSemanaPublico(s) {
   }
 
   // Tesoros
-  const aux  = auxEnSemana(s.fecha);
+  const aux  = auxEnSemana(s.fecha, s);
   const lect = s.tesoros?.lecturaBiblica;
   let lectRow;
   if (aux && lect?.ayudante) {
@@ -1111,7 +1124,7 @@ function renderParteItem(key, label, parte, opts = {}) {
   // Discurso de ministerio con sala auxiliar: una persona por sala, sin ayudante.
   // El análisis con el auditorio ("¿Qué diría?") es la excepción: solo sala principal,
   // así que no lleva ni divisor de salas ni picker de auxiliar.
-  const aux          = auxEnSemana(semanaData?.fecha) && !minSinSalaAux(parte);
+  const aux          = auxEnSemana(semanaData?.fecha, semanaData) && !minSinSalaAux(parte);
   const esMinisterio = key.startsWith('ministerio.');
   const spLabel = (aux && esMinisterio)
     ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
@@ -1148,7 +1161,7 @@ function renderParteItemConAyudante(key, label, parte, opts = {}) {
     : '';
   const dur         = parte?.duracion ? `<span class="parte-dur-badge">${parte.duracion} min</span>` : '';
   const isMinisterio = key.startsWith('ministerio.');
-  const aux          = auxEnSemana(semanaData?.fecha);
+  const aux          = auxEnSemana(semanaData?.fecha, semanaData);
 
   // Cuando hay sala auxiliar, etiquetar la sala principal explícitamente
   const spLabel  = aux ? `<div class="sala-divider"><span>Sala Principal</span></div>` : '';
@@ -1842,7 +1855,7 @@ function aplicarWOLaSemana(importado) {
     // estaba como 'conversacion' y ahora se detecta como análisis con el auditorio):
     // solo se conservan los campos que el tipo nuevo realmente usa.
     const conAyudante = !minSinAyudante(p);
-    const conSalaAux  = auxEnSemana(semanaData.fecha) && !minSinSalaAux(p);
+    const conSalaAux  = auxEnSemana(semanaData.fecha, semanaData) && !minSinSalaAux(p);
     return {
       ...p,
       instruccion: p.instruccion ?? null,
@@ -1874,7 +1887,7 @@ function aplicarWOLaSemana(importado) {
 // [{ key, rolRequerido, esAyudante, esSalaAux }, ...]
 function construirSlotsOrdenados(semana) {
   const slots = [];
-  const aux   = auxEnSemana(semana.fecha); // en la semana del super no hay sala auxiliar
+  const aux   = auxEnSemana(semana.fecha, semana); // en la semana del super no hay sala auxiliar
 
   slots.push({ key: 'presidente',      rolRequerido: 'VM_PRESIDENTE' });
   slots.push({ key: 'oracionApertura', rolRequerido: 'VM_ORACION' });
@@ -2750,7 +2763,7 @@ function _modalidadMin(p) {
 
 function formatSemanaParaSheets(s) {
   const rows = [];
-  const aux = auxEnSemana(s.fecha);
+  const aux = auxEnSemana(s.fecha, s);
   const wk  = _semanaHeaderText(s.fecha);
   const n   = id => (id && nombreDePub(id)) || '';
   const par = (pid, aid) => { const sp = n(pid); const ay = n(aid); return sp ? (ay ? `${sp} - ${ay}` : sp) : ''; };
@@ -2913,7 +2926,7 @@ function s89FechaReunion(semana) {
 function s89SlipsDeSemana(semana) {
   const slips = [];
   const fecha = s89FechaReunion(semana);
-  const aux   = auxEnSemana(semana.fecha);
+  const aux   = auxEnSemana(semana.fecha, semana);
 
   const add = (pubId, ayudanteId, intervencion, sala) => {
     const nombre = nombreDePub(pubId);
