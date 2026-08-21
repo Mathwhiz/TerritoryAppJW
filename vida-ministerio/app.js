@@ -349,12 +349,19 @@ function minSinSalaAux(parte) {
 // y se limpian esos campos. Devuelve true si tocó algo (para marcar el dirty state).
 function reclasificarAnalisisMin(semana) {
   let cambio = false;
+  // Si la lista de hermanos todavía no cargó, no se limpia ningún titular: se prefiere
+  // dejar el dato como está antes que borrarlo por no poder validarlo.
+  const habilitados = publicadores.length ? new Set(pubsQueDiria().map(p => p.id)) : null;
   (semana?.ministerio || []).forEach(p => {
     if (!p || esAnalisisMin(p)) return;
     if (!esAnalisisAuditorio(p.titulo, p.instruccion)) return;
     p.tipo = 'analisis';
     delete p.ayudante;
     delete p.salaAux;
+    // El titular que había venía de la cola de estudiantes (puede ser una hermana o un
+    // publicador sin privilegio): si no puede dar esta parte, se libera el slot para
+    // que lo tome el ✦ Auto o el encargado a mano.
+    if (p.pubId && habilitados && !habilitados.has(p.pubId)) p.pubId = null;
     cambio = true;
   });
   return cambio;
