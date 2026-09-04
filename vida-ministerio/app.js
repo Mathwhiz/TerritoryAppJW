@@ -673,6 +673,7 @@ window.goToSemana = async function(fecha) {
         uiToast('No se encontró el programa para esta semana', 'error');
         return;
       }
+      _asigSnapshot = _fotoAsignaciones(semanaData);
       uiLoading.hide();
     } catch(e) {
       uiLoading.hide();
@@ -1556,6 +1557,56 @@ function _slotLabel(semana, key) {
   }
 }
 
+// ─────────────────────────────────────────
+//   ESTADO DE SLOTS
+// ─────────────────────────────────────────
+let _asigSnapshot = null;
+
+function _fotoAsignaciones(semana) {
+  const out = {};
+  if (!semana) return out;
+  construirSlotsOrdenados(semana).forEach(s => {
+    out[s.key] = getSlotPubIdFromSemana(semana, s.key) || null;
+  });
+  return out;
+}
+
+function _nombrePub(pubId) {
+  if (!pubId) return null;
+  return publicadores.find(p => p.id === pubId)?.nombre || pubId;
+}
+
+function _diffAsignaciones(antes, semana) {
+  const ahora  = _fotoAsignaciones(semana);
+  const claves = new Set([...Object.keys(antes || {}), ...Object.keys(ahora)]);
+  const cambios = [];
+  claves.forEach(k => {
+    const de = (antes || {})[k] || null;
+    const a  = ahora[k] || null;
+    if (de === a) return;
+    cambios.push({
+      slot: k, label: _slotLabel(semana, k),
+      de, deNombre: _nombrePub(de),
+      a,  aNombre:  _nombrePub(a),
+    });
+  });
+  return cambios;
+}
+
+function _logCambiosAsignaciones(semana, accion, antes) {
+  try {
+    if (!semana) return;
+    const cambios = _diffAsignaciones(antes, semana);
+    if (!cambios.length) return;
+    const n = cambios.length;
+    logActividad(
+      congreId, 'vida-ministerio', accion,
+      `Semana ${semana.fecha} — ${n} ${n === 1 ? 'asignación' : 'asignaciones'}`,
+      { semana: semana.fecha, cambios },
+    );
+  } catch (_) { /* nunca romper el guardado por el log */ }
+}
+
 // Devuelve { vacios:[], repetidos:[], sexo:[], noDisp:[] } con labels de slots problemáticos.
 function _validarSemana(semana) {
   const slots = construirSlotsOrdenados(semana);
@@ -1645,6 +1696,8 @@ window.guardarSemana = async function() {
     uiLoading.hide();
     uiToast('Programa guardado', 'success');
     logActividad(congreId, 'vida-ministerio', 'guardado', 'Semana ' + semanaData.fecha);
+    _logCambiosAsignaciones(semanaData, 'edicion', _asigSnapshot);
+    _asigSnapshot = _fotoAsignaciones(semanaData);
     window.lanzarPelotaFestejo?.('⚽');
   } catch(e) {
     uiLoading.hide();
@@ -2372,8 +2425,10 @@ window.autocompletarHermanos = async function() {
   });
   if (!ok) return;
 
+  const _antesAuto = _fotoAsignaciones(semanaData);
   const colas = calcularColasVM();
   autoAsignarSemana(semanaData, colas, { soloVacios: true });
+  _logCambiosAsignaciones(semanaData, 'auto_asignar', _antesAuto);
   _marcarModificada();
   renderSemanaEdit();
   uiToast('Hermanos auto-asignados', 'success');
@@ -2485,12 +2540,14 @@ window.crearSemana = async function() {
     // Auto-asignar hermanos si está activo
     if (autoAsignar && colasAA && !debeSkipAutoAsignar(fecha)) {
       autoAsignarSemana(semanaData, colasAA, { ultimaGlobal: ultGlobAA, salaGlobal: salaGlobAA, parejaGlobal: parejaGlobAA });
+      _logCambiosAsignaciones(semanaData, 'generacion', {});
     }
 
     // Guardar en Firestore
     try {
       await setDoc(doc(db, 'congregaciones', congreId, 'vidaministerio', fecha), semanaData);
       await setDoc(doc(db, 'congregaciones', congreId, 'vm_programa', fecha), toPublicVmSemana(semanaData));
+      _asigSnapshot = _fotoAsignaciones(semanaData);
     } catch(e) {
       uiLoading.hide();
       uiToast(`Error guardando ${fmtDisplay(fecha)}: ${e.message}`, 'error');

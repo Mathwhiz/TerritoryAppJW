@@ -1852,7 +1852,27 @@ const ACT_MODULOS = {
   'conferencias':    { label: 'Conferencias',    icon: '🎤',  color: '#D85A30' },
   'predicacion':     { label: 'Predicación',     icon: '📣',  color: '#97C459' },
 };
-const ACT_ACCIONES = { apertura: 'Abrió', guardado: 'Guardó', edicion: 'Editó' };
+const ACT_ACCIONES = {
+  apertura: 'Abrió', guardado: 'Guardó', edicion: 'Editó',
+  auto_asignar: 'Auto-asignó', generacion: 'Generó',
+};
+
+function actEsc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function actCambiosHtml(cambios) {
+  if (!Array.isArray(cambios) || !cambios.length) return '';
+  const filas = cambios.map(c => `
+    <div class="act-cambio">
+      <span class="act-cambio-slot">${actEsc(c.label || c.slot)}</span>
+      <span class="act-cambio-de">${actEsc(c.deNombre || '—')}</span>
+      <span class="act-cambio-flecha">→</span>
+      <span class="act-cambio-a">${actEsc(c.aNombre || '—')}</span>
+    </div>`).join('');
+  return `<div class="act-cambios">${filas}</div>`;
+}
 
 async function openActividad(congreId, congreNombre) {
   showView('view-actividad');
@@ -1910,7 +1930,9 @@ async function loadActividad(congreId) {
       const hora    = ts ? ts.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '—';
       const nombre  = e.nombre || (e.anonimo ? 'Invitado' : '—');
       const anonBadge  = e.anonimo ? ' <span style="font-size:10px;color:#555;">(invitado)</span>' : '';
-      const detalleHtml = e.detalle ? `<div class="act-detalle">${e.detalle}</div>` : '';
+      const detalleHtml = e.detalle
+        ? `<div class="act-detalle">${e.detalle}</div>${actCambiosHtml(e.cambios)}`
+        : actCambiosHtml(e.cambios);
       html += `
         <div class="act-entry">
           <div class="act-icon" style="background:${mod.color}22;">${mod.icon}</div>

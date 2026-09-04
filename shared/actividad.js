@@ -23,10 +23,11 @@ function getDeviceId() {
  * Registra una acción en Firestore.
  * @param {string} congreId
  * @param {'territorios'|'asignaciones'|'vida-ministerio'|'hermanos'|'conferencias'|'predicacion'} modulo
- * @param {'apertura'|'guardado'|'edicion'} accion
+ * @param {'apertura'|'guardado'|'edicion'|'auto_asignar'|'generacion'} accion
  * @param {string|null} detalle  — texto libre, ej: "Semana 2026-04-07"
+ * @param {object|null} extra    — campos adicionales del doc
  */
-export async function logActividad(congreId, modulo, accion, detalle = null) {
+export async function logActividad(congreId, modulo, accion, detalle = null, extra = null) {
   if (!congreId) return;
   try {
     const user = window.currentUser;
@@ -37,6 +38,7 @@ export async function logActividad(congreId, modulo, accion, detalle = null) {
       modulo,
       accion,
       detalle,
+      ...(extra && typeof extra === 'object' ? extra : {}),
       anonimo:   !!(user?.isAnonymous),
       timestamp: serverTimestamp(),
     });
