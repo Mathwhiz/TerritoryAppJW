@@ -711,7 +711,7 @@ function renderHistorialMesesAnteriores(meses) {
     </div>`;
 }
 
-function _metaMensualCard(actualMes, metaMensual, labelMes, extraHead = '') {
+function _metaMensualCard(actualMes, metaMensual, labelMes, extraHead = '', ldcIncluido = 0) {
   const faltante  = Math.max(0, metaMensual - actualMes);
   const cumplida  = actualMes >= metaMensual;
   return `
@@ -724,6 +724,7 @@ function _metaMensualCard(actualMes, metaMensual, labelMes, extraHead = '') {
         <div class="meta-current">${fmtTiempo(actualMes)}</div>
         <div class="meta-target">de ${fmtTiempo(metaMensual)}</div>
       </div>
+      ${ldcIncluido ? `<div class="meta-ldc-nota">incluye ${fmtTiempo(ldcIncluido)} de LDC</div>` : ''}
       <div class="meta-bar">
         <div class="meta-bar-fill" style="width:${metaPct(actualMes, metaMensual)}%;"></div>
       </div>
@@ -784,7 +785,11 @@ function renderMetas() {
     .filter(m => (m.minutos || 0) > 0 || (m.ldcMinutos || 0) > 0 || (m.revisitas || 0) > 0 || (m.estudios || 0) > 0)
     .sort((a, b) => b.id.localeCompare(a.id));
 
-  const actualMes = _dataMes.minutos || 0;
+  // Las horas de LDC se hacen distinto pero SUMAN igual para el compromiso: van dentro
+  // de todo progreso-contra-meta (mensual, anual y ritmo). Se siguen guardando y
+  // mostrando aparte en las stats — lo que cambia es solo cómo se mide la meta.
+  const ldcMes    = _dataMes.ldcMinutos || 0;
+  const actualMes = (_dataMes.minutos || 0) + ldcMes;
 
   const anios = aniosServicioDisponibles();
   const selectorServicio = anios.length > 1
@@ -807,12 +812,16 @@ function renderMetas() {
   if (_esPrecursorRegular) {
     const metaMensual  = 50 * 60;
     const metaAnual    = 600 * 60;
-    const actualAnual  = mesesServicio.reduce((s, mes) => s + (mesesCalculados.get(mes)?.minutos || 0), 0);
+    const actualAnual  = mesesServicio.reduce((s, mes) => {
+      const m = mesesCalculados.get(mes);
+      return s + (m?.minutos || 0) + (m?.ldcMinutos || 0);
+    }, 0);
+    const ldcAnual     = mesesServicio.reduce((s, mes) => s + (mesesCalculados.get(mes)?.ldcMinutos || 0), 0);
     const faltanteAnual = Math.max(0, metaAnual - actualAnual);
 
     cont.innerHTML = `
       <div class="metas-grid">
-        ${_metaMensualCard(actualMes, metaMensual, fmtMes(_mesMostrado))}
+        ${_metaMensualCard(actualMes, metaMensual, fmtMes(_mesMostrado), '', ldcMes)}
         <div class="meta-card">
           <div class="meta-head">
             <div class="meta-title">Meta anual</div>
@@ -822,6 +831,7 @@ function renderMetas() {
             <div class="meta-current">${fmtTiempo(actualAnual)}</div>
             <div class="meta-target">de ${fmtTiempo(metaAnual)}</div>
           </div>
+          ${ldcAnual ? `<div class="meta-ldc-nota">incluye ${fmtTiempo(ldcAnual)} de LDC</div>` : ''}
           <div class="meta-bar">
             <div class="meta-bar-fill" style="width:${metaPct(actualAnual, metaAnual)}%;"></div>
           </div>
@@ -841,7 +851,7 @@ function renderMetas() {
     const metaMensualAux = 30 * 60;
     cont.innerHTML = `
       <div class="metas-grid">
-        ${_metaMensualCard(actualMes, metaMensualAux, `${fmtMes(_mesMostrado)} · Auxiliar`)}
+        ${_metaMensualCard(actualMes, metaMensualAux, `${fmtMes(_mesMostrado)} · Auxiliar`, '', ldcMes)}
         ${historialCard}
       </div>`;
     _maybeFestejarMeta(_mesMostrado, actualMes, metaMensualAux);
@@ -856,7 +866,7 @@ function renderMetas() {
     const metaMensualPersonalMin = _metaMensualPersonal * 60;
     cont.innerHTML = `
       <div class="metas-grid">
-        ${_metaMensualCard(actualMes, metaMensualPersonalMin, fmtMes(_mesMostrado), extraHead)}
+        ${_metaMensualCard(actualMes, metaMensualPersonalMin, fmtMes(_mesMostrado), extraHead, ldcMes)}
         ${historialCard}
       </div>`;
     _maybeFestejarMeta(_mesMostrado, actualMes, metaMensualPersonalMin);

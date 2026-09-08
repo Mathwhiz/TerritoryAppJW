@@ -453,6 +453,8 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .meta-servicio-sel:focus-visible { outline: 2px solid #E05277; outline-offset: 1px; }
 .meta-main { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+/* Aclara que el total contra la meta ya trae las horas de LDC adentro. */
+.meta-ldc-nota { font-size: 11px; color: var(--text-muted); margin: -8px 0 10px; }
 .meta-current { font-size: 28px; font-weight: 700; color: #E05277; }
 .meta-target { font-size: 14px; color: var(--text-secondary); }
 .meta-bar {
