@@ -181,6 +181,7 @@ let _timerStart    = 0;
 let _timerAccum    = 0;
 let _timerRunning  = false;
 let _timerInicioTs = null; // timestamp real del inicio de la sesión activa
+let _desdeTimer    = false; // el modal de agregar tiempo se abrió desde el cronómetro
 
 let _grupoId    = null; // grupoId del publicador vinculado
 let _grupoColor = null; // color hex del grupo
@@ -1068,17 +1069,20 @@ window.exportarResumenWhatsApp = function() {
 // ─────────────────────────────────────────
 //   AGREGAR TIEMPO (cronómetro o manual)
 // ─────────────────────────────────────────
-window.abrirAgregarTiempo = function() {
+window.abrirAgregarTiempo = function(prefillMins = 0) {
+  const mins = Number.isFinite(prefillMins) ? Math.max(0, prefillMins) : 0;
   document.getElementById('add-fecha').value = fechaHoy();
   document.getElementById('add-tipo').value  = 'predicacion';
-  document.getElementById('add-horas').value = '';
-  document.getElementById('add-mins').value  = '';
+  document.getElementById('add-horas').value = mins ? String(Math.floor(mins / 60)) : '';
+  document.getElementById('add-mins').value  = mins ? String(mins % 60).padStart(2, '0') : '';
   document.getElementById('modal-add-tiempo').style.display = 'flex';
   setTimeout(() => document.getElementById('add-horas').focus(), 60);
 };
 
 window.cerrarAgregarTiempo = function() {
   document.getElementById('modal-add-tiempo').style.display = 'none';
+  // Si venía del cronómetro y se cancela, el tiempo cronometrado queda intacto.
+  _desdeTimer = false;
 };
 
 window.sumarTiempoRapido = function(horas, mins) {
@@ -1103,8 +1107,10 @@ window.guardarAgregarTiempo = async function() {
   // Si la fecha es de otro mes, navegar a ese mes (guardarDia lo vuelve a asegurar)
   await irAMesDeFecha(fecha);
 
+  const veniaDelTimer = _desdeTimer;
   cerrarAgregarTiempo();
   await guardarDia(fecha, mins, { ldcMinutos: tipo === 'ldc' ? mins : 0 });
+  if (veniaDelTimer) timerReset();   // recién ahora: si el guardado falla, no se pierde
   renderStats();
   await cargarHistorial();
   toast(`${fmtTiempo(mins)} agregados — ${fmtFecha(fecha)}`);
@@ -1257,16 +1263,14 @@ window.timerReset = function() {
   _timerUpdateLabel();
 };
 
-window.timerAgregarAlMes = async function() {
-  const ms   = timerElapsedMs();
-  const mins = Math.floor(ms / 60000);
+window.timerAgregarAlMes = function() {
+  const mins = Math.floor(timerElapsedMs() / 60000);
   if (mins < 1) { toast('Menos de 1 minuto registrado', 'error'); return; }
 
-  timerReset();
-  await guardarDia(fechaHoy(), mins);
-  renderStats();
-  await cargarHistorial();
-  toast(`${fmtTiempo(mins)} agregados — ${fmtFecha(fechaHoy())}`);
+  // El cronómetro no sabe si el tiempo fue de campo o de LDC — se elige en el modal, que
+  // ya viene con el tiempo cronometrado cargado y además deja corregir la fecha.
+  _desdeTimer = true;
+  abrirAgregarTiempo(mins);
 };
 
 // ─────────────────────────────────────────

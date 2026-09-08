@@ -347,6 +347,12 @@ window.linkWithGoogle = async () => {
     email:             fbUser.email,
     displayName:       fbUser.displayName || '',
     photoURL:          fbUser.photoURL    || null,
+    // birthDate y sexo son obligatorios en la regla de create de `usuarios/{uid}`, y acá
+    // casi siempre es un create: los invitados anónimos ya no se persisten (ver arriba),
+    // así que este setDoc no está mergeando sobre nada. Sin estos dos campos, vincular
+    // una sesión de invitado con Google muere en permission-denied.
+    birthDate:         null,
+    sexo:              null,
     matchedPublisherId,
     congregacionId:    congreId || null,
     appRol,
