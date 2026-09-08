@@ -655,6 +655,33 @@ function fmtServicioRango(servicioDesde) {
   return `Sep ${servicioDesde} → Ago ${servicioDesde + 1}`;
 }
 
+/**
+ * Años de servicio (sep→ago) que tienen algún dato, más el actual, de más nuevo a más viejo.
+ * Sin esto sólo se podía llegar a un año anterior navegando mes por mes hacia atrás.
+ */
+function aniosServicioDisponibles() {
+  const set = new Set(_historialMeses.map(m => getServicioDesdeMes(m.id)));
+  set.add(getServicioDesdeMes(mesHoy()));
+  set.add(getServicioDesdeMes(_mesMostrado));
+  return [...set].sort((a, b) => b - a);
+}
+
+/** Salta al año de servicio elegido, parándose en su último mes con datos. */
+window.irAServicio = async function(servicioDesde) {
+  const desde = Number(servicioDesde);
+  if (desde === getServicioDesdeMes(_mesMostrado)) return;
+  const meses = listMesesServicio(desde);
+  const conDatos = _historialMeses
+    .map(m => m.id)
+    .filter(id => meses.includes(id))
+    .sort((a, b) => b.localeCompare(a));
+  // Año en curso -> el mes de hoy; año cerrado -> su último mes con datos (o agosto).
+  const destino = desde === getServicioDesdeMes(mesHoy())
+    ? mesHoy()
+    : (conDatos[0] || meses[meses.length - 1]);
+  await window.irAMes(destino);
+};
+
 function renderHistorialMesesAnteriores(meses) {
   if (!meses.length) {
     return `
@@ -747,8 +774,11 @@ function renderMetas() {
   const servicioDesde   = getServicioDesdeMes(_mesMostrado);
   const mesesServicio   = listMesesServicio(servicioDesde);
   const mesesCalculados = calcularMesesConArrastre();
+  // Si el año de servicio ya cerró, se muestra ENTERO: cortar en el mes mostrado sólo
+  // tiene sentido para el año en curso (ahí "anterior" significa "ya transcurrido").
+  const esServicioCerrado = servicioDesde < getServicioDesdeMes(mesHoy());
   const mesesAnteriores = mesesServicio
-    .filter(mes => compareMes(mes, _mesMostrado) < 0)
+    .filter(mes => esServicioCerrado || compareMes(mes, _mesMostrado) < 0)
     .map(mes => mesesCalculados.get(mes))
     .filter(Boolean)
     .filter(m => (m.minutos || 0) > 0 || (m.ldcMinutos || 0) > 0 || (m.revisitas || 0) > 0 || (m.estudios || 0) > 0)
@@ -756,11 +786,19 @@ function renderMetas() {
 
   const actualMes = _dataMes.minutos || 0;
 
+  const anios = aniosServicioDisponibles();
+  const selectorServicio = anios.length > 1
+    ? `<select class="meta-sub meta-servicio-sel" onchange="irAServicio(this.value)"
+               aria-label="Año de servicio">
+         ${anios.map(a => `<option value="${a}"${a === servicioDesde ? ' selected' : ''}>${fmtServicioRango(a)}</option>`).join('')}
+       </select>`
+    : `<div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>`;
+
   const historialCard = `
     <div class="meta-card">
       <div class="meta-head">
-        <div class="meta-title">Historial anterior</div>
-        <div class="meta-sub">${fmtServicioRango(servicioDesde)}</div>
+        <div class="meta-title">${esServicioCerrado ? 'Historial del año' : 'Historial anterior'}</div>
+        ${selectorServicio}
       </div>
       ${renderHistorialMesesAnteriores(mesesAnteriores)}
     </div>`;

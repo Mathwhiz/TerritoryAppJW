@@ -443,6 +443,15 @@ body { font-family: system-ui, sans-serif; background: var(--bg-primary); color:
 }
 .meta-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .meta-sub { font-size: 12px; color: var(--text-muted); }
+/* Selector de año de servicio: se ve como el subtitulo que reemplaza, pero es un <select>. */
+.meta-servicio-sel {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid var(--border-light);
+  border-radius: 8px; padding: 3px 26px 3px 8px; cursor: pointer;
+  background: var(--bg-primary) url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8.5 2.5 5h7z'/%3E%3C/svg%3E") no-repeat right 8px center;
+  font-family: inherit; line-height: 1.4;
+}
+.meta-servicio-sel:focus-visible { outline: 2px solid #E05277; outline-offset: 1px; }
 .meta-main { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
 .meta-current { font-size: 28px; font-weight: 700; color: #E05277; }
 .meta-target { font-size: 14px; color: var(--text-secondary); }
