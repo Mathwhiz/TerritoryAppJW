@@ -27,6 +27,7 @@ const _isNative = () => window.Capacitor?.isNativePlatform() === true;
 // ── Estado interno ────────────────────────────────────────────────
 let _user      = null;   // { ...campos Firestore, _firebaseUser }
 let _authReady = false;
+let _lastAuthError = null;   // S148: ultimo error al cargar/crear el doc (ver window.lastAuthError)
 const _waiters = [];     // resolvers en espera de que auth esté listo
 
 function normalizeAppRoles(data) {
@@ -190,6 +191,7 @@ onAuthStateChanged(auth, async (fbUser) => {
   }
 
   try {
+    _lastAuthError = null;
     if (fbUser) {
       _user = await loadOrCreateUser(fbUser);
       _setCachedUser(_user);
@@ -199,6 +201,10 @@ onAuthStateChanged(auth, async (fbUser) => {
     }
   } catch (err) {
     console.error('[auth] Error al cargar usuario — authGuard bloqueará el acceso:', err);
+    // S148: guardar el error para que la UI pueda DECIR que pasó. Sin esto el fallo es
+    // mudo: la pantalla vuelve sola al boton de Google y parece que "no hizo nada"
+    // (caso real 07/09: una regla de Firestore rechazaba el create y nadie se enteraba).
+    _lastAuthError = err;
     // Si se resolvió desde caché, no nullear _user (datos stale > sin acceso)
     if (!_authReady) _user = null;
   } finally {
@@ -206,7 +212,7 @@ onAuthStateChanged(auth, async (fbUser) => {
     _waiters.forEach(resolve => resolve(_user)); // no-op si ya se resolvió desde caché
     _waiters.length = 0;
     if (typeof window.updateSessionHeader === 'function') window.updateSessionHeader(_user);
-    window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: _user } }));
+    window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: _user, error: _lastAuthError } }));
   }
 });
 
@@ -218,6 +224,13 @@ window.waitForAuth = () =>
 
 /** Usuario actual (null si no está logueado). */
 Object.defineProperty(window, 'currentUser', { get: () => _user });
+
+/**
+ * Último error al cargar/crear el doc de usuario, o null.
+ * Existe para que la UI distinga "cancelaste" de "fallo la escritura": son el mismo
+ * silencio en pantalla y causas completamente distintas.
+ */
+window.lastAuthError = () => _lastAuthError;
 
 /**
  * Verifica si el usuario actual tiene un permiso.

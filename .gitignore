@@ -39,3 +39,6 @@ tools/import_publicadores_nw_csv.py
 tools/*.png
 tools/*.jpg
 tools/*.jpeg
+
+# backups locales antes de un fix (no van al repo publico)
+*.bak_*

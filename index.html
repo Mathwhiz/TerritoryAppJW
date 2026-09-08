@@ -1986,6 +1986,15 @@
         return;
       }
       if (!finalUser) {
+        // S148: el sign-in de Google puede salir BIEN y aun asi quedarse sin usuario, si
+        // falla la creacion del doc en Firestore (regla que rechaza, red, permisos). Antes
+        // eso volvia al boton en silencio y era indistinguible de "cancele el popup" —
+        // paso de verdad el 07/09 y costo ~20 reintentos a ciegas. Ahora se dice.
+        const authErr = window.lastAuthError?.();
+        if (authErr) {
+          const code = authErr.code ? ` (${authErr.code})` : '';
+          uiToast(`Entraste con Google pero no pudimos crear tu perfil${code}. Reintentá en un minuto.`, 'error');
+        }
         resetAuthFlowUI();
         return;
       }
@@ -2014,6 +2023,13 @@
         await finishAuthEntry();
       } catch (err) {
         console.error(err);
+        // Cerrar el popup a proposito no es un error que valga contarle al usuario;
+        // cualquier otra cosa SI (dominio no autorizado, red, config de Firebase).
+        const silenciosos = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request', 'auth/user-cancelled'];
+        if (!silenciosos.includes(err?.code)) {
+          const code = err?.code ? ` (${err.code})` : '';
+          uiToast(`No se pudo entrar con Google${code}. Probá de nuevo.`, 'error');
+        }
         resetAuthFlowUI();
       }
     };
