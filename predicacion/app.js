@@ -23,6 +23,12 @@ function fechaHoy() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+function ultimoDiaDelMes(iso) {
+  const [y, m] = iso.split('-').map(Number);
+  const dia = new Date(y, m, 0).getDate();   // día 0 del mes siguiente = último de este
+  return `${iso}-${String(dia).padStart(2,'0')}`;
+}
+
 function navearMes(iso, delta) {
   const [y, m] = iso.split('-').map(Number);
   let nm = m + delta, ny = y;
@@ -345,9 +351,49 @@ async function cargarMes() {
 //   GUARDAR
 // ─────────────────────────────────────────
 
+/**
+ * Deja `_mesMostrado` en el mes de una fecha dada. Nada se guarda en otro mes que el suyo:
+ * el mes mostrado puede estar parado en uno viejo (el selector de año de servicio salta a
+ * agosto y ahí queda) mientras el cronómetro guarda con la fecha de hoy.
+ */
+async function irAMesDeFecha(fecha) {
+  const mes = String(fecha || '').slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(mes) || mes === _mesMostrado) return;
+  _mesMostrado = mes;
+  renderMonthLabel();
+  await cargarMes();
+  renderHistorial();
+  renderMetas();
+}
+
+/**
+ * Un mes importado tiene el total en el doc padre y ninguna entrada en `dias/`. Desde el
+ * primer día que se agregue, la suma de `dias/` pasa a ser la fuente de verdad y pisaría
+ * ese total (el mes quedaría con solo lo nuevo): lo materializamos como un movimiento más
+ * para que no se pierda.
+ */
+async function materializarMesImportado() {
+  if (_diasMes.length > 0) return;
+  const snap = await getDoc(mesRef(_mesMostrado));
+  if (!snap.exists()) return;
+  const prev       = snap.data();
+  const minutos    = prev.minutos    || 0;
+  const ldcMinutos = prev.ldcMinutos || 0;
+  if (minutos <= 0 && ldcMinutos <= 0) return;
+
+  const fecha  = ultimoDiaDelMes(_mesMostrado);
+  const newRef = await addDoc(diasRef(_mesMostrado), {
+    fecha, minutos, ldcMinutos, importado: true, creadoEn: serverTimestamp(),
+  });
+  _diasMes.push({ id: newRef.id, fecha, minutos, ldcMinutos, importado: true });
+  _diasMes.sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+
 // Guarda un día individual y actualiza el total en el doc padre
 async function guardarDia(fecha, minutos, extras = {}) {
   const ldcMinutos = Math.max(0, extras.ldcMinutos || 0);
+  await irAMesDeFecha(fecha);
+  await materializarMesImportado();
   const newRef = await addDoc(diasRef(_mesMostrado), {
     fecha,
     minutos,
@@ -517,7 +563,7 @@ function renderDiasMes() {
   filas.push(..._diasMes.map(d => `
     <div class="hist-day-row">
       <div class="hist-day-main">
-        <span class="hist-day-date">${fmtFecha(d.fecha)}</span>
+        <span class="hist-day-date">${d.importado ? 'Total del mes (importado)' : fmtFecha(d.fecha)}</span>
         ${d.ldcMinutos ? '<span class="hist-day-badge">LDC</span>' : ''}
       </div>
       <span class="hist-day-time">${fmtTiempo(d.minutos)}</span>
@@ -785,11 +831,11 @@ function renderMetas() {
     .filter(m => (m.minutos || 0) > 0 || (m.ldcMinutos || 0) > 0 || (m.revisitas || 0) > 0 || (m.estudios || 0) > 0)
     .sort((a, b) => b.id.localeCompare(a.id));
 
-  // Las horas de LDC se hacen distinto pero SUMAN igual para el compromiso: van dentro
-  // de todo progreso-contra-meta (mensual, anual y ritmo). Se siguen guardando y
-  // mostrando aparte en las stats — lo que cambia es solo cómo se mide la meta.
+  // Las horas de LDC cuentan para la meta, y YA ESTÁN DENTRO de `minutos`: un día de LDC
+  // se guarda con su tiempo en `minutos` y además en `ldcMinutos`, que es un subconjunto,
+  // no un total aparte (ver guardarDia). Sumar los dos las contaba dos veces.
   const ldcMes    = _dataMes.ldcMinutos || 0;
-  const actualMes = (_dataMes.minutos || 0) + ldcMes;
+  const actualMes = _dataMes.minutos || 0;
 
   const anios = aniosServicioDisponibles();
   const selectorServicio = anios.length > 1
@@ -812,10 +858,7 @@ function renderMetas() {
   if (_esPrecursorRegular) {
     const metaMensual  = 50 * 60;
     const metaAnual    = 600 * 60;
-    const actualAnual  = mesesServicio.reduce((s, mes) => {
-      const m = mesesCalculados.get(mes);
-      return s + (m?.minutos || 0) + (m?.ldcMinutos || 0);
-    }, 0);
+    const actualAnual  = mesesServicio.reduce((s, mes) => s + (mesesCalculados.get(mes)?.minutos || 0), 0);
     const ldcAnual     = mesesServicio.reduce((s, mes) => s + (mesesCalculados.get(mes)?.ldcMinutos || 0), 0);
     const faltanteAnual = Math.max(0, metaAnual - actualAnual);
 
@@ -1057,15 +1100,8 @@ window.guardarAgregarTiempo = async function() {
   if (!fecha) { toast('Seleccioná una fecha', 'error'); return; }
   if (mins < 1) { toast('Ingresá al menos 1 minuto', 'error'); return; }
 
-  // Si la fecha es de otro mes, navegar a ese mes
-  const mesDeFecha = fecha.slice(0, 7);
-  if (mesDeFecha !== _mesMostrado) {
-    _mesMostrado = mesDeFecha;
-    renderMonthLabel();
-    await cargarMes();
-    renderHistorial();
-    renderMetas();
-  }
+  // Si la fecha es de otro mes, navegar a ese mes (guardarDia lo vuelve a asegurar)
+  await irAMesDeFecha(fecha);
 
   cerrarAgregarTiempo();
   await guardarDia(fecha, mins, { ldcMinutos: tipo === 'ldc' ? mins : 0 });
